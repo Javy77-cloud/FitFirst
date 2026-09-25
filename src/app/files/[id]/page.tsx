@@ -54,9 +54,7 @@ export default async function FilePreviewPage({
     >
       <PrintOnLoad enabled={print === "1"} />
       <div className="ff-no-print mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          In-browser preview. Email and SMS are desk stubs. Print uses the browser print dialog.
-        </p>
+
         <DocFileActions
           documentId={doc.id}
           filename={doc.filename}
@@ -70,10 +68,7 @@ export default async function FilePreviewPage({
         {file == null ? (
           <div className="space-y-2 px-6 py-16 text-center" data-ff-file-missing="">
             <p className="text-sm font-semibold text-navy">{doc.filename} is not in storage.</p>
-            <p className="text-sm text-muted-foreground">
-              Local disk uploads do not survive Vercel deploys. Re-upload the file. Existing blob URLs
-              are retried automatically.
-            </p>
+
             <Link href={backHref} className={cn(buttonVariants({ size: "sm" }), "mt-2 inline-flex")}>
               Back to Documents
             </Link>

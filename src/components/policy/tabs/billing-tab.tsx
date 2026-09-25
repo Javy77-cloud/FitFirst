@@ -86,10 +86,7 @@ export function PolicyBillingTab({
     <div className="space-y-4" data-ff-policy-tab="billing">
       <section className="ff-card p-4">
         <h2 className="text-base font-semibold text-navy">Billing</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Premium and schedule from the policy record. Payment method is shown only when stored —
-          FitFirst does not invent card or ACH details.
-        </p>
+
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-helper text-muted-foreground">Premium</dt>
@@ -118,9 +115,7 @@ export function PolicyBillingTab({
                 ? formatMoney(policy.downPayment)
                 : "—"}
             </dd>
-            {!(policy.downPayment != null && policy.downPayment !== "") ? (
-              <p className="text-xs text-muted-foreground">Stub — not stored on policies yet.</p>
-            ) : null}
+            {!(policy.downPayment != null && policy.downPayment !== "") ? null : null}
           </div>
           <div>
             <dt className="text-helper text-muted-foreground">Finance charge</dt>
@@ -129,28 +124,21 @@ export function PolicyBillingTab({
                 ? formatMoney(policy.financeCharge)
                 : "—"}
             </dd>
-            {!(policy.financeCharge != null && policy.financeCharge !== "") ? (
-              <p className="text-xs text-muted-foreground">Stub — not stored on policies yet.</p>
-            ) : null}
+            {!(policy.financeCharge != null && policy.financeCharge !== "") ? null : null}
           </div>
           <div>
             <dt className="text-helper text-muted-foreground">Finance agreement #</dt>
             <dd className="font-medium text-navy">
               {policy.financeAgreementNumber?.trim() || "—"}
             </dd>
-            {!policy.financeAgreementNumber?.trim() ? (
-              <p className="text-xs text-muted-foreground">Stub — not stored on policies yet.</p>
-            ) : null}
+            {!policy.financeAgreementNumber?.trim() ? null : null}
           </div>
         </dl>
       </section>
 
       <section className="ff-card p-4" data-ff-policy-billing-earned="">
         <h2 className="text-base font-semibold text-navy">Earned vs unearned</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Pro-rata from effective / expiration and written premium. Desk estimate only — not a
-          carrier statement.
-        </p>
+
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-helper text-muted-foreground">Earned premium</dt>
@@ -176,9 +164,7 @@ export function PolicyBillingTab({
       {showCommission ? (
       <section className="ff-card p-4" data-ff-policy-billing-commission="">
         <h2 className="text-base font-semibold text-navy">Commission earned vs pending</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Read-only estimate from rate × premium × earned %. Agency edits stay on the Agency tab.
-        </p>
+
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-helper text-muted-foreground">Split / rate</dt>
@@ -210,10 +196,7 @@ export function PolicyBillingTab({
 
       <section className="ff-card p-4" data-ff-policy-payment-schedule="">
         <h2 className="text-base font-semibold text-navy">Payment schedule</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Installments with due date, amount, and paid / due / overdue. Receiving does not collect
-          money.
-        </p>
+
         <div className="mt-3">
           <AddInstallmentDialog policyId={policyId} />
         </div>

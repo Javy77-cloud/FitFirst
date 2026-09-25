@@ -50,9 +50,7 @@ export default async function RenewalQueuePage({
 
       {rows.length === 0 ? (
         <section className="ff-card px-4 py-6">
-          <p className="text-base text-muted-foreground">
-            No Policies on the renewal queue. Open the renewal list and queue an in-force term.
-          </p>
+          <p className="text-base text-muted-foreground">No Policies on the renewal queue.</p>
         </section>
       ) : (
         <div className="grid gap-4 xl:grid-cols-5">

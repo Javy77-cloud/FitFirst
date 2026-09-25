@@ -26,9 +26,7 @@ export default async function ReportsHubPage() {
   await requireSignedIn();
   return (
     <AppShell title="Reports" eyebrow="Book">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Reporting surfaces already on the desk. Nothing here writes a Policy or sends mail.
-      </p>
+
       <div className="grid gap-3 md:grid-cols-3">
         {CARDS.map((card) => (
           <Link

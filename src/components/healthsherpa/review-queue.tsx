@@ -25,15 +25,10 @@ export function HealthSherpaReviewQueue({
 }) {
   return (
     <div data-ff-healthsherpa-review="">
-      <p className="mb-2 max-w-3xl text-sm text-muted-foreground">{HEALTHSHERPA_REVIEW_BLURB}</p>
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground" data-ff-healthsherpa-external-id="">
-        {HEALTHSHERPA_EXTERNAL_ID_STAMP}
-      </p>
+
       {rows.length === 0 ? (
         <section className="ff-card p-4">
-          <p className="text-sm text-muted-foreground">
-            No unmatched HealthSherpa enrollments. Strong inbound matches attach automatically.
-          </p>
+          <p className="text-sm text-muted-foreground">No unmatched HealthSherpa enrollments.</p>
         </section>
       ) : (
         <ul className="space-y-3">

@@ -10,10 +10,7 @@ export default async function AutomationsCampaignsPage() {
   return (
     <AppShell title="Paid campaigns">
       <AutomationsModuleNav />
-      <InHouseOnly
-        title="No paid email campaigns"
-        body="This desk does not connect Mailchimp, Constant Contact, or SendGrid. Renewal and quote follow-ups are playbooks that create Tasks and in-app Alerts."
-      />
+      <InHouseOnly title="No paid email campaigns" />
     </AppShell>
   );
 }

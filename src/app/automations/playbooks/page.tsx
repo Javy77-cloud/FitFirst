@@ -67,10 +67,7 @@ export default async function AutomationsPlaybooksPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-2 max-w-3xl text-sm text-muted-foreground">
-        In-desk playbooks. Each fire writes a desk Task and/or an in-app Alert. Nothing emails
-        Javy. FitFirst does not send client mail from here.
-      </p>
+
       <p className="mb-4 text-xs text-navy">
         You are {session.isAdmin ? "Admin" : "Agent"}.{" "}
         {session.isAdmin
@@ -135,7 +132,7 @@ export default async function AutomationsPlaybooksPage({
       <section className="ff-card mt-4 overflow-hidden">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-navy">Fired work</h2>
-          <p className="text-xs text-muted-foreground">Tasks and Alerts only. No mail left the desk.</p>
+
         </div>
         {runs.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No playbook fires in your view yet.</p>

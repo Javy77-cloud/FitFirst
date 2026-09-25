@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { getDealWorkspace, getFormTemplate } from "@/lib/db/queries";
@@ -33,21 +32,7 @@ export default async function FormFillPage({
 
   return (
     <AppShell title={template.name}>
-      <p className="mb-3 text-base text-muted-foreground">
-        Filled from Quote Sheet on{" "}
-        {workspace ? (
-          <Link href={`/deals/${workspace.deal.id}?tab=quote-sheet`} className="text-primary hover:underline">
-            {workspace.deal.title}
-          </Link>
-        ) : (
-          "no deal"
-        )}
-        . Same record Super-Copy and Send to Fill use. Yellow missing / blue CHECK. Also in{" "}
-        <Link href={`/documents/fill/${template.slug}`} className="text-primary hover:underline">
-          Documents → Forms
-        </Link>
-        {" "}(scan-to-fill).
-      </p>
+
       <div className="mb-4 flex flex-wrap gap-2 text-[11px]">
         <span className="rounded-sm bg-fit-yellow-bg px-1.5 py-0.5 text-fit-yellow">
           Missing {counts.missing}

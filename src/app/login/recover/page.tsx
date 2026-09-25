@@ -28,10 +28,7 @@ export default async function RecoverPage({
           </p>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">
-              {person.name} · {person.email}. This clears 2-step so you can enroll again. Set a
-              new password if you forgot it, then continue to MFA.
-            </p>
+
             {error === "password" ? (
               <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red">
                 Password must be at least 4 characters and match the confirmation.

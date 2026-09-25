@@ -90,9 +90,7 @@ export function RenewalCrossSellPanel({
 
             <section className="space-y-2 rounded-md border border-border p-3">
               <h4 className="text-sm font-semibold text-navy">a) Set a reminder</h4>
-              <p className="text-xs text-muted-foreground">
-                Creates a task on your agent task list with the date you pick.
-              </p>
+
               <form action={createRenewalCrossSellReminder} className="space-y-2">
                 <input type="hidden" name="policyId" value={policyId} />
                 <input type="hidden" name="contactId" value={contactId ?? ""} />
@@ -119,15 +117,8 @@ export function RenewalCrossSellPanel({
 
             <section className="space-y-2 rounded-md border border-border p-3">
               <h4 className="text-sm font-semibold text-navy">b) Send a template</h4>
-              <p className="text-xs text-muted-foreground">
-                Queues an outbound email job (desk stub — nothing sends until a vendor is wired).
-                Schedule tomorrow or a custom date.
-              </p>
-              {templates.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  Honest stub: no email templates yet. Add one under Settings → Email templates.
-                </p>
-              ) : (
+
+              {templates.length === 0 ? null : (
                 <form action={queueRenewalCrossSellTemplate} className="space-y-2">
                   <input type="hidden" name="policyId" value={policyId} />
                   <input type="hidden" name="contactId" value={contactId ?? ""} />
@@ -187,9 +178,7 @@ export function RenewalCrossSellPanel({
 
             <section className="space-y-2 rounded-md border border-border p-3">
               <h4 className="text-sm font-semibold text-navy">c) Create a quote</h4>
-              <p className="text-xs text-muted-foreground">
-                Opens a new deal pre-filled with this client and the suggested line.
-              </p>
+
               <form action={createRenewalCrossSellDeal}>
                 <input type="hidden" name="contactId" value={contactId ?? ""} />
                 <input type="hidden" name="accountId" value={accountId ?? ""} />
@@ -199,11 +188,7 @@ export function RenewalCrossSellPanel({
                   Create {open.label} deal
                 </Button>
               </form>
-              {!contactId && !accountId ? (
-                <p className="text-xs text-muted-foreground">
-                  Link a contact or business on the policy first.
-                </p>
-              ) : null}
+              {!contactId && !accountId ? null : null}
             </section>
 
             {suggestions.length > 1 ? (

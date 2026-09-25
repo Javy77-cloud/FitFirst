@@ -12,9 +12,7 @@ export default async function NewCallPage() {
   return (
     <AppShell title="Log Call" eyebrow="New">
       <form action={createHeaderCall} className="ff-card max-w-xl space-y-3 p-4">
-        <p className="text-sm text-muted-foreground">
-          Desk call note — not a live trunk. Assign it to a Deal, Contact, Policy, Business, or Lead.
-        </p>
+
         <input type="hidden" name="kind" value="call" />
         <input type="hidden" name="status" value="completed" />
         <input type="hidden" name="returnTo" value="/calendar" />

@@ -36,11 +36,7 @@ export default async function SuspenseBoardPage({
 
   return (
     <AppShell title="Suspense">
-      <p className="mb-4 text-base text-muted-foreground">
-        Agency rollup of auto-opened AOR and ID-card follow-ups. Age is days open as of the desk
-        clock — not a cancel. Dec stays a manual collect. Mark collected when the packet arrives —
-        the Policy stays in force.
-      </p>
+
       <div className="mb-3 flex flex-wrap gap-2 text-sm">
         <RecordLink href={hrefFor(undefined, age)}>All open</RecordLink>
         <RecordLink href={hrefFor("aor", age)}>AOR</RecordLink>

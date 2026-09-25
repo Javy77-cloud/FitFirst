@@ -11,10 +11,7 @@ export default async function NewDeveloperFunctionPage() {
 
   return (
     <SettingsShell title="New function" current="functions">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Name plus apiName. Standalone functions can expose REST (org API key) or show the OAuth
-        wall. The body is not evaluated as host JavaScript.
-      </p>
+
       <FunctionForm connections={connections} />
     </SettingsShell>
   );

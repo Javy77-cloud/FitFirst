@@ -77,9 +77,7 @@ export function AddLocationForm({
           </select>
         </div>
       </div>
-      <p className="text-base text-muted-foreground">
-        Public Zillow / FEMA flood tabs appear after save. They are lookups only — not Cov A.
-      </p>
+
       <Button type="submit" size="sm">
         Save location
       </Button>

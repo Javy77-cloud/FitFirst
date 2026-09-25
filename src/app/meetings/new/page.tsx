@@ -12,9 +12,7 @@ export default async function NewMeetingPage() {
   return (
     <AppShell title="Add Meeting" eyebrow="Quick action">
       <form action={createHeaderMeeting} className="ff-card max-w-xl space-y-3 p-4">
-        <p className="text-sm text-muted-foreground">
-          Logs a meeting on the desk calendar. Assign it to a Deal, Contact, Policy, Business, or Lead.
-        </p>
+
         <input type="hidden" name="kind" value="meeting" />
         <input type="hidden" name="status" value="open" />
         <input type="hidden" name="returnTo" value="/calendar" />

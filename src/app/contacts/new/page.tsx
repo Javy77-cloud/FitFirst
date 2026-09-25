@@ -35,9 +35,7 @@ export default async function NewContactPage() {
   return (
     <AppShell title="Add Contact">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Same Contact layout as detail — fill what you know, Save Contact opens the record.
-        </p>
+
         <EditLayoutLink module="contacts" />
       </div>
 

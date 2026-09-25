@@ -184,9 +184,6 @@ export function CarrierIdentityFields({
           admin={admin}
         />
       ))}
-      <p className="pt-2 text-[11px] text-muted-foreground">
-        Lines hint: HO, DP, AUTO, FLOOD, UMBRELLA, GL, E&amp;O, BOP, LIFE, RV, WC (comma-separated).
-      </p>
     </div>
   );
 }

@@ -49,17 +49,9 @@ export async function RecordAskPanel({
       {framed ? (
         <>
           <h2 className="text-sm font-semibold text-navy">Ask a teammate</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Admin only. Tag someone from the dropdown (required). Typing a name does not submit.
-            In-app ping + durable log. Not a chat product.
-          </p>
+
         </>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          Tag someone from the dropdown (required). Typing a name does not submit. In-app ping +
-          durable log. Not a chat product.
-        </p>
-      )}
+      ) : null}
       <form action={createRecordAsk} className="mt-3 grid gap-2 sm:grid-cols-2">
         <input type="hidden" name="entityType" value={entityType} />
         <input type="hidden" name="entityId" value={entityId} />

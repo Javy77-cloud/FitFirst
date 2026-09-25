@@ -59,39 +59,15 @@ export default async function SocialPulsePage({
         ) : undefined
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        {session.isAdmin
-          ? "Admin connects Facebook and Instagram with one click when FitFirst’s Meta app is configured. LinkedIn / GBP still use the agency developer app. FitFirst does not buy those APIs or invent follower counts. Inquiries on a connected account become Leads. X stays a paid wall."
-          : "Inbound social inquiries become Leads. Admin connects accounts under Settings → Social / GBP. FitFirst does not invent follower counts."}
-      </p>
-      {notice === "gbp-locked" ? (
-        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Google Business Profile stays locked until Admin allows agents to monitor it.
-        </p>
-      ) : null}
-      {session.isAdmin && notice === "platform-disconnected" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          That platform is not connected. Ask Admin to connect it under Settings → Social.
-        </p>
-      ) : null}
+
       {notice === "no-new-inquiries" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Visible inquiries already have Lead records (matched by name plus email or phone).
         </p>
       ) : null}
-      {notice === "unassigned-queued" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          That inbound is agency-level. Admin will award it to an agent — you were not assigned.
-        </p>
-      ) : null}
       {notice === "awarded" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
           Lead awarded. That agent got an in-app ping.
-        </p>
-      ) : null}
-      {pulse.gbpLocked ? (
-        <p className="mb-3 rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm">
-          GBP is locked on this desk until Admin allows agents to monitor it.
         </p>
       ) : null}
 

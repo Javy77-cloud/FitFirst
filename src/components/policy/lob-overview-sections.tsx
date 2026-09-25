@@ -43,9 +43,7 @@ export function LobOverviewSections({
                     row.value
                   )}
                 </dd>
-                {row.empty && row.hint ? (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{row.hint}</p>
-                ) : null}
+                {row.empty && row.hint ? null : null}
               </div>
             ))}
           </dl>

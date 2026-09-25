@@ -31,7 +31,7 @@ export function SettingsNav({
         <Link href="/settings" className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-navy">
           All settings
         </Link>
-        <p className="text-xs text-muted-foreground">Search, then a group, then the page.</p>
+
         <div className="mt-2">
           <SettingsSearch compact />
         </div>
@@ -62,7 +62,7 @@ export function SettingsNav({
                         </span>
                       ) : null}
                     </span>
-                    <span className="block text-[11px] text-muted-foreground">{group.hint}</span>
+
                   </span>
                 </Link>
                 {groupActive ? (

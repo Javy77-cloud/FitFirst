@@ -17,10 +17,7 @@ export default function OnboardingPurchasePage() {
             FitFirst purchase
           </div>
           <h1 className="text-2xl font-semibold text-navy">Agency onboarding</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Purchase checkout is not live. Consent storage and the learning-pool gate are in
-            place so enabling is a flag flip later.
-          </p>
+
         </div>
 
         <form action={recordLearningPoolConsent} className="space-y-4">

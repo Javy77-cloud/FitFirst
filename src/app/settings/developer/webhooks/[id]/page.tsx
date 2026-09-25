@@ -98,9 +98,7 @@ export default async function DeveloperWebhookDetailPage({
           Delivery queue
         </div>
         {deliveries.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-muted-foreground">
-            No deliveries. Change a deal stage or send a test.
-          </p>
+          <p className="px-4 py-4 text-sm text-muted-foreground">No deliveries.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="ff-table">

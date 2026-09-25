@@ -63,9 +63,7 @@ function GroupRow({
           ) : null}
         </td>
         <td>
-          <span className="text-base text-muted-foreground">
-            Grouped identical checklist items — expand to open each Policy.
-          </span>
+
         </td>
       </tr>
       {open

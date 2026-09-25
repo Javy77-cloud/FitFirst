@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -102,9 +101,7 @@ export function AddCarrierDialog() {
         >
           <DialogHeader>
             <DialogTitle>New Carrier</DialogTitle>
-            <DialogDescription>
-              Agency directory record. Portal credentials stay Admin-only after save.
-            </DialogDescription>
+
           </DialogHeader>
 
           {error ? (

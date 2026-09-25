@@ -33,11 +33,6 @@ export default async function EmailTriggersPage() {
         </form>
       }
     >
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Jobs hang off the won date and the policy expiration. Archiving a deal does not drop them.
-        Internal renewal work is an in-app task. Client mail goes through whichever inbox is
-        connected. Nothing emails the broker.
-      </p>
 
       {!anyConnected ? (
         <div className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm text-navy">
@@ -48,10 +43,7 @@ export default async function EmailTriggersPage() {
 
       <section className="mb-4 ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Send from</h2>
-        <p className="mt-1 text-helper text-muted-foreground">
-          Google, Outlook, Yahoo, Zoho Mail, or IMAP. Connect a mailbox under Settings → Email
-          when the agency is ready.
-        </p>
+
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {accounts.map((account) => (
             <div key={account.provider} className="rounded-md border border-border bg-card p-3">
@@ -69,9 +61,7 @@ export default async function EmailTriggersPage() {
 
       <div className="space-y-4">
         {triggers.length === 0 ? (
-          <p className="ff-card px-4 py-6 text-sm text-muted-foreground">
-            No email triggers yet. Add one here.
-          </p>
+          <p className="ff-card px-4 py-6 text-sm text-muted-foreground">No email triggers yet.</p>
         ) : (
           triggers.map(({ trigger, template }) => (
             <form

@@ -10,17 +10,8 @@ const SECTIONS = [
     title: "Phone",
     body: (
       <>
-        <p>
-          The in-desk softphone uses this computer&apos;s microphone (optional webcam) and stores
-          call duration on hangup. There is no Twilio, Vonage, or other PSTN vendor in this repo.
-        </p>
-        <div className="mt-4 rounded-md border border-dashed border-border px-3 py-4">
+        <div className="rounded-md border border-dashed border-border px-3 py-4">
           <div className="font-medium text-navy">Connect your phone line later</div>
-          <p className="mt-1 text-muted-foreground">
-            Bring-your-own trunk. Click-to-call already opens the softphone shell and a{" "}
-            <code className="text-xs">tel:</code> fallback. Plug a carrier SIP/WebRTC endpoint
-            here when you have one — do not paste vendor keys into the app.
-          </p>
           <button
             type="button"
             disabled
@@ -58,19 +49,7 @@ const SECTIONS = [
   {
     id: "notifications",
     title: "Notifications",
-    body: (
-      <>
-        <p>
-          Alerts stay on the desk. There is no outbound email vendor and no push subscription in
-          this repo.
-        </p>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">
-          <li>Unread alerts show on the bell in the top bar.</li>
-          <li>Calendar events you add here do not sync to Google or Outlook.</li>
-          <li>Deal and lead Quick Communications are notes on the record.</li>
-        </ul>
-      </>
-    ),
+    body: null,
   },
 ] as const;
 
@@ -93,7 +72,7 @@ export function SettingsAccordion({ initial = "phone" }: { initial?: string }) {
               <span className="text-base font-semibold text-navy">{section.title}</span>
               <ChevronDown className={cn("size-4 text-muted-foreground transition", open && "rotate-180")} />
             </button>
-            {open ? (
+            {open && section.body ? (
               <div className="border-t border-border px-4 py-3 text-base text-muted-foreground">
                 {section.body}
               </div>

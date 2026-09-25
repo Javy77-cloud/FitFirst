@@ -16,12 +16,6 @@ export default async function BookHealthPage({
 
   return (
     <AppShell title="Book health">
-      <p className="mb-4 text-base text-muted-foreground">
-        Agency book is every in-force Policy. Producer book is the same rows grouped by owner.
-        Use a producer filter to see that book’s missing packets. Lapse risk, monoline gaps, and
-        missing decs reuse the servicing gauges. Missing docs are auto-required servicing slots (dec on file).
-        AOR and ID cards stay optional on Documents. Quotes are not policies.
-      </p>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Stat label="Agency active / in force" value={health.counts.active} href="/policies?status=in_force" />

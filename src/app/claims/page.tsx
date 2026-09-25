@@ -33,11 +33,7 @@ export default async function ClaimsPage({
     <AppShell title="Claims log">
       <SavedToast show={saved} message="Claim saved." listHref="/claims" />
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <p className="max-w-3xl text-base text-muted-foreground">
-          FNOL desk intake and timeline. Inquiry → referred to carrier → closed. Handle the claim
-          on the carrier website — FitFirst does not file FNOL, set reserves, or talk to a
-          carrier claims API.
-        </p>
+
         <div className="flex flex-wrap gap-2">
           <Link href="/claims/diary" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
             Claim diary

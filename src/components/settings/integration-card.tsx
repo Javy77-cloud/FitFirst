@@ -32,16 +32,12 @@ export function IntegrationCard({
                 </span>
               ) : null}
             </div>
-            <p className="mt-0.5 text-helper text-muted-foreground">{item.blurb}</p>
+
           </div>
         </div>
         <ConnectionBadge connected={false} />
       </div>
-      <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>
-      <p className="text-helper text-muted-foreground">{item.byoNote}</p>
-      <p className="mt-3 text-sm text-muted-foreground">
-        Connect {item.name} when the agency is ready. OAuth is not wired on this desk.
-      </p>
+
     </article>
   );
 }

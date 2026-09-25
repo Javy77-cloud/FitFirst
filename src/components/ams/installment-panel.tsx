@@ -33,9 +33,7 @@ export function InstallmentPanel({
         </p>
       ) : null}
       {installments.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No installments on this Policy. Schedule one below — it does not collect.
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">No installments on this Policy.</p>
       ) : (
         <ul className="mt-3 divide-y divide-border rounded-md border border-border">
           {installments.map((row) => (

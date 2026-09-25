@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -411,9 +410,7 @@ export function SelectionActionsMenu({
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
             <DialogTitle>{compose === "sms" ? "Queue SMS" : "Queue Email"}</DialogTitle>
-            <DialogDescription>
-              Writes the desk outbound queue and activity log. No vendor send from this menu.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
@@ -468,9 +465,7 @@ export function SelectionActionsMenu({
         <DialogContent className="sm:max-w-3xl" showCloseButton data-testid="deal-attach-from-actions">
           <DialogHeader>
             <DialogTitle>Attach documents</DialogTitle>
-            <DialogDescription>
-              Deal is pre-selected from the list. Add pages or files — no deal name search.
-            </DialogDescription>
+
           </DialogHeader>
           {attachOpen && selectedRecords[0] ? (
             <DealDocsUpload
@@ -501,10 +496,7 @@ export function SelectionActionsMenu({
         <DialogContent className="sm:max-w-sm" showCloseButton data-testid="list-assign-owner">
           <DialogHeader>
             <DialogTitle>Assign owner</DialogTitle>
-            <DialogDescription>
-              Sets the owner/agent on {selected.length} selected{" "}
-              {selected.length === 1 ? "row" : "rows"}. Soft-refresh after save.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="space-y-3">
             <div>

@@ -27,11 +27,7 @@ export default async function WidgetsPage({
         </Link>
       }
     >
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Embed UI stubs. Types: Custom Button, Related List, Settings, Home. Hosting is Internal
-        (zip metadata) or External URL. No Zoho Widget SDK — the host comments the future JS
-        bridge.
-      </p>
+
       <HubNotice notice={notice} />
       <section className="ff-card overflow-hidden">
         {widgets.length === 0 ? (

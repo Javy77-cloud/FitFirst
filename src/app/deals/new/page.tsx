@@ -67,11 +67,7 @@ export default async function NewDealPage({
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <h1 className="text-xl font-semibold text-navy">New shop</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Cross-family on one deal — Personal, Commercial, Life, and Health together. Shared
-            identity once; each product keeps its own questions. Save Deal creates the record; Back
-            leaves no deal.
-          </p>
+
         </div>
         <EditLayoutLink module="deals" />
       </div>

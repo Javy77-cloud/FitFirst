@@ -14,9 +14,7 @@ export function TypeCarrierBrowse({
 }) {
   if (groups.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        No type folders yet. Create an ACORD, Cancellation, or AOR folder — then nest the carrier inside.
-      </p>
+      <p className="text-sm text-muted-foreground">No type folders yet.</p>
     );
   }
   return (
@@ -51,7 +49,7 @@ export function TypeCarrierBrowse({
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-muted-foreground">No carrier folders yet. Nest the carrier inside this type.</p>
+              <p className="text-xs text-muted-foreground">No carrier folders yet.</p>
             )}
             <Link href={href} className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
               <FolderOpen className="size-3.5" />

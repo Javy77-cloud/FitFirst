@@ -164,12 +164,7 @@ export function PolicyCommissionBlock({
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-navy">Policy commission</h2>
-          <p className="mt-1 text-[12px] text-muted-foreground">
-            Enter line and GWP. Rate % fills from the live desk (agency + line).
-            TAC, initial, deferred, and monthly fill themselves — do not retype
-            them. No New-vs-Renewal field. Selling Agency stays off this form
-            unless Settings turns the picklists on.
-          </p>
+
         </div>
         {form.commissionId && form.producerStatus ? (
           <CommissionStatusPill status={form.producerStatus} />
@@ -404,9 +399,7 @@ export function PolicyCommissionBlock({
           {form.commissionId ? (
             <MarkPaidForm commissionId={form.commissionId} status={form.producerStatus ?? ""} />
           ) : null}
-          <span className="text-[11px] text-muted-foreground">
-            Mark paid logs producer pay. It does not change Policy status.
-          </span>
+
         </div>
       </form>
     </section>

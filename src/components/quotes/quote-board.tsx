@@ -261,10 +261,7 @@ export function QuoteBoard({
                   ) : null}
                 </div>
                 {shop.rows.length === 0 ? (
-                  <p className="px-4 py-6 text-base text-muted-foreground">
-                    No shops recorded on this deal. Filter markets first, then log the attempt. This
-                    board does not call a rater.
-                  </p>
+                  <p className="px-4 py-6 text-base text-muted-foreground">No shops recorded on this deal.</p>
                 ) : (
                   shop.rows.map((row: TrackingRow) => (
                     <QuoteCard
@@ -278,11 +275,7 @@ export function QuoteBoard({
                   ))
                 )}
               </>
-            ) : (
-              <p className="px-4 py-3 text-sm text-muted-foreground">
-                Shop collapsed. Identity stays above — expand to see every quote card and its Actions menu.
-              </p>
-            )}
+            ) : null}
           </section>
         );
       })}

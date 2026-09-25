@@ -28,9 +28,7 @@ export default async function InvitePasswordPage({
           </p>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">
-              {person.name} · {person.email}. Admin created this login. You set the password.
-            </p>
+
             {error === "password" ? (
               <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red">
                 Password must be at least 4 characters and match the confirmation.

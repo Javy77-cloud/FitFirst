@@ -66,10 +66,7 @@ export function LeadLineDocuments({
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-navy">Documents by line</h2>
-          <p className="text-xs text-muted-foreground">
-            Each policy subtype has its own files. Convert carries them onto the deal in the same
-            groups.
-          </p>
+
         </div>
         {leftover.length > 0 ? (
           <label className="text-xs font-medium text-navy">
@@ -220,9 +217,7 @@ function LineCard({
                 }, 0);
               }}
             >
-              <p className="mb-2 text-xs text-muted-foreground">
-                Drop files here or choose below. Add as many as you need, then Upload.
-              </p>
+
               <div className="space-y-2">
                 {slots.map((id, index) => (
                   <div key={id} className="min-w-0 space-y-1" data-ff-file-slot={index}>

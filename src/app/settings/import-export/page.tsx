@@ -33,10 +33,7 @@ export default async function ImportExportPage() {
 
       <section className="ff-card mb-4 border-dashed p-4">
         <div className="text-sm font-semibold text-navy">IVANS / AL3 download</div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Not connected. Connect IVANS / AL3 under Settings when the agency has a feed. Use the
-          CSV packs below for a book move — do not paste a vendor key here.
-        </p>
+
         <button
           type="button"
           disabled

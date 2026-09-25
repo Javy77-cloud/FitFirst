@@ -15,10 +15,7 @@ export function GapPanel({
     <section className={embedded ? "space-y-2" : "ff-card overflow-hidden"} data-ff-gap-panel="">
       <div className={embedded ? "" : "border-b border-border px-4 py-3"}>
         <h3 className="text-sm font-semibold text-navy">Coverage gaps</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Rule-based from in-force policies plus Coverage carrier-of-record. Missing means
-          not covered — another carrier still counts as has that line. {report.quotesDoNotCount}
-        </p>
+
         {report.inForceCount > 0 || report.otherCarrierLines.length > 0 ? (
           <p className="mt-1 text-[11px] text-muted-foreground">
             In force: {report.inForceLines.map(gapLineLabel).join(", ") || "none"}

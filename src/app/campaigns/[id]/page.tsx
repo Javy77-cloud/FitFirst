@@ -33,9 +33,7 @@ export default async function CampaignDetailPage({
     <AppShell title={campaign.name}>
       <RecordModuleMacros module="campaigns" recordId={campaign.id} />
       <Notice code={notice} />
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Draft only. Connect work email under Settings before a campaign can leave the desk.
-      </p>
+
       <div className="mb-3 text-sm">
         <Link href="/campaigns" className="text-primary hover:underline">
           ← All campaigns
@@ -105,9 +103,7 @@ export default async function CampaignDetailPage({
                 ))}
               </ul>
             )}
-            <p className="mt-3 text-sm text-muted-foreground">
-              Send is not wired. Connect Gmail or Outlook in Settings → Email.
-            </p>
+
           </div>
           <div className="ff-card overflow-hidden p-4">
             <h2 className="mb-2 text-sm font-semibold text-navy">Send log</h2>

@@ -29,9 +29,6 @@ export default async function AgentPerformancePage({
         <Link href={`/scorecards/${person.id}`} className="text-primary hover:underline">
           Full producer scorecard
         </Link>
-        {" · "}
-        Ranked conversion, retention, in-force premium, and binds from the book they own. Quotes
-        are not written premium.
       </p>
 
       {person.status !== "active" ? (
@@ -48,17 +45,6 @@ export default async function AgentPerformancePage({
         </p>
       )}
 
-      <section className="ff-card mt-4 p-4">
-        <h2 className="text-sm font-semibold text-navy">What this is</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Same math as{" "}
-          <Link href="/scorecards" className="text-primary hover:underline">
-            Scorecards
-          </Link>
-          . Conversion is binds over shops + lost. Retention is in-force over in-force + lapsed.
-          Premium is Active + Bound only. Quotes never count.
-        </p>
-      </section>
     </SettingsShell>
   );
 }

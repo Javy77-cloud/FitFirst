@@ -65,10 +65,7 @@ export function FolderGrid({
 }) {
   if (folders.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        No folders here. Create one with New Folder — agency library stays separate from account and
-        deal files.
-      </p>
+      <p className="text-sm text-muted-foreground">No folders here.</p>
     );
   }
   return (
@@ -107,9 +104,7 @@ export function FileGrid({
 }) {
   if (docs.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        No files in this folder. Upload a dec, ACORD, flyer, or photo — demo names only.
-      </p>
+      <p className="text-sm text-muted-foreground">No files in this folder.</p>
     );
   }
   return (

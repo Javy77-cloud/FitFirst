@@ -12,10 +12,7 @@ export async function DecDropForm() {
     <form action={createDealFromDecDrop} className="ff-card space-y-3 p-4">
       <div>
         <h2 className="text-sm font-semibold text-navy">Dec drop → deal</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Same funnel as a lead. The declarations file opens a shopping deal. Contact and policy
-          still wait for bind.
-        </p>
+
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>

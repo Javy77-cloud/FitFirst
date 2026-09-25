@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -94,7 +93,7 @@ export function BusinessLocationsSection({
         <DialogContent className="sm:max-w-lg" data-ff-add-location-dialog="">
           <DialogHeader>
             <DialogTitle>Add Location</DialogTitle>
-            <DialogDescription>Premises For Commercial Coverage On This Account.</DialogDescription>
+
           </DialogHeader>
           <AddLocationForm businessId={accountId} defaultOccupancy="commercial" />
         </DialogContent>

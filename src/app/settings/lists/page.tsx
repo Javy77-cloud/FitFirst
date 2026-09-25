@@ -17,65 +17,39 @@ export default async function GlobalListsPage() {
 
   return (
     <SettingsShell title="Lines / Global lists" current="lists">
-      <p className="mb-4 text-sm text-muted-foreground">
-        Agency-wide lists — written books, policy picklists, email templates, and won-date
-        triggers. These are not per-agent prefs.
-      </p>
+
       <div className="mb-4 grid gap-3 md:grid-cols-2">
         <Link href="/settings/lines" className="ff-list-card block hover:border-primary/40">
           <div className="ff-list-card-body">
             <h2 className="text-sm font-semibold tracking-tight text-navy">Lines of business</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Agency catalog for deals, policies, and forms. Life / Health write toggles.
-            </p>
+
           </div>
         </Link>
         <Link href="/settings/email-templates" className="ff-list-card block hover:border-primary/40">
           <div className="ff-list-card-body">
             <h2 className="text-sm font-semibold tracking-tight text-navy">Email templates</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Thank-you and review copy. English and Spanish. Nothing sends itself.
-            </p>
+
           </div>
         </Link>
         <Link href="/settings/email-triggers" className="ff-list-card block hover:border-primary/40">
           <div className="ff-list-card-body">
             <h2 className="text-sm font-semibold tracking-tight text-navy">Triggers</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Hung on won date. ARCHIVE does not cancel. Needs a connected inbox later.
-            </p>
+
           </div>
         </Link>
         <Link href="/settings/integrations" className="ff-list-card block hover:border-primary/40">
           <div className="ff-list-card-body">
             <h2 className="text-sm font-semibold tracking-tight text-navy">Integrations catalog</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Gmail and Google Calendar are one-click Google Connect. Yahoo, Outlook Calendar, social,
-              and DocuSign sandbox stay BYO. Agency pays the vendor.
-            </p>
+
           </div>
         </Link>
       </div>
 
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Zoho-style picklists used on Policies: types, sub-types, terms, statuses, and file
-        categories. Carriers stay on their own records — this hub lists them so you do not hunt.
-        No live Zoho. Admins can add, rename, color (click Color for the full palette), delete
-        values, or clear a whole list.
-      </p>
-
-      {!session.isAdmin ? (
-        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          List edits are Admin only. Agents still see the values on Policy forms.
-        </p>
-      ) : null}
 
       <section className="ff-list-card mb-4">
         <div className="ff-list-card-body">
           <h2 className="text-sm font-semibold tracking-tight text-navy">Carriers</h2>
-          <p className="mt-1 text-helper text-muted-foreground">
-            Writing companies already on the book. Open a carrier to edit NAIC, AM Best, and appetite.
-          </p>
+
           <ul className="mt-3 columns-1 gap-x-6 text-sm sm:columns-2">
             {[...carriers].sort((a, b) => a.carrier.name.localeCompare(b.carrier.name)).map(({ carrier }) => (
               <li key={carrier.id} className="break-inside-avoid py-0.5">

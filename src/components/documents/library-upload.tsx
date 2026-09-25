@@ -37,10 +37,7 @@ export function LibraryUpload({
   return (
     <form action={uploadDocument} className="ff-card space-y-2 p-3">
       <div className="text-sm font-semibold text-navy">Upload files</div>
-      <p className="text-xs text-muted-foreground">
-        Multi-file. Type and name show before you save
-        {library === "forms" ? " — Forms uploads are marked fillable." : " — Library files are marketing, appetite, and carrier info."}
-      </p>
+
       <input type="hidden" name="library" value={library} />
       {folderId ? <input type="hidden" name="folderId" value={folderId} /> : null}
       {library === "forms" ? <input type="hidden" name="fillable" value="true" /> : null}

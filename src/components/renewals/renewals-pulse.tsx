@@ -84,11 +84,7 @@ export function RenewalsPulse({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-navy">Book pulse</p>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {total === 0
-            ? "No renewals on this book yet."
-            : "Share of this book in each urgency band."}
-        </p>
+
         <ul className="ff-renewals-pulse-legend" data-ff-pulse-depth="">
           {shares.map((share) => (
             <li key={share.band} data-ff-pulse-band={share.band}>

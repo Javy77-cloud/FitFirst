@@ -22,10 +22,7 @@ export function CreateDealForm({ parties }: { parties: PartyRecord[] }) {
 
   return (
     <form action={createDeal} className="ff-card max-w-xl space-y-3 p-4">
-      <p className="text-base text-muted-foreground">
-        Type a Contact or Business as you go — name, email, or phone. Creates a shopping deal with
-        an empty master risk. Policy still waits until bind.
-      </p>
+
       <PartyTypeahead parties={parties} required onPick={onPick} />
       <div className="grid gap-3 sm:grid-cols-2">
         <div>

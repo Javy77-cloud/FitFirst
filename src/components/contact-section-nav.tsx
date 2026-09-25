@@ -39,7 +39,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -111,8 +110,6 @@ export function ContactSectionNav({
     [chips],
   );
 
-
-
   useEffect(() => {
     if (mode === "tabs") return;
     const nodes = sections
@@ -167,7 +164,6 @@ export function ContactSectionNav({
       window.removeEventListener("scroll", measure);
     };
   }, [sections, pinned]);
-
 
   function tabHref(id: ContactSectionId): string {
     const tab = contactTabFromSection(id);
@@ -418,10 +414,7 @@ export function ContactSectionNav({
         <DialogContent className="sm:max-w-lg" data-ff-contact-nav-customize="">
           <DialogHeader>
             <DialogTitle>Edit Nav</DialogTitle>
-            <DialogDescription>
-              Choose up to {CONTACT_SECTION_NAV_MAX} tabs for the Contact page. Hidden
-              tabs stay available here. Saved for the whole agency.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-md border border-border p-2" data-ff-contact-nav-selected="">

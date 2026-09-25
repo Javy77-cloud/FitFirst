@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -173,9 +172,7 @@ export function AddBusinessDialog({
         >
           <DialogHeader>
             <DialogTitle>New Account</DialogTitle>
-            <DialogDescription>
-              Quick add commercial account. Status defaults to Not A Client until a policy binds.
-            </DialogDescription>
+
           </DialogHeader>
 
           {match ? (

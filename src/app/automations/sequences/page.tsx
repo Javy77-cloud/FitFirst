@@ -27,10 +27,7 @@ export default async function CampaignSequencesPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Five insurance sequence stubs. Steps are desk Tasks or work-email drafts.
-        Enable or disable. Nothing sends — use Playbooks when you want a live Task + Alert.
-      </p>
+
       <p className="mb-4 text-xs text-navy">
         {onCount} of {rows.length} sequences on
       </p>

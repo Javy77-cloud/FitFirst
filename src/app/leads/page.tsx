@@ -249,10 +249,6 @@ export default async function LeadsPage({
           <div className="ff-leads-banner-row" data-ff-leads-banner-row="">
             <LeadsSourceBanner sources={rows.map((lead) => lead.source)} />
             <LeadMotivation stats={motivation} />
-            <p className="ff-leads-desk-note">
-              Stack is the desk. Queue is the work sheet. The Activity board on the right is the same
-              panel as a contact.
-            </p>
           </div>
           <LeadsQueueToolbar
         sources={uniqueOptions(
@@ -524,9 +520,7 @@ export default async function LeadsPage({
                   initialKind={activityKind}
                 />
               ) : (
-                <div className="ff-card p-4 text-sm text-muted-foreground">
-                  No open lead selected. Queue a lead to see Conversations.
-                </div>
+                <div className="ff-card p-4 text-sm text-muted-foreground">No open lead selected.</div>
               )
             }
           />

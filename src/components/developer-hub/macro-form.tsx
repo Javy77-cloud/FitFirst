@@ -63,9 +63,7 @@ export function MacroForm({
       </div>
       <fieldset className="space-y-2 rounded-md border border-border p-3">
         <legend className="px-1 text-sm font-semibold text-navy">Target modules</legend>
-        <p className="text-xs text-muted-foreground">
-          One Settings row. Brokers run this macro only on the lists and records you pick.
-        </p>
+
         <div className="grid gap-2 sm:grid-cols-2">
           {DEV_HUB_MODULES.map((item) => (
             <label key={item} className="inline-flex items-center gap-2 text-sm">
@@ -95,9 +93,7 @@ export function MacroForm({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Follow-up macros show as <strong>Run Follow-up Macro</strong> on Leads.
-          </p>
+
         </div>
         <label className="mt-6 inline-flex items-center gap-2 text-sm">
           <input type="checkbox" name="enabled" defaultChecked={macro?.enabled ?? true} />
@@ -107,9 +103,7 @@ export function MacroForm({
 
       <fieldset className="space-y-2 rounded-md border border-border p-3">
         <legend className="px-1 text-sm font-semibold text-navy">Email stub (≤1)</legend>
-        <p className="text-xs text-muted-foreground">
-          Queues the outbound stub. Merge tokens: {"{{record.firstName}}"} {"{{record.email}}"}.
-        </p>
+
         <select
           name="emailTemplateId"
           defaultValue={actions.email?.templateId ?? ""}
@@ -172,10 +166,7 @@ export function MacroForm({
 
       <fieldset className="space-y-2 rounded-md border border-border p-3">
         <legend className="px-1 text-sm font-semibold text-navy">Stage move</legend>
-        <p className="text-xs text-muted-foreground">
-          Moves the Deal (or the quote’s shop) to a pipeline stage. Off unless Deals or Quotes is
-          selected. Does not bind. Ana’s shop is skipped.
-        </p>
+
         <select
           name="stageMove"
           defaultValue={actions.stageMove?.stage ?? ""}

@@ -137,10 +137,7 @@ export function PolicyFileAttach({
     <section className="space-y-3">
       <div>
         <h3 className="text-sm font-semibold text-navy">Attachments</h3>
-        <p className="text-helper text-muted-foreground">
-          Attach issued files here. This is not Save policy — drop one or more, add another row if
-          you need a second category. Replace keeps the prior copy on the version timeline.
-        </p>
+
       </div>
       <form onSubmit={onSubmit} className="space-y-3 rounded-md border border-border p-3" data-ff-policy-file-attach="">
         <input type="hidden" name="policyId" value={policyId} />

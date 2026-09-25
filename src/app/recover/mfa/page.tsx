@@ -18,10 +18,7 @@ export default async function RecoverMfaPage({
         <div>
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Recovery</div>
           <h1 className="text-2xl font-semibold text-navy">Clear 2FA and re-enroll</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Admin issued this stub link. Confirming wipes the current method. Next sign-in gates
-            the desk until a new method is enrolled.
-          </p>
+
         </div>
         {error === "expired" || (!row && token) ? (
           <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red">

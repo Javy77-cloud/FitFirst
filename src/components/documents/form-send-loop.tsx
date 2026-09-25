@@ -131,16 +131,12 @@ export function FormSendLoop({
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">Send a form</h2>
-            <p className="mt-1 max-w-2xl text-sm text-white/80">
-              Pick ACORD, No Run Loss, Cancellation, or AOR. Prefill from the deal and any uploaded
-              declaration. Verify, then send to the client.
-            </p>
           </div>
-          <p className="text-xs text-white/70" data-ff-form-send-docusign="">
-            {docusignReady
-              ? `DocuSign sandbox ready${docusignLabel ? ` · ${docusignLabel}` : ""}`
-              : "Connect DocuSign sandbox in Settings → E-sign"}
-          </p>
+          {docusignReady ? (
+            <p className="text-xs text-white/70" data-ff-form-send-docusign="">
+              {`DocuSign sandbox ready${docusignLabel ? ` · ${docusignLabel}` : ""}`}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -160,7 +156,7 @@ export function FormSendLoop({
               )}
             >
               <p className="text-sm font-semibold text-navy">{DOCUMENT_PIPELINE_TYPE_LABELS[key]}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{FORM_BLURBS[key]}</p>
+
             </button>
           ))}
         </div>
@@ -216,9 +212,7 @@ export function FormSendLoop({
                 <p className="text-sm font-semibold text-navy">
                   Verify {DOCUMENT_PIPELINE_TYPE_LABELS[job.type]}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Confirm every field before send. Nothing auto-sends.
-                </p>
+
               </div>
               {status ? (
                 <span
@@ -360,12 +354,7 @@ export function FormSendLoop({
               </>
             )}
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Choose a deal, then Prefill & review. Cancellation and AOR are live templates here — not
-            buried Agency Letters.
-          </p>
-        )}
+        ) : null}
 
         <div>
           <h3 className="mb-2 text-sm font-semibold text-navy">Recent sends</h3>

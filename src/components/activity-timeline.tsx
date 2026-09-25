@@ -29,10 +29,6 @@ export function ActivityTimeline({
   return (
     <section className="ff-card p-4">
       <h2 className="text-base font-semibold text-navy">{heading}</h2>
-      <p className="mt-1 text-base text-muted-foreground">
-        Tasks, meetings, and calls assign to a Contact, Policy, and/or Business. Every one writes
-        a log. Call logging is a note — the softphone belongs to the sibling ops agent.
-      </p>
 
       <form action={logDeskActivity} className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2">
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}

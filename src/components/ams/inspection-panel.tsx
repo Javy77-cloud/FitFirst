@@ -33,9 +33,7 @@ export function InspectionPanel({
         </p>
       ) : null}
       {inspections.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No inspections on this Policy. Request one below — it does not file.
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">No inspections on this Policy.</p>
       ) : (
         <ul className="mt-3 divide-y divide-border rounded-md border border-border">
           {inspections.map((row) => (

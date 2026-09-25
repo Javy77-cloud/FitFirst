@@ -29,11 +29,7 @@ export function CertificateStub({
             <div className="text-muted-foreground">Issued {formatDay(certificate.issuedAt)}</div>
           </div>
         </div>
-        <p className="mt-2 text-base text-muted-foreground">
-          Not a licensed ACORD product. This stub does not amend, extend, or alter the policies
-          listed. It is a desk preview for holder name, address, optional job/location, and
-          in-force GL / WC lines.
-        </p>
+
       </header>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -136,9 +132,7 @@ export function CertificateStub({
             </h2>
             {certificate.additionalInsured ? (
               <p className="mt-1 font-medium text-navy">{certificate.additionalInsured}</p>
-            ) : (
-              <p className="mt-1 text-muted-foreground">Holder only — no separate AI named.</p>
-            )}
+            ) : null}
           </section>
           <section className="rounded-md border border-border p-3">
             <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

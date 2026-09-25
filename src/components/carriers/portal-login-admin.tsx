@@ -166,9 +166,7 @@ export function PortalLoginAdmin({
         >
           {busy === "save" ? "Saving…" : "Save"}
         </button>
-        <span className="text-xs text-muted-foreground">
-          This carrier only — agency code, username, password. Nothing auto-saves.
-        </span>
+
       </div>
       {savedFlash ? <p className="text-xs font-medium text-green-800">{savedFlash}</p> : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
@@ -185,9 +183,7 @@ export function PortalLoginAdmin({
             className="mt-1 h-8"
             data-ff-carrier-agency-code=""
           />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Unique per carrier — not shared across the book.
-          </p>
+
         </div>
         <div>
           <Label className="text-xs">Portal username</Label>
@@ -260,9 +256,7 @@ export function PortalLoginAdmin({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-sm font-semibold text-navy">Quote handoff readiness</p>
-            <p className="text-xs text-muted-foreground">
-              Stores URL, this carrier’s agency code, and login for later portal fill.
-            </p>
+
           </div>
           <span
             className={

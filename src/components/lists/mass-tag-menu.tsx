@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -91,9 +90,7 @@ export function MassTagMenu({
         <DialogContent className="sm:max-w-md" showCloseButton data-ff-mass-tag-dialog="">
           <DialogHeader>
             <DialogTitle>Mass tag · {selected.length} selected</DialogTitle>
-            <DialogDescription>
-              Apply catalog tags to the selected rows. Add keeps existing tags; Replace overwrites.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="space-y-3">
             <div className="flex gap-2 text-sm">
@@ -117,9 +114,7 @@ export function MassTagMenu({
               </label>
             </div>
             {catalog.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No catalog tags yet. Create them from Manage tags (⋯).
-              </p>
+              <p className="text-sm text-muted-foreground">No catalog tags yet.</p>
             ) : (
               <ul className="max-h-56 space-y-0.5 overflow-auto">
                 {catalog.map((row) => {

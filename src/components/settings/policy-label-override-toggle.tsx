@@ -40,22 +40,14 @@ export function PolicyLabelOverrideToggle({
   return (
     <section className="ff-card space-y-3 p-4" data-ff-policy-label-override-toggle="">
       <h2 className="text-base font-semibold text-navy">Manual label overrides</h2>
-      <p className="text-sm text-muted-foreground">
-        Policy titles follow the auto-label template. Rename was removed from the policy detail
-        page (too easy to mis-click). Use this agency toggle to lock or unlock manual overrides,
-        and clear any leftover names below. Agents never see this setting.
-      </p>
+
       <form
         action={setAllowPolicyLabelOverride}
         className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2"
       >
         <div>
           <p className="text-sm font-semibold text-navy">Allow admins to override auto-labels</p>
-          <p className="text-helper text-muted-foreground">
-            {enabled
-              ? "On — overrides may be stored via admin tools; policy detail still has no rename control."
-              : "Off — auto-labels only (recommended). Clear existing overrides below if needed."}
-          </p>
+
         </div>
         <input type="hidden" name="allowPolicyLabelOverride" value={enabled ? "0" : "1"} />
         <Button type="submit" size="sm" variant={enabled ? "default" : "outline"} disabled={pending}>

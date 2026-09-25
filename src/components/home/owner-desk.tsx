@@ -208,7 +208,6 @@ export function OwnerDesk({
                       icon={Users}
                       label="Active accounts"
                       value={fmt(snapshot.activeAccounts)}
-                      hint="Contacts and Accounts with active, bound, or pending policies"
                     />
                   ),
                 }
@@ -222,7 +221,6 @@ export function OwnerDesk({
                       icon={CircleDollarSign}
                       label="Premium in-force"
                       value={formatMoney(snapshot.inForcePremium)}
-                      hint="Active or Bound only"
                     />
                   ),
                 }
@@ -250,7 +248,6 @@ export function OwnerDesk({
                       icon={Building2}
                       label="Carriers"
                       value={fmt(snapshot.carrierCount)}
-                      hint="Distinct on this book"
                     />
                   ),
                 }
@@ -322,7 +319,6 @@ export function OwnerDesk({
                         framed={false}
                         label="Policies / account"
                         value={snapshot.policiesPerAccount.toFixed(2)}
-                        hint="In-force policies ÷ active accounts"
                       />
                     </div>
                   ),
@@ -429,10 +425,7 @@ export function OwnerDesk({
                   company: (
                     <div className="p-4">
                       <h3 className="text-sm font-semibold text-navy">Agency this month</h3>
-                      <p className="text-[11px] text-muted-foreground">
-                        Company widget on agent desks when Admin turns it on. Quotes are not written
-                        premium.
-                      </p>
+
                       <div className="mt-3 grid gap-2 sm:grid-cols-3">
                         <StatCard
                           framed={false}
@@ -450,7 +443,6 @@ export function OwnerDesk({
                           framed={false}
                           label="Open pipeline"
                           value={fmt(snapshot.pipeline.openQuotes)}
-                          hint="Open shops on this view"
                         />
                       </div>
                     </div>
@@ -462,9 +454,7 @@ export function OwnerDesk({
                   "line-mix": (
                     <div className="p-3" aria-label="Policy type">
                       <Header title="Policies by line of business" href="/policies?status=in_force" action="Policies" />
-                      <p className="mb-2 mt-1 text-[11px] text-muted-foreground">
-                        In-force premium by policy type. Quotes are not written.
-                      </p>
+
                       <MixDonut
                         slices={lineSettings ? filterLineMix(snapshot.lineMix, lineSettings) : snapshot.lineMix}
                         empty="No in-force policy types yet."
@@ -478,9 +468,7 @@ export function OwnerDesk({
                   "carrier-mix": (
                     <div className="p-3">
                       <Header title="Carrier by business share" href="/policies?status=in_force" action="Policies" />
-                      <p className="mb-2 mt-1 text-[11px] text-muted-foreground">
-                        Top writing companies on this book. Compact share bars.
-                      </p>
+
                       <MixBars compact slices={snapshot.carrierMix} empty="No in-force carriers yet." />
                     </div>
                   ),
@@ -492,10 +480,7 @@ export function OwnerDesk({
                     <div className="overflow-hidden">
                       <div className="border-b border-border px-4 py-3">
                         <h3 className="text-sm font-semibold text-navy">Production leaderboard</h3>
-                        <p className="text-[11px] text-muted-foreground">
-                          Top 10 this month and last month. Agency ranking is visible so producers can see who is
-                          winning.
-                        </p>
+
                       </div>
                       <div className="grid gap-0 sm:grid-cols-2">
                         <LeaderTable title="This month" rows={snapshot.leaderboardThisMonth} />
@@ -528,9 +513,7 @@ export function OwnerDesk({
                         <Cake className="size-3.5 text-primary" />
                         Birthdays
                       </h3>
-                      <p className="mb-3 text-[11px] text-muted-foreground">
-                        From Contact date of birth. Scoped to this book.
-                      </p>
+
                       <div className="space-y-4">
                         <PeopleList title="Today" rows={snapshot.birthdays.today} empty="No birthdays today." />
                         <PeopleList
@@ -553,9 +536,7 @@ export function OwnerDesk({
                   turning65: (
                     <div className="p-4">
                       <h3 className="text-sm font-semibold text-navy">Turning 65</h3>
-                      <p className="mb-3 text-[11px] text-muted-foreground">
-                        Life / Medicare prep. Contacts who turn 65 next month or next year.
-                      </p>
+
                       <div className="space-y-4">
                         <PeopleList
                           title="Next month"
@@ -564,7 +545,6 @@ export function OwnerDesk({
                         />
                         <PeopleList
                           title="Next year"
-                          hint="Medicare enrollment window"
                           rows={snapshot.turning65.nextYear}
                           empty="Nobody turns 65 next year."
                         />
@@ -596,9 +576,7 @@ export function OwnerDesk({
                           <div className="text-sm text-muted-foreground">{formatMoney(snapshot.renewals60.premium)}</div>
                         </Link>
                       </div>
-                      <p className="mt-3 text-[11px] text-muted-foreground">
-                        30-day names sit inside the 60-day window. Counts are in-force terms only.
-                      </p>
+
                     </div>
                   ),
                 }
@@ -610,7 +588,7 @@ export function OwnerDesk({
                       <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <h3 className="text-sm font-semibold text-navy">Needs attention</h3>
-                          <p className="text-[11px] text-muted-foreground">Overdue, this week, this month, next month</p>
+
                         </div>
                         <Link href="/work-queue" className="text-[12px] font-medium text-primary hover:underline">
                           Work queue
@@ -659,10 +637,7 @@ export function OwnerDesk({
                   ana: (
                     <div className="p-4">
                       <h3 className="text-sm font-semibold text-navy">Ana Dib shop</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Still an unbound Palm Bay HO3. Coverage A is $321,000. Eight markets, zero bindable. She is
-                        open pipeline — not an in-force policy.
-                      </p>
+
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Link href={`/deals/${DEAL_ID}`} className={cn(buttonVariants())}>
                           Open the shop
@@ -800,7 +775,7 @@ function KpiLink({
   icon: typeof Shield;
   label: string;
   value: string;
-  hint: string;
+  hint?: string;
   extra?: ReactNode;
   framed?: boolean;
 }) {
@@ -819,7 +794,7 @@ function KpiLink({
       </div>
       <div className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="truncate text-xl font-semibold tabular-nums text-navy">{value}</div>
-      <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>
+      {hint ? <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div> : null}
       {extra ? <div className="mt-1 text-[12px]">{extra}</div> : null}
     </Link>
   );
@@ -833,14 +808,14 @@ function StatCard({
 }: {
   label: string;
   value: string;
-  hint: string;
+  hint?: string;
   framed?: boolean;
 }) {
   return (
     <div className={framed ? "ff-card p-3" : "rounded-md border border-border bg-secondary/50 p-3"}>
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="truncate text-xl font-semibold tabular-nums text-navy">{value}</div>
-      <div className="text-[11px] text-muted-foreground">{hint}</div>
+      {hint ? <div className="text-[11px] text-muted-foreground">{hint}</div> : null}
     </div>
   );
 }

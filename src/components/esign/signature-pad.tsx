@@ -131,9 +131,7 @@ export function SignaturePad({
           onPointerUp={end}
           onPointerLeave={end}
         />
-        <p className="mt-1 text-xs text-muted-foreground">
-          Drawing is optional. Type the name either way. This is the in-desk stub — not DocuSign.
-        </p>
+
       </div>
       <Button type="submit">{role === "agent_demo" ? "Mark signed (agent demo)" : "Mark signed"}</Button>
     </form>

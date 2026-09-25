@@ -7,7 +7,6 @@ import { PipelineStageEditor } from "@/components/pipeline/stage-editor";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -149,10 +148,7 @@ export function PipelineViewsMenu({
         <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto" data-ff-edit-stages-dialog="">
           <DialogHeader>
             <DialogTitle>Edit stages</DialogTitle>
-            <DialogDescription>
-              Rename, recolor, reorder, or add stages for this pipeline. Late and forward
-              moves still happen only from the deal Quotes workspace.
-            </DialogDescription>
+
           </DialogHeader>
           {canStages && active ? (
             <div className="space-y-3" data-ff-edit-stages-boards="">

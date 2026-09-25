@@ -22,10 +22,7 @@ export function CrossSellPanel({ rows, embedded = false }: { rows: CrossSellRow[
     <section className={embedded ? "overflow-hidden" : "ff-card overflow-hidden"}>
       <div className="border-b border-border px-4 py-3">
         <h3 className="text-base font-semibold text-navy">Cross-sell</h3>
-        <p className="text-helper text-muted-foreground">
-          Pick a sellable line, then see who already has in-force coverage but not that product.
-          Quotes do not count. No scores.
-        </p>
+
         <div className="mt-2 flex flex-wrap gap-1.5">
           {HOME_LINE_KEYS.map((key) => (
             <button
@@ -43,9 +40,7 @@ export function CrossSellPanel({ rows, embedded = false }: { rows: CrossSellRow[
           ))}
         </div>
       </div>
-      {!line ? (
-        <p className="px-4 py-5 text-sm text-muted-foreground">Choose a line to list households that need it.</p>
-      ) : matches.length === 0 ? (
+      {!line ? null : matches.length === 0 ? (
         <p className="px-4 py-5 text-sm text-muted-foreground">
           Nobody on the in-force book is missing {HOME_LINE_LABEL[line]}.
         </p>

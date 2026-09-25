@@ -197,10 +197,7 @@ export function PolicyActivityTab({
     <div className="space-y-4" data-ff-policy-tab="activity">
       <section className="ff-card p-4">
         <h2 className="text-base font-semibold text-navy">Activity & timeline</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Chronological feed only (most recent first). Notices, service events, field changes, and
-          desk activity. Producer name is on every row when set on the policy.
-        </p>
+
         {policyProducer ? (
           <p className="mt-2 text-sm text-navy">
             Producer: <span className="font-medium">{policyProducer}</span>

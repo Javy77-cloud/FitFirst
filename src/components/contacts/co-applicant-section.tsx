@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -138,9 +137,7 @@ export function CoApplicantSection({
         <DialogContent className="sm:max-w-md" data-ff-coapplicant-search-dialog="">
           <DialogHeader>
             <DialogTitle>Link Co-Applicant</DialogTitle>
-            <DialogDescription>
-              Search an existing contact by name. Policies stay on their own page.
-            </DialogDescription>
+
           </DialogHeader>
           <Input
             className="h-8"

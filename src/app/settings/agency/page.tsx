@@ -39,17 +39,6 @@ export default async function AgencySettingsPage() {
 
   return (
     <SettingsShell title="Agency branding" current="agency">
-      {!desk.isAdmin ? (
-        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Agency logo, name, templates, and signatures are Admin-only. Switch to Admin in the
-          rail, or use My desk for your own colors and columns.
-        </p>
-      ) : (
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          Agency chrome every agent inherits. Logo sits with the agency name in the top-left —
-          FitFirst is not the corner brand. This is not billing or a second settings app.
-        </p>
-      )}
 
       {desk.isAdmin ? (
         <div className="mb-4 grid gap-3 sm:grid-cols-2">
@@ -59,37 +48,28 @@ export default async function AgencySettingsPage() {
             data-ff-agency-lines-card=""
           >
             <div className="text-sm font-semibold text-navy">Lines of business</div>
-            <p className="mt-1 text-helper text-muted-foreground">
-              Master catalog for deals, policies, and forms. Hide Life or Health when those books are off.
-            </p>
+
           </Link>
           <Link
             href="/settings/offices"
             className="ff-card block p-4 hover:border-primary/40"
           >
             <div className="text-sm font-semibold text-navy">Offices</div>
-            <p className="mt-1 text-helper text-muted-foreground">
-              Name, state(s), address, optional timezone. Agents can sit in more than one desk.
-            </p>
+
           </Link>
           <Link
             href="/settings/territories"
             className="ff-card block p-4 hover:border-primary/40"
           >
             <div className="text-sm font-semibold text-navy">Territories</div>
-            <p className="mt-1 text-helper text-muted-foreground">
-              States, counties, or a freeform geo label. Link offices. Filter Home by book.
-            </p>
+
           </Link>
           <Link
             href="/settings/import-export"
             className="ff-card block p-4 hover:border-primary/40"
           >
             <div className="text-sm font-semibold text-navy">Agency data / Import Export</div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              CSV packs for Contacts, Accounts, Leads, Deals, Policies, and Carriers. No paid
-              migration vendor.
-            </p>
+
           </Link>
         </div>
       ) : null}
@@ -169,9 +149,7 @@ export default async function AgencySettingsPage() {
         <div className="space-y-4">
         <section className="ff-card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-navy">Home widgets</h2>
-          <p className="text-helper text-muted-foreground">
-            Optionally pin agency production on every agent dashboard. Does not change the blue/orange desk colors.
-          </p>
+
           <form action={saveShowCompanyWidgets} className="space-y-2">
             <label className="flex items-center gap-2 text-sm">
               <input

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { claimCauseLabel, FNOL_INTAKE_COPY } from "@/lib/claims";
+import { claimCauseLabel } from "@/lib/claims";
 import { formatDay } from "@/lib/domain";
 
 export type PolicyClaimActivity = {
@@ -49,7 +49,7 @@ export function PolicyClaimsPanel({
           Claims log
         </Link>
       </div>
-      <p className="mt-1 text-base text-muted-foreground">{FNOL_INTAKE_COPY}</p>
+
       <ClaimsDeskNotice compact />
 
       <div className="mt-3 overflow-hidden rounded-md border border-border">

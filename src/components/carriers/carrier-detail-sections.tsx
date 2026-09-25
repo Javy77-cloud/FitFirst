@@ -137,9 +137,7 @@ export function CarrierDetailSections({
             Rating History
           </p>
           {amBestHistory.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No Rating History Yet. Updates Persist When AM Best Fields Change.
-            </p>
+            <p className="text-xs text-muted-foreground">No Rating History Yet.</p>
           ) : (
             <ol className="space-y-1 text-xs text-muted-foreground">
               {amBestHistory.map((row, i) => (
@@ -166,11 +164,7 @@ export function CarrierDetailSections({
             </Link>
             {related.policyCount === 0 ? (
               <div className="text-xs text-muted-foreground">No linked policies yet.</div>
-            ) : (
-              <div className="text-xs text-muted-foreground">
-                Opens Policies filtered to this carrier (all linked records).
-              </div>
-            )}
+            ) : null}
           </li>
           <li className="space-y-0.5">
             <Link

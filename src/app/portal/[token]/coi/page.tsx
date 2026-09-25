@@ -25,11 +25,6 @@ export default async function PortalCoiPage({
 
   return (
     <PortalShell session={session} title="Certificate of Insurance">
-      <p className="mb-4 text-sm text-muted-foreground">
-        Issued stubs stay on the Business. If you ask for a holder that already
-        has a stub, we open that preview instead of creating a second request.
-        New holders go to the agency work queue with the holder fields filled in.
-      </p>
 
       {queued ? (
         <p className="mb-4 rounded-md bg-fit-green-bg px-3 py-2 text-sm text-fit-green">
@@ -47,13 +42,7 @@ export default async function PortalCoiPage({
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
           Issued stubs
         </div>
-        {session.certificates.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            {session.canRequestCoi
-              ? "No certificate stub on this Business yet."
-              : "COI stubs are for a Business with an in-force GL or WC policy. Personal HO ID cards live under ID cards."}
-          </p>
-        ) : (
+        {session.certificates.length === 0 ? null : (
           <ul className="divide-y divide-border">
             {session.certificates.map((cert) => (
               <li key={cert.id} className="px-4 py-3 text-sm">
@@ -116,12 +105,7 @@ export default async function PortalCoiPage({
               Submit COI request
             </Button>
           </form>
-        ) : (
-          <p className="mt-2 text-sm text-muted-foreground">
-            This link has no certifiable GL or WC line. Use Harbor Key Marine LLC
-            for the commercial COI stub, or open ID cards for a personal policy.
-          </p>
-        )}
+        ) : null}
       </section>
     </PortalShell>
   );

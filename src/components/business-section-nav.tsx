@@ -39,7 +39,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -113,8 +112,6 @@ export function BusinessSectionNav({
     [chips],
   );
 
-
-
   useEffect(() => {
     if (mode === "tabs") return;
     const nodes = sections
@@ -169,7 +166,6 @@ export function BusinessSectionNav({
       window.removeEventListener("scroll", measure);
     };
   }, [sections, pinned]);
-
 
   function tabHref(id: BusinessSectionId): string {
     const tab = businessTabFromSection(id);
@@ -420,10 +416,7 @@ export function BusinessSectionNav({
         <DialogContent className="sm:max-w-lg" data-ff-business-nav-customize="">
           <DialogHeader>
             <DialogTitle>Edit Nav</DialogTitle>
-            <DialogDescription>
-              Choose up to {BUSINESS_SECTION_NAV_MAX} tabs for the Account page. Hidden
-              tabs stay available here. Saved for the whole agency.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-md border border-border p-2" data-ff-business-nav-selected="">

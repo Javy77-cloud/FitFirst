@@ -28,16 +28,10 @@ export default async function SynonymCandidatesPage() {
       }
     >
       <LogsTabs current="synonym-candidates" />
-      <p className="mb-3 text-sm text-muted-foreground">
-        Queue when times_seen is at least 2. Approve sets status only — it does not edit
-        synonyms.ts. Mark shipped after a PR lands the dictionary change.
-      </p>
+
       <section className="ff-card overflow-x-auto">
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No candidates with times_seen at least 2 yet. Corrections with miss_reason
-            no_synonym or no_delimiter bump this queue.
-          </p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No candidates with times_seen at least 2 yet.</p>
         ) : (
           <table className="ff-table">
             <thead>

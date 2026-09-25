@@ -68,7 +68,7 @@ export async function ActivityRecordPage({
                 <StagePill stage={activity.status} />
                 <span className="uppercase text-muted-foreground">{activity.kind}</span>
                 {activity.assignee ? (
-                  <span className="text-muted-foreground">Owner {activity.assignee}</span>
+                  <span className="text-muted-foreground">Producer {activity.assignee}</span>
                 ) : null}
               </div>
               <section className="ff-card p-4">
@@ -231,9 +231,7 @@ export async function ActivityRecordPage({
                 </dd>
               </div>
             </dl>
-            <p className="mt-4 text-base text-muted-foreground">
-              Desk 30/60/90 review item. Activity logs on Contact and Policy stay on those records.
-            </p>
+
             {task.status === "open" ? (
               <div className="mt-4" data-ff-task-complete="">
                 <CompleteTaskForm taskId={task.id} noticeOffer={noticeOffer} />

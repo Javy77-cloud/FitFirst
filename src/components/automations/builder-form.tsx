@@ -102,10 +102,7 @@ export function AutomationBuilderForm({
   return (
     <form action={saveGuidedAutomation} className="ff-card space-y-3 p-4">
       <h2 className="text-sm font-semibold text-navy">New automation</h2>
-      <p className="text-xs text-muted-foreground">
-        Admin writes the rule. Fired work stays in-desk — Task, Alert, or both. Nothing emails
-        Javy.
-      </p>
+
       <div>
         <Label className="text-xs">Name</Label>
         <Input name="name" required className="mt-1 h-8" placeholder="Closed Won — ping producer" />

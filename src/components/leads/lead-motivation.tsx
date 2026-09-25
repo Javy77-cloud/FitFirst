@@ -21,7 +21,7 @@ export function LeadMotivation({ stats }: { stats: LeadMotivationStat[] }) {
             Lead momentum
           </p>
           <p className="mt-1 text-base font-semibold text-navy">Converted this month</p>
-          <p className="mt-1 text-sm text-muted-foreground">{converted.hint}</p>
+
           <div className="mt-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
             {leadsToday.valueLabel} new leads today
           </div>

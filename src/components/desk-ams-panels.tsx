@@ -7,9 +7,7 @@ export function VehiclesList({ vehicles }: { vehicles: Vehicle[] }) {
         Vehicles on this Auto
       </div>
       {vehicles.length === 0 ? (
-        <p className="px-4 py-6 text-base text-muted-foreground">
-          No vehicles on this policy yet. The Auto schedule is empty — quotes are not coverage.
-        </p>
+        <p className="px-4 py-6 text-base text-muted-foreground">No vehicles on this policy yet.</p>
       ) : (
         <table className="ff-table">
           <thead>

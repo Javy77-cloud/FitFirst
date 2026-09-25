@@ -46,10 +46,7 @@ export default async function FieldPicklistsPage() {
       </StayOnSaveForm>
 
       {lists.length === 0 ? (
-        <p className="text-sm text-muted-foreground" data-ff-picklists-empty>
-          No global picklists yet. Create one here, then choose it when you drop a picklist or
-          multi-select on the field builder.
-        </p>
+        <p className="text-sm text-muted-foreground" data-ff-picklists-empty>No global picklists yet.</p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2" data-ff-picklists>
           {lists.map((list) => (

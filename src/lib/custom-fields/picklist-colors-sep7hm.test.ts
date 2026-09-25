@@ -21,7 +21,7 @@ describe("sep7hm picklist colors + A–Z + default", () => {
     expect(STATUS_COLOR_KEYS.length).toBeGreaterThanOrEqual(16);
     const { readFileSync } = require("node:fs") as typeof import("node:fs");
     expect(readFileSync("src/components/settings/global-list-card.tsx", "utf8")).toMatch(/ListOptionRow/);
-    expect(readFileSync("src/components/settings/global-list-card.tsx", "utf8")).toMatch(/click Color for the full palette/);
+    expect(readFileSync("src/components/settings/global-list-card.tsx", "utf8")).not.toMatch(/click Color for the full palette/);
     expect(readFileSync("src/components/desk/status-color-select.tsx", "utf8")).toMatch(/data-ff-status-color-palette/);
     expect(readFileSync("src/components/settings/picklist-card.tsx", "utf8")).toMatch(/optionColors/);
     expect(readFileSync("src/components/settings/picklist-card.tsx", "utf8")).toMatch(/defaultIndex/);

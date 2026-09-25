@@ -4,16 +4,16 @@ import { GlanceTabs } from "@/components/glance/glance-tabs";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { loadGlance } from "@/lib/glance/load";
-import { GLANCE_TAB_HINT, GLANCE_TAB_LABEL } from "@/lib/glance/tabs";
+import { GLANCE_TAB_LABEL } from "@/lib/glance/tabs";
 import { GLANCE_LIST_COLUMNS } from "@/lib/list-columns";
 
 export const dynamic = "force-dynamic";
 
 const EMPTY: Record<string, string> = {
-  sales: "No open shops on this book. Quote Sent still counts as shopping — bind is a later step.",
-  service: "No open service work. Endorsements and review tasks land here when they exist.",
-  claims: "No claim notices on the book yet. Log one on Claims — this does not file FNOL.",
-  renewals: "No in-force terms expire in the next 60 days. Quotes are not renewals.",
+  sales: "No open shops on this book.",
+  service: "No open service work.",
+  claims: "No claim notices on the book yet.",
+  renewals: "No in-force terms expire in the next 60 days.",
 };
 
 export default async function GlancePage({
@@ -22,15 +22,10 @@ export default async function GlancePage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const params = await searchParams;
-  const { session, tab, rows, counts } = await loadGlance(params.tab);
+  const { tab, rows, counts } = await loadGlance(params.tab);
 
   return (
     <AppShell title="Glance">
-      <p className="mb-3 text-sm text-muted-foreground">
-        One lifecycle board. Tabs filter records that already exist — Deals, tasks, claims, and
-        Policies. {session.isAdmin ? "Admin sees the whole book." : "You see your book only."} Ana
-        Dib stays Quote Sent / unbound at $321,000.
-      </p>
 
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <GlanceTabs tab={tab} counts={counts} />
@@ -38,8 +33,6 @@ export default async function GlancePage({
           Producer scorecards
         </Link>
       </div>
-
-      <p className="mb-3 text-sm text-muted-foreground">{GLANCE_TAB_HINT[tab]}</p>
 
       <section className="ff-card overflow-x-auto">
         <div className="border-b border-border px-4 py-3">

@@ -12,10 +12,7 @@ export function PolicyChangeTimeline({
     <section className="space-y-3">
       <div>
         <h3 className="text-sm font-semibold text-navy">Change history</h3>
-        <p className="text-helper text-muted-foreground">
-          Who changed which field, when, and the value before / after. Bind, record edits, and
-          endorsements write here. Ana is not on this book.
-        </p>
+
       </div>
       {groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">No field changes recorded on this policy yet.</p>

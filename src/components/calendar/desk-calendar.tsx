@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, CircleHelp } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   deleteDeskActivity,
   logDeskActivity,
@@ -76,8 +76,6 @@ const KIND_LABELS: Record<(typeof KINDS)[number], string> = {
 };
 const HOURS = dayHours(7, 19);
 const HOUR_H = 48;
-const GRID_HELP =
-  "Drag an event, or select it and click an empty day or hour to reschedule. Double-click an empty slot to add.";
 
 export type CalendarEvent = ReturnType<typeof serializeCalendarActivity>;
 
@@ -283,15 +281,6 @@ export function DeskCalendar({
               {CALENDAR_TOOLBAR_ROWS[0][index]}
             </Button>
           ))}
-          <span
-            className="ml-0.5 inline-flex size-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-navy"
-            title={GRID_HELP}
-            aria-label={GRID_HELP}
-            role="img"
-            data-ff-calendar-help=""
-          >
-            <CircleHelp className="size-3.5" strokeWidth={2} />
-          </span>
         </div>
         <div
           className="flex flex-wrap items-center justify-center gap-0.5"
@@ -342,13 +331,9 @@ export function DeskCalendar({
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {selectedId ? (
-        <p className="text-xs text-navy">
-          Selected — click an empty slot to move it, or{" "}
-          <button type="button" className="underline" onClick={() => setSelectedId(null)}>
-            clear
-          </button>
-          .
-        </p>
+        <button type="button" className="text-xs text-navy underline" onClick={() => setSelectedId(null)}>
+          clear
+        </button>
       ) : null}
 
       <div className="-mt-0.5 mb-0 flex flex-wrap items-end justify-between gap-1 py-0.5">
@@ -1039,9 +1024,7 @@ function CalendarEditor({
                 ? " · Private"
                 : ""}
             </p>
-            <p className="text-xs text-muted-foreground">
-              This event lives on {providerLabel}. FitFirst imported the title and time. Edit or delete it there.
-            </p>
+
             {event.calendarHtmlLink ? (
               <a
                 href={event.calendarHtmlLink}

@@ -33,15 +33,11 @@ export default async function SignedDocumentsPage({
         </Link>
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Agency-wide DocuSign and in-desk envelopes sent through FitFirst. Search a client or signer,
-        filter by status or form, download the signed PDF when the vendor has it, and jump back to
-        the deal or policy when a carrier asks for a copy.
-      </p>
+
       <p className="mb-4 text-xs text-navy">
         {docusign.ready
-          ? `DocuSign sandbox connected${docusign.label ? ` · ${docusign.label}` : ""}. Completed envelopes download the combined signed PDF.`
-          : "DocuSign sandbox is not connected. In-desk envelopes and filled packets still appear here."}{" "}
+          ? `DocuSign sandbox connected${docusign.label ? ` · ${docusign.label}` : ""}`
+          : "DocuSign sandbox is not connected."}{" "}
         {rows.length} envelope{rows.length === 1 ? "" : "s"} shown.
       </p>
       <SignedRetrievalDesk rows={rows} filters={filters} />

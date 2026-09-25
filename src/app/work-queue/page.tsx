@@ -66,10 +66,7 @@ export default async function WorkQueuePage({
           { label: "Work queue" },
         ]}
       />
-      <p className="mb-3 text-base text-muted-foreground">
-        Flags, notes, assignee, and in-app pings on the file — separate from Bound / Active /
-        Lapse. Pings land on the assignee&apos;s bell. Nothing emails.
-      </p>
+
       <SavedFiltersBar
         moduleId="work-queue"
         searchPlaceholder="Contains policy, party, flag…"
@@ -148,10 +145,7 @@ export default async function WorkQueuePage({
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Needs attention
         </div>
-        <p className="border-b border-border px-4 py-2 text-sm text-muted-foreground">
-          Identical Collect / Servicing checklist rows are grouped by item type with a count —
-          expand a group to open each Policy. Soft-refresh keeps the grouping.
-        </p>
+
         <GroupedAttentionTable
           items={attention.map((item) => ({
             id: item.id,

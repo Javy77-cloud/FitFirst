@@ -113,10 +113,7 @@ export function ContactCoverageRecord({
       <p className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
         {CONTACT_EXTERNAL_COVERAGE_LABEL}
       </p>
-      <p className="text-[11px] leading-snug text-muted-foreground">
-        Mark lines with another carrier. Policies in force with this agency stay on Policies — they
-        are not stored here. Another carrier counts as covered, not a missing-line gap.
-      </p>
+
       <ul
         className="grid grid-cols-2 gap-1.5 max-[520px]:grid-cols-1"
         data-ff-coverage-record-list=""

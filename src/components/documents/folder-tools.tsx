@@ -24,11 +24,7 @@ export function FolderTools({
         <div className="text-sm font-semibold text-navy">
           {role === "type" ? "New type folder" : "New carrier folder"}
         </div>
-        <p className="text-helper text-muted-foreground">
-          {role === "type"
-            ? "Top level is the document type. Put a carrier folder inside."
-            : `Carrier inside ${folder?.name ?? "this type"}.`}
-        </p>
+
         <input type="hidden" name="library" value={library} />
         {folder ? <input type="hidden" name="parentId" value={folder.id} /> : null}
         {role === "type" ? (

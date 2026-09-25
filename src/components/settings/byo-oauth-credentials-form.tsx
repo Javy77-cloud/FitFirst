@@ -69,12 +69,7 @@ export function ByoOauthCredentialsForm({
           Create free {spec.vendor} app
         </a>
       </div>
-      {showConnect ? (
-        <p className="text-caption text-muted-foreground">
-          Paste a new Client Secret, then Connect — FitFirst saves it before opening Google. You do not
-          need a separate Save first.
-        </p>
-      ) : null}
+      {showConnect ? null : null}
     </form>
   );
 }

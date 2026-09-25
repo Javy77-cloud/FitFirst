@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { ScorecardRankTable, ScorecardStatGrid } from "@/components/scorecards/scorecard-grid";
 import { ScorecardSortTabs } from "@/components/scorecards/sort-tabs";
@@ -17,16 +16,6 @@ export default async function ScorecardsPage({
 
   return (
     <AppShell title="Scorecards">
-      <p className="mb-3 text-sm text-muted-foreground">
-        {session.isAdmin
-          ? "Admin ranks every producer on conversion, retention, in-force premium, and binds. Quotes are not written premium."
-          : "Your book only. Other producers stay hidden. Quotes are not written premium."}{" "}
-        Open{" "}
-        <Link href="/glance" className="text-primary hover:underline">
-          Glance
-        </Link>{" "}
-        for Sales / Service / Claims / Renewals.
-      </p>
 
       <div className="mb-4">
         <ScorecardSortTabs sort={sort} />
@@ -49,19 +38,14 @@ export default async function ScorecardsPage({
         <section className="ff-card overflow-x-auto">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-navy">Ranked producers</h2>
-            <p className="text-[11px] text-muted-foreground">
-              Rank follows the selected metric. Frozen logins stay on the sheet with historical figures.
-            </p>
+
           </div>
           <ScorecardRankTable rows={visible} highlightId={session.userId} />
         </section>
       ) : (
         <section className="ff-card p-4">
           <h2 className="text-sm font-semibold text-navy">What you see</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Agents see their own conversion, retention, premium, and binds. Rank is your place on the
-            agency sort — not a list of other producers. Admin opens the full ranked board.
-          </p>
+
         </section>
       )}
     </AppShell>

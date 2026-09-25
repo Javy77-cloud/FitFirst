@@ -285,9 +285,7 @@ export function PortalLoginBlock({
               style={{ backgroundColor: "#eef2f7", border: "1px solid rgba(0,40,104,0.25)" }}
             >
               {saveButton}
-              <span className="text-xs text-muted-foreground">
-                This carrier only — agency code, username, password. Nothing auto-saves.
-              </span>
+
             </div>
             {savedFlash ? <p className="text-xs font-medium text-green-800">{savedFlash}</p> : null}
             {error ? <p className="text-xs text-destructive">{error}</p> : null}
@@ -304,9 +302,7 @@ export function PortalLoginBlock({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-semibold text-navy">Quote handoff readiness</p>
-                <p className="text-[11px] text-muted-foreground">
-                  URL + agency code + login for portal fill.
-                </p>
+
               </div>
               <span
                 className={

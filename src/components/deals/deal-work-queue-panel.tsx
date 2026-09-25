@@ -6,7 +6,6 @@ import { whenForActivity } from "@/lib/activities/rules";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -43,9 +42,7 @@ export function DealWorkQueuePanel({
       >
         <DialogHeader>
           <DialogTitle>Work queue · {chip?.label ?? type}</DialogTitle>
-          <DialogDescription>
-            Due today for this activity type. Close to return to the pipeline.
-          </DialogDescription>
+
         </DialogHeader>
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nothing of this type is due today.</p>

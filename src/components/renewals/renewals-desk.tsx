@@ -221,10 +221,7 @@ export async function RenewalsDesk({
         {archiveEmpty &&
         filtered.length === 0 &&
         !visibleStages.some((item) => isRenewalArchiveStage(item.slug)) ? (
-          <p className="text-sm text-muted-foreground" data-ff-renewals-archive-empty="">
-            No archived renewals yet. This book does not park cards on Archived — shopping stays on
-            All / P&amp;C / Health / Life, and bound or lost sit on Won-Lost.
-          </p>
+          <p className="text-sm text-muted-foreground" data-ff-renewals-archive-empty="">No archived renewals yet.</p>
         ) : (
           <>
             <div className="ff-renewals-book" data-ff-renewals-book="">

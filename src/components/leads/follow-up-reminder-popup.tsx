@@ -135,7 +135,7 @@ export function FollowUpReminderPopup({
               <DialogTitle>{copy.action}</DialogTitle>
               <DialogDescription>{copy.leadName}</DialogDescription>
             </DialogHeader>
-            <p className="text-xs text-muted-foreground">In-app follow-up. Nothing emailed Javy.</p>
+
             <FollowUpSnoozePresets pending={pending} onSnooze={snooze} />
             <DialogFooter>
               {shown.leadId ? (
@@ -154,7 +154,7 @@ export function FollowUpReminderPopup({
               <DialogTitle>{shown.title}</DialogTitle>
               <DialogDescription>{shown.body}</DialogDescription>
             </DialogHeader>
-            <p className="text-xs text-muted-foreground">In-app reminder. Nothing emailed Javy.</p>
+
             <FollowUpSnoozePresets pending={pending} onSnooze={snoozePlaybook} testId="playbook-snooze" />
             <DialogFooter>
               <Button type="button" size="sm" variant="outline" onClick={() => void dismissPlaybook()}>

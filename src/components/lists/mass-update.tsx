@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -149,10 +148,7 @@ export function MassUpdateMenu({
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
             <DialogTitle>Mass update · {active?.label ?? columnId ?? ""}</DialogTitle>
-            <DialogDescription>
-              Writes {selected.length} selected {selected.length === 1 ? "row" : "rows"} on this list. Ana
-              is skipped. Bound is signature-only.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="space-y-3">
             <div>

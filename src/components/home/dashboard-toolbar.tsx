@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -218,9 +217,7 @@ function LayoutDropdown({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Name this layout</DialogTitle>
-            <DialogDescription>
-              Saves the current tile order and sizes for you on this desk. You can rename it later.
-            </DialogDescription>
+
           </DialogHeader>
           <Input
             value={draftName}
@@ -246,7 +243,7 @@ function LayoutDropdown({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Rename layout</DialogTitle>
-            <DialogDescription>The name is only for you on this desk.</DialogDescription>
+
           </DialogHeader>
           <Input
             value={draftName}
@@ -325,10 +322,7 @@ function WidgetSettingsDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Widget settings</DialogTitle>
-          <DialogDescription>
-            Show or hide cards, turn on corner resize, or reset the board. Resize never changes a
-            neighbor&apos;s stored size.
-          </DialogDescription>
+
         </DialogHeader>
         <form action={saveHomeHiddenWidgets} className="space-y-4">
           <label className="flex items-start gap-2 rounded-md border border-border bg-card px-3 py-2">
@@ -344,10 +338,7 @@ function WidgetSettingsDialog({
             />
             <span>
               <span className="block text-[13px] font-medium text-navy">Resize tiles</span>
-              <span className="block text-[12px] text-muted-foreground">
-                Makes tiles customizable. Pull a corner to stretch or shrink. Preset sizes stay as
-                shortcuts.
-              </span>
+
             </span>
           </label>
           <div>

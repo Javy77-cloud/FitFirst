@@ -43,11 +43,7 @@ export default async function FunctionsPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Categories Button, Automation, Schedule, and Standalone (plus Related List / Signals /
-        Validation). The editor persists the body. Run test uses an allowlisted JSON transform.
-        Standalone REST checks an org API key.
-      </p>
+
       <div className="mb-3 flex flex-wrap gap-1.5">
         <Link
           href="/automations/functions"
@@ -73,9 +69,7 @@ export default async function FunctionsPage({
       </div>
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No functions in this category. Create one from Developer Hub.
-          </p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No functions in this category.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="ff-table">

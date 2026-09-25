@@ -91,10 +91,6 @@ export default async function DocumentsPage({
         </div>
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Documents by type, carrier nested inside. Forms hold ACORD, No Run Loss, Cancellation, and AOR.
-        Signed envelopes live on Signed. Email templates are their own nav section, not this library.
-      </p>
 
       {notice === "bad-move" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
@@ -194,9 +190,7 @@ export default async function DocumentsPage({
             <section className="space-y-3">
               <div>
                 <h2 className="text-sm font-semibold text-navy">Browse by type</h2>
-                <p className="text-xs text-muted-foreground">
-                  Open a type, then the carrier inside it. Email is not listed here.
-                </p>
+
               </div>
               <TypeCarrierBrowse
                 groups={groupFoldersByTypeAndCarrier(

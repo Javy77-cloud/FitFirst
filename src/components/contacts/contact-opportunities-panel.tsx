@@ -148,16 +148,8 @@ export function ContactOpportunitiesPanel({
 
   return (
     <div className="space-y-4" data-ff-contact-opportunities="">
-      <p className="text-xs text-muted-foreground">
-        Actionable gaps from coverage (with us vs elsewhere), household facts on Contact Details, and
-        life-event / renewal signals. Each row has a short title, why it matters, and an optional CTA.
-      </p>
-      {isAna ? (
-        <p className="text-sm text-muted-foreground" data-ff-contact-opportunities-ana="">
-          Ana Dib is still shopping. Quotes are not coverage and do not create cross-sell
-          opportunities. Coverage A is $321,000. Do not bind Ana.
-        </p>
-      ) : null}
+
+      {isAna ? null : null}
 
       {dealRows.length > 0 ? (
         <ul

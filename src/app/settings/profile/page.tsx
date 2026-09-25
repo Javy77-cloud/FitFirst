@@ -20,10 +20,7 @@ export default async function ProfileSettingsPage({
 
   return (
     <SettingsShell title="Profile" current="profile" allowMfaPending>
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        This login only. Email stays on the user row so seed logins keep matching. Password and
-        2FA live under Security.
-      </p>
+
       {params.saved ? (
         <p className="mb-4 rounded-md bg-fit-green-bg px-3 py-2 text-sm text-navy">Profile saved.</p>
       ) : null}

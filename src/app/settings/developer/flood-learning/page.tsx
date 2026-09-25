@@ -19,14 +19,9 @@ export default async function DeveloperFloodLearningPage() {
         </Link>
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground" data-ff-flood-learning-intro="">
-        Flood premium-learning stub: location, elevation, elevation certificate, zone, premiums/outcomes. Same site-dev gate as Appetite Log. Stub UI — no rows yet.
-      </p>
+
       <section className="ff-card px-4 py-8" data-ff-flood-learning-sheet="">
-        <p className="text-sm text-muted-foreground">
-          No Flood learning rows yet. Quote writes for this line will attach a feature snapshot on 
-          <code className="text-xs">quote_attempt_logs</code> going forward.
-        </p>
+        <p className="text-sm text-muted-foreground">No Flood learning rows yet.</p>
       </section>
     </SettingsShell>
   );

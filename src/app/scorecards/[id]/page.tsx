@@ -36,7 +36,6 @@ export default async function ProducerScorecardPage({
             </Link>
           </>
         ) : null}
-        . Quotes are not written premium.
       </p>
 
       <div className="mb-4">

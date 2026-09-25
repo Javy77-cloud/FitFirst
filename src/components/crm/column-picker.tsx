@@ -119,9 +119,7 @@ export async function ColumnPickerMenu({
               </button>
             </form>
           ) : null}
-          <p className="px-2 text-[10px] text-muted-foreground">
-            Per-agent layout. Colors and fonts stay on admin branding.
-          </p>
+
         </div>
       </div>
     </details>

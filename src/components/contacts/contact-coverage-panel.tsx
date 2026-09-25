@@ -50,17 +50,8 @@ export function ContactCoveragePanel({
 
   return (
     <div className="space-y-5" data-ff-contact-coverage="">
-      <p className="text-xs text-muted-foreground">
-        Household coverage on this Contact. <strong>With us</strong> comes from FitFirst policies.
-        <strong> Elsewhere</strong> is agent-entered — renewal date drives Opportunities chase.
-        Quotes are not coverage.
-      </p>
 
-      {isAna ? (
-        <p className="text-sm text-muted-foreground" data-ff-contact-coverage-ana="">
-          Ana Dib is still shopping. Quotes are not coverage. Coverage A is $321,000. Do not bind Ana.
-        </p>
-      ) : null}
+      {isAna ? null : null}
 
       <section className="space-y-2" data-ff-coverage-with-us="">
         <h3 className="text-sm font-semibold text-[#002868]">With us</h3>
@@ -138,10 +129,7 @@ export function ContactCoveragePanel({
 
       <section className="space-y-2" data-ff-coverage-elsewhere="">
         <h3 className="text-sm font-semibold text-[#002868]">Elsewhere</h3>
-        <p className="text-[11px] text-muted-foreground">
-          Lines the household holds with another carrier. Add / edit / remove — renewal date is the
-          Opportunities chase trigger.
-        </p>
+
         <ElsewhereCoverageEditor recordId={contactId} value={elsewhereCoverage} />
       </section>
 

@@ -47,7 +47,7 @@ export function SettingsHomeCards() {
                       className="flex items-baseline justify-between gap-2 rounded-md px-1.5 py-1 text-sm text-navy hover:bg-navy/5"
                     >
                       <span>{child.label}</span>
-                      <span className="truncate text-[11px] text-muted-foreground">{child.hint}</span>
+
                     </Link>
                   </li>
                 ))}
@@ -65,7 +65,7 @@ export function SettingsHomeCards() {
                           className="flex items-baseline justify-between gap-2 rounded-md px-1.5 py-1 text-sm text-navy/80 hover:bg-navy/5"
                         >
                           <span>{child.label}</span>
-                          <span className="truncate text-[11px] text-muted-foreground">{child.hint}</span>
+
                         </Link>
                       </li>
                     ))}

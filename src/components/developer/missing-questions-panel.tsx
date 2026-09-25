@@ -115,11 +115,7 @@ export function MissingQuestionsPanel({
         <p
           className="ff-card px-4 py-6 text-sm text-muted-foreground"
           data-ff-missing-questions-empty=""
-        >
-          Nothing logged yet. When a carrier or quote bot asks for data FitFirst has no field for,
-          add it here once. Mark Added after the field ships on Deal Details or Risk Profile. This
-          list stays empty on purpose — no example carrier noise.
-        </p>
+        >Nothing logged yet.</p>
       ) : (
         <div className="space-y-3" data-ff-missing-questions-list="">
           {rows.map((row) => {

@@ -51,11 +51,6 @@ export default async function MergeQueuePage() {
         </form>
       }
     >
-      <p className="mb-4 max-w-3xl text-base text-muted-foreground">
-        Likely duplicates — same person, two records. Matches are rule-based: same email, same
-        phone, same name plus date of birth, or same name plus address. Review the pair, keep one
-        record, copy blanks onto it, and retire the other. Nothing is hard-deleted.
-      </p>
 
       <section className="ff-card overflow-hidden">
         <DeskColumnTable
@@ -64,9 +59,6 @@ export default async function MergeQueuePage() {
           empty={
             <div>
               <p className="font-medium text-navy">No open matches.</p>
-              <p className="mt-1">
-                Rescan after you add another contact or lead that looks like a duplicate.
-              </p>
             </div>
           }
           rows={candidates.map((row) => {

@@ -167,9 +167,7 @@ export function ActivityForm({
             </option>
           ))}
         </select>
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          Assign to a contact and a policy at the same time. Calendar is a view, not the record.
-        </p>
+
       </div>
       <div>
         <Label className="text-xs">Notes</Label>

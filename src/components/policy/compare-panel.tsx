@@ -53,9 +53,7 @@ export function ComparePanel({
       <section className="ff-card flex flex-wrap items-center gap-3 p-4">
         <FillCompareFromDecsButton policyId={policy.id} />
         <ClientStayingButton policyId={policy.id} renewalDate={policy.renewalDate} size="sm" />
-        <p className="text-sm text-muted-foreground">
-          Pull premium and term dates from Documents tagged Prior/Current + Renewal.
-        </p>
+
       </section>
       {change ? <PremiumChangeSummary change={change} /> : (
         <section className="ff-card p-4 text-base text-muted-foreground">
@@ -119,9 +117,7 @@ export function ComparePanel({
         <form action={saveProposedTerm} className="ff-card space-y-3 p-4">
           <div>
             <h2 className="text-base font-semibold text-navy">Record proposed term</h2>
-            <p className="mt-1 text-base text-muted-foreground">
-              Enter what the carrier sent. This is not a rater and does not invent a risk score.
-            </p>
+
           </div>
           <input type="hidden" name="policyId" value={policy.id} />
           <input type="hidden" name="coverageCount" value={coverageList(proposed?.coverages).length} />
@@ -203,9 +199,7 @@ export function ComparePanel({
             ) : null}
           </div>
           {logs.length === 0 ? (
-            <p className="px-4 py-6 text-base text-muted-foreground">
-              No compares logged yet. Save a proposed term to write the first row.
-            </p>
+            <p className="px-4 py-6 text-base text-muted-foreground">No compares logged yet.</p>
           ) : (
             <table className="ff-table">
               <thead>

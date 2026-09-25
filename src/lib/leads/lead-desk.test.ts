@@ -35,7 +35,7 @@ describe("leads stack + queue desk", () => {
     expect(source("src/app/leads/page.tsx")).toMatch(/parseLeadsView/);
     expect(source("src/app/leads/page.tsx")).toMatch(/LeadsPriorityStack/);
     expect(source("src/app/leads/page.tsx")).not.toMatch(/LeadsHostList/);
-    expect(source("src/app/leads/page.tsx")).toMatch(/Stack is the desk\. Queue is the work sheet\./);
+    expect(source("src/app/leads/page.tsx")).not.toMatch(/Stack is the desk\. Queue is the work sheet\./);
     expect(source("src/app/leads/page.tsx")).not.toMatch(/List is columns/);
   });
 

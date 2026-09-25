@@ -13,10 +13,7 @@ export function LifeHealthPanel({ deal }: { deal: Deal }) {
       <form action={updateDealCrmNotes} className="ff-card space-y-3 p-4">
         <input type="hidden" name="dealId" value={deal.id} />
         <h2 className="text-sm font-semibold text-navy">{label} CRM notes</h2>
-        <p className="text-xs text-muted-foreground">
-          Life and health stay on the contact and deal. There is no rating worksheet, market
-          filter, or carrier portal for these lines.
-        </p>
+
         <div>
           <Label htmlFor="primaryNamedInsured" className="text-xs">
             Proposed insured
@@ -47,11 +44,7 @@ export function LifeHealthPanel({ deal }: { deal: Deal }) {
 
       <section className="ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Rating</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Comparative rating is not available for life or health. Use the notes above, then bind
-          when the coverage is actually written so the contact, policy, tenure, and 30/60/90
-          tasks are created.
-        </p>
+
       </section>
     </div>
   );

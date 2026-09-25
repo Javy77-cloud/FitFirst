@@ -13,9 +13,7 @@ export function OptOutForm({
   return (
     <section id="optouts" className="ff-card mb-4 p-4">
       <h2 className="text-base font-semibold text-navy">Opt-outs</h2>
-      <p className="mt-1 text-helper text-muted-foreground">
-        Held on the contact. Outbound email and SMS queue will not send when a flag is on.
-      </p>
+
       <form action={updateContactRecord} className="mt-3 space-y-2 text-sm">
         <input type="hidden" name="contactId" value={contactId} />
         <input type="hidden" name="saveOptOuts" value="1" />

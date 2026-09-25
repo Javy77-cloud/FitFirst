@@ -23,17 +23,6 @@ export default async function MasterRiskSettingsPage({
 
   return (
     <SettingsShell title="Master risk" current="master-risk">
-      {!session.isAdmin ? (
-        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Master risk is an Admin background appetite tool. It is not on the agent Deal. Agents
-          shop from Documents, Quote Sheet, Markets, and Quotes.
-        </p>
-      ) : (
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          Background appetite worksheet. Agents do not see this tab on the Deal. Pick a shop,
-          edit the structured risk, then use Markets on that Deal. Ana stays unbound.
-        </p>
-      )}
 
       {session.isAdmin ? (
         <form className="mb-4 flex flex-wrap items-end gap-2" method="get">
@@ -77,11 +66,7 @@ export default async function MasterRiskSettingsPage({
             extraQuery={{ deal: workspace.deal.id }}
           />
         </div>
-      ) : session.isAdmin && dealId && !workspace?.risk ? (
-        <p className="text-sm text-muted-foreground">That deal has no master risk row.</p>
-      ) : session.isAdmin ? (
-        <p className="text-sm text-muted-foreground">Choose a deal to edit its appetite worksheet.</p>
-      ) : null}
+      ) : session.isAdmin && dealId && !workspace?.risk ? null : session.isAdmin ? null : null}
     </SettingsShell>
   );
 }

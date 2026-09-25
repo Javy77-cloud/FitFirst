@@ -33,10 +33,7 @@ export default async function ButtonsPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        List, detail, or mass-action buttons. Click can open a URL, run a Developer Hub function,
-        or a widget stub. Mass-action buttons show on Leads / Contacts / Deals with Run Macro.
-      </p>
+
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No custom buttons yet.</p>

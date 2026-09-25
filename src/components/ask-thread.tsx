@@ -42,9 +42,7 @@ export function AskThread({
       </summary>
       <div className={compact ? "mt-2 space-y-2" : "mt-3 space-y-3"}>
         {asks.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            No notes yet. Post a short question or a payout request — this is not chat.
-          </p>
+          <p className="text-xs text-muted-foreground">No notes yet.</p>
         ) : (
           <ol className="space-y-2">
             {asks.map(({ ask, author }) => (

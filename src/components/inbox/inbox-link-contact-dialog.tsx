@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -108,9 +107,7 @@ export function InboxLinkContactDialog({
         <DialogContent className="sm:max-w-md" data-ff-inbox-link-dialog="">
           <DialogHeader>
             <DialogTitle>Link or create contact</DialogTitle>
-            <DialogDescription>
-              Stay in this thread. Link the sender to someone already on the book, or create them here.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="flex gap-2" role="tablist" aria-label="Link or create">
             <Button
@@ -146,11 +143,7 @@ export function InboxLinkContactDialog({
                 />
               </label>
               <ul className="max-h-56 overflow-auto rounded-md border border-border" data-ff-inbox-contact-hits="">
-                {hits.length === 0 ? (
-                  <li className="px-3 py-2 text-sm text-muted-foreground">
-                    {query.trim() ? "No contact with that name." : "Type a name to search the book."}
-                  </li>
-                ) : (
+                {hits.length === 0 ? null : (
                   hits.map((hit) => (
                     <li key={hit.id}>
                       <button

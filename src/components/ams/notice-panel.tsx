@@ -27,9 +27,7 @@ export function NoticePanel({
       <h2 className="text-base font-semibold text-navy">Cancel / non-renew notices</h2>
       <p className="mt-1 text-base text-muted-foreground">{NOTICE_DIARY_DISCLAIMER}</p>
       {notices.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No notices on this Policy. Draft one below — it does not file a change.
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">No notices on this Policy.</p>
       ) : (
         <ul className="mt-3 divide-y divide-border rounded-md border border-border">
           {notices.map((notice) => (

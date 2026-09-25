@@ -36,18 +36,10 @@ export default async function MacrosPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Manual only — not workflows and never scheduled. Same <code>desk_macros</code> rows as
-        Settings → Automations &amp; Developer → Macros. Configure every run surface there
-        (Leads, Deals / Pipeline, Contacts, Accounts, Policies, Campaigns, Tasks, Quotes).
-        Check rows, then <strong>Run Macro</strong>. Leads also has <strong>Run Follow-up Macro</strong>.
-        Macros run on the records you pick.
-      </p>
+
       <section className="ff-card overflow-hidden">
         {macros.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No macros yet. Admin can create one in Developer Hub.
-          </p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No macros yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="ff-table">

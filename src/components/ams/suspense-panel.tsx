@@ -20,11 +20,7 @@ export function SuspensePanel({
   return (
     <section className="ff-card mb-4 p-4">
       <h2 className="text-base font-semibold text-navy">Suspense / follow-ups</h2>
-      <p className="mt-1 text-base text-muted-foreground">
-        Missing AOR or ID cards open an in-app Task automatically. Dec stays a manual collect
-        when that slot is empty. Closing a row does not add the file and does not cancel the
-        Policy.
-      </p>
+
       {open.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">
           No open AOR or ID-card follow-ups on this Policy.
@@ -35,7 +31,7 @@ export function SuspensePanel({
             <li key={task.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
               <div>
                 <div className="font-medium text-navy">{task.title}</div>
-                <p className="text-sm text-muted-foreground">Open servicing task · in-app only</p>
+
               </div>
               <form action={completeSuspenseTask}>
                 <input type="hidden" name="taskId" value={task.id} />

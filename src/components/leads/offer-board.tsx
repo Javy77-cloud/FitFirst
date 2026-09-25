@@ -14,10 +14,7 @@ export function UnassignedOfferBoard({
     <section className="ff-card overflow-hidden" data-lead-offers="unassigned">
       <div className="border-b border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-navy">Unassigned inbound</h3>
-        <p className="text-helper text-muted-foreground">
-          Agency social / inbound Leads. Award to any agent. Home bulletin reads the same offer
-          list.
-        </p>
+
       </div>
       {offers.length === 0 ? (
         <p className="px-4 py-6 text-sm text-muted-foreground">

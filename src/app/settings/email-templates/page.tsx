@@ -115,7 +115,7 @@ export default async function EmailTemplatesPage() {
         <section className="ff-card overflow-hidden">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-navy">System</h2>
-            <p className="text-xs text-muted-foreground">Seeded review, check-in, and renewal copy.</p>
+
           </div>
           <TemplateTable
             templates={system}
@@ -126,7 +126,7 @@ export default async function EmailTemplatesPage() {
         <section className="ff-card overflow-hidden">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-navy">Custom</h2>
-            <p className="text-xs text-muted-foreground">Agency-authored. Seed will not overwrite these.</p>
+
           </div>
           <TemplateTable
             templates={custom}

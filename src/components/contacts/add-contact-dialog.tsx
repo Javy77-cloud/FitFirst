@@ -136,9 +136,7 @@ export function AddContactDialog({ contacts }: { contacts: ExistingContactRow[] 
         >
           <DialogHeader>
             <DialogTitle>New Contact</DialogTitle>
-            <DialogDescription>
-              Quick add. Bind / Closed Won still creates or links a contact automatically.
-            </DialogDescription>
+
           </DialogHeader>
 
           {softDup || match ? (

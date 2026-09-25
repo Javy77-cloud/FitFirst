@@ -99,9 +99,9 @@ export function PicklistConfig({
       </div>
       {bound ? (
         <div className="space-y-1" data-ff-option-set-preview>
-          <p className="text-helper text-muted-foreground">
+          <p className="text-[11px] font-medium text-navy">
             {boundLabel}
-            {previewRows.length ? ` · ${previewRows.length}` : ""} — colors live on the Settings list.
+            {previewRows.length ? ` · ${previewRows.length}` : ""}
           </p>
           {previewRows.length ? (
             <CollapsibleListCard
@@ -115,7 +115,7 @@ export function PicklistConfig({
               ))}
             />
           ) : (
-            <p className="text-helper text-muted-foreground">No values yet. Add them on the Settings list.</p>
+            <p className="text-helper text-muted-foreground">No values yet.</p>
           )}
         </div>
       ) : (

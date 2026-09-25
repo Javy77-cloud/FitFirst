@@ -118,9 +118,7 @@ export function MeetingButton({
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h2 className="text-sm font-semibold text-navy">Schedule a meeting</h2>
-                <p className="text-[11px] text-muted-foreground">
-                  Video-call, In-Home, or In-Office. Nothing syncs to Google Calendar.
-                </p>
+
               </div>
               <button
                 type="button"

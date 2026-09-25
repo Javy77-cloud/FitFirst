@@ -21,10 +21,7 @@ export default async function PortalIdCardsPage({
 
   return (
     <PortalShell session={session} title="ID cards">
-      <p className="mb-4 text-sm text-muted-foreground">
-        Wallet stub from the in-force policy. Download uses the issued policy-file
-        when one is on the record. This is not a carrier portal download.
-      </p>
+
       {session.policies.length === 0 ? (
         <p className="ff-card px-4 py-6 text-sm text-muted-foreground">
           No policies on this link, so there is no ID card to show.
@@ -56,10 +53,7 @@ export default async function PortalIdCardsPage({
                       Download {file?.filename ?? "ID card"}
                     </a>
                   ) : (
-                    <p className="text-xs text-muted-foreground">
-                      No issued ID file on this policy yet. The stub above is the
-                      desk preview.
-                    </p>
+                    <p className="text-xs text-muted-foreground">No issued ID file on this policy yet.</p>
                   )}
                   <Link
                     href={portalHref(session.token.token, "changes")}

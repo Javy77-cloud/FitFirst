@@ -67,10 +67,7 @@ export default async function CampaignsPage({
       }
     >
       <SavedToast show={saved} message="Campaign saved." listHref="/campaigns" />
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Draft lists and templates. Sending waits until work email is connected under Settings →
-        Email. No SMTP from this desk today.
-      </p>
+
       <div className="mb-3 flex flex-wrap gap-2">
         {TEMPLATES.map((tpl) => (
           <Link
@@ -135,10 +132,7 @@ export default async function CampaignsPage({
                 <option key={stage} value={stage} />
               ))}
             </datalist>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Known tags: {tags.length ? tags.join(", ") : "none yet — tag a contact first"}. Stages:{" "}
-              {DEAL_STAGES.join(", ")}.
-            </p>
+
           </div>
           <FormPrimaryActions submitLabel="Save draft" />
         </form>

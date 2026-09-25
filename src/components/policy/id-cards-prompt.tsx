@@ -90,9 +90,7 @@ export function IdCardsPrompt({
           <>
             <DialogHeader>
               <DialogTitle>Upload ID cards</DialogTitle>
-              <DialogDescription>
-                Choose file(s), rename if needed, then Upload. Cancel dismisses this reminder forever.
-              </DialogDescription>
+
             </DialogHeader>
             <IdCardsUploadPanel
               policyId={policyId}

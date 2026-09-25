@@ -50,12 +50,7 @@ export function PolicyWorkPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-navy">Work on this file</h2>
-          <p className="mt-1 max-w-2xl text-base text-muted-foreground">
-            Assignee and work status are separate from Bound / Active / Lapse.
-            Flag the file, note it, and ping in-desk. After issue, use the same
-            tools for “carrier needs docs” or “add endorsement,” then file the
-            endorsement on the existing Policy tab. No broker email.
-          </p>
+
         </div>
         <WorkFlagPills flags={[...openFlags]} empty="No open flags" />
       </div>
@@ -166,9 +161,7 @@ export function PolicyWorkPanel({
             Open Tasks
           </div>
           {reminders.length === 0 ? (
-            <p className="mt-2 text-base text-muted-foreground">
-              No in-app Task on this file. Pings stay here — they never email.
-            </p>
+            <p className="mt-2 text-base text-muted-foreground">No in-app Task on this file.</p>
           ) : (
             <ul className="mt-2 space-y-2">
               {reminders.map((task) => (

@@ -142,9 +142,7 @@ export function CarrierCommissionTable({
             Save schedule
           </Button>
         </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">Rates are read-only for agents.</p>
-      )}
+      ) : null}
     </div>
   );
 }

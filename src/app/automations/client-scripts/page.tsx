@@ -33,10 +33,7 @@ export default async function ClientScriptsPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Page + event + optional field. The body persists. The desk parses allowlisted{" "}
-        <code>getValue</code> / <code>setValue</code> / <code>showError</code> only — no eval.
-      </p>
+
       <section className="ff-card overflow-hidden">
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No client scripts yet.</p>

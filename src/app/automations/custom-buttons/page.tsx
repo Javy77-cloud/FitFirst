@@ -28,16 +28,10 @@ export default async function AutomationsCustomButtonsPage() {
       }
     >
       <AutomationsModuleNav />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Links & Buttons on list, detail, and mass-action bars. Same records as Settings →
-        Developer Hub. Click can open a URL, a widget panel, or a Function apiName (no-op until
-        the core Functions table exists).
-      </p>
+
       <section className="ff-card overflow-hidden">
         {buttons.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No custom buttons yet. Admin can add one in Developer Hub.
-          </p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No custom buttons yet.</p>
         ) : (
           <table className="ff-table">
             <thead>

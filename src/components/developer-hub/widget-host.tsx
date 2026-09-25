@@ -20,9 +20,7 @@ export function WidgetHost({
       <div className="mb-2 flex items-center justify-between gap-2">
         <div>
           <div className="text-sm font-semibold text-navy">{name}</div>
-          <p className="text-xs text-muted-foreground">
-            Widget host placeholder. Internal zip metadata is stored; external URLs iframe here.
-          </p>
+
         </div>
         {onClose ? (
           <button type="button" onClick={onClose} className="text-xs text-primary hover:underline">
@@ -37,11 +35,7 @@ export function WidgetHost({
           className="h-56 w-full rounded-md border border-border bg-card"
           sandbox="allow-scripts allow-same-origin allow-forms"
         />
-      ) : (
-        <div className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
-          Widget host placeholder — upload a zip on Developer Hub → Widgets, or paste an external URL.
-        </div>
-      )}
+      ) : null}
     </section>
   );
 }

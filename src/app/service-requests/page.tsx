@@ -26,12 +26,7 @@ export default async function ServiceRequestsPage({
 
   return (
     <AppShell title="Service requests">
-      <p className="mb-4 text-base text-muted-foreground">
-        Endorsement, cancellation, and non-renewal queue. Status chips show the next desk step.
-        Filing updates the existing Policy, writes the durable activity log, and is never
-        automatic — Hale stays in force until you file. Quotes never become Policies. Split
-        the queue by producer vs CSR without changing status.
-      </p>
+
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <RecordLink href="/service-requests">All desks</RecordLink>
         <RecordLink href="/service-requests?desk=csr">CSR</RecordLink>

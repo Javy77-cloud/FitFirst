@@ -41,10 +41,7 @@ export default async function EndorsementsPage({
           { label: "Endorsements" },
         ]}
       />
-      <p className="mb-4 text-base text-muted-foreground">
-        Endorsement drafts from a Policy — status pipeline only. Draft does not file. Link back to
-        the Policy from each row.
-      </p>
+
       <p className="mb-2 text-xs text-muted-foreground">{ENDORSEMENT_DRAFT_DISCLAIMER}</p>
       {error ? (
         <p className="mb-3 text-sm text-destructive" role="alert">

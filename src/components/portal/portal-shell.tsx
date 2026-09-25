@@ -44,9 +44,7 @@ export function PortalShell({
                 Policy change
               </Link>
             </nav>
-          ) : (
-            <p className="text-sm text-muted-foreground">Stub link — no password.</p>
-          )}
+          ) : null}
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6">

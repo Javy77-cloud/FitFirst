@@ -28,10 +28,7 @@ export default async function CustomButtonsPage({
         </Link>
       }
     >
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Links & Buttons. Placement is list, detail, or mass action. Click can run a Function
-        apiName (no-op until core lands), open a merge-token URL, or open a Widget panel.
-      </p>
+
       <HubNotice notice={notice} />
       <section className="ff-card overflow-hidden">
         {buttons.length === 0 ? (

@@ -75,9 +75,7 @@ export function ScriptForm({ script }: { script?: DeskClientScript }) {
           defaultValue={script?.body ?? COV_A_EMPTY_SCRIPT}
           className="mt-1 min-h-32 font-mono text-xs"
         />
-        <p className="mt-1 text-xs text-muted-foreground">
-          Allowlisted calls only: getValue, setValue, showError. The desk does not eval this string.
-        </p>
+
       </div>
       <label className="inline-flex items-center gap-2 text-sm">
         <input type="checkbox" name="enabled" defaultChecked={script?.enabled ?? true} />

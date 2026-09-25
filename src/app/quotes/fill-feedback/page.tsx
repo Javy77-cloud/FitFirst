@@ -17,17 +17,10 @@ export default async function FillFeedbackPage() {
         </Link>
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Appetite-style learning log — not a trained model. When someone corrects a mapped field
-        after ingest, or marks a paste field wrong, the desk stores doc type, field, wrong value,
-        and the correction. The next fill prefers that correction when the same extract repeats.
-      </p>
+
       <section className="ff-card overflow-x-auto">
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No fill corrections yet. Save a Quote Sheet edit after a source-doc fill, or mark a
-            paste field wrong.
-          </p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No fill corrections yet.</p>
         ) : (
           <table className="ff-table">
             <thead>

@@ -111,11 +111,7 @@ export function AgentPolicyAccessPanel({ initial }: { initial: AgentPolicyAccess
     <div className="space-y-4" data-ff-agent-policy-access="">
       <section className="ff-card space-y-2 p-4">
         <h2 className="text-base font-semibold text-navy">Always on for agents (read)</h2>
-        <p className="text-sm text-muted-foreground">
-          Servicing checklist, coverage schedule, documents, activity timeline, FNOL, inspections,
-          certificates, and the renewals board stay visible. Agents cannot edit those surfaces —
-          no extra toggles in this version.
-        </p>
+
       </section>
 
       {AGENT_POLICY_ACCESS_AREAS.map((area) => {
@@ -129,15 +125,13 @@ export function AgentPolicyAccessPanel({ initial }: { initial: AgentPolicyAccess
           >
             <div>
               <h2 className="text-base font-semibold text-navy">{copy.title}</h2>
-              <p className="text-sm text-muted-foreground">{copy.hint}</p>
+
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
               <div>
                 <p className="text-sm font-semibold text-navy">Read</p>
-                <p className="text-helper text-muted-foreground">
-                  {flags.read ? "On — agents can see this block." : "Off — hidden for agents."}
-                </p>
+
               </div>
               <button
                 type="button"
@@ -154,9 +148,7 @@ export function AgentPolicyAccessPanel({ initial }: { initial: AgentPolicyAccess
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2">
               <div>
                 <p className="text-sm font-semibold text-navy">Write</p>
-                <p className="text-helper text-muted-foreground">
-                  Extra layer. Turning this on requires two confirms. Write also turns Read on.
-                </p>
+
               </div>
               <button
                 type="button"

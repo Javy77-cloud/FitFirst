@@ -65,9 +65,7 @@ export function PolicyAgencyTab({
       <section className="ff-card space-y-4 p-4" data-ff-policy-agency-actions="">
         <div>
           <h2 className="text-base font-semibold text-navy">Agency actions</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Lifecycle (endorse / cancel / non-renew) on top. Operational boards below.
-          </p>
+
         </div>
 
         {showLifecycle ? (
@@ -81,12 +79,7 @@ export function PolicyAgencyTab({
                   premium={policy.premium}
                   status={policy.status}
                 />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Lifecycle is view-only for your desk. Ask an admin to enable write on Agent Policy
-                  Access.
-                </p>
-              )}
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -132,9 +125,7 @@ export function PolicyAgencyTab({
       {showCommission ? (
       <section className="ff-card p-4" data-ff-policy-agency-commission="">
         <h2 className="text-base font-semibold text-navy">Commission breakdown</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Rate is computed from the carrier schedule when set — not overridden here.
-        </p>
+
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-helper text-muted-foreground">Premium / GWP</dt>
@@ -162,9 +153,7 @@ export function PolicyAgencyTab({
       {/* 3. Renewal pipeline status */}
       <section className="ff-card p-4" data-ff-policy-agency-renewal="">
         <h2 className="text-base font-semibold text-navy">Renewal pipeline status</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Upcoming / Contacted / Quoted / Bound / Lost — from the renewals board, not just in-force.
-        </p>
+
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-helper text-muted-foreground">Renewal / X-date</dt>
@@ -207,9 +196,7 @@ export function PolicyAgencyTab({
       {/* 4. Download reconciliation — empty until download runs */}
       <section className="ff-card p-4" data-ff-policy-agency-download="">
         <h2 className="text-base font-semibold text-navy">Download reconciliation</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Empty until a carrier download runs for this policy. Buckets stay honest stubs.
-        </p>
+
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
           <div data-ff-policy-recon="matched">
             <dt className="text-helper text-muted-foreground">Matched</dt>

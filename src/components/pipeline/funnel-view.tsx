@@ -55,9 +55,7 @@ export function PipelineFunnelView({
           })}
         </ul>
       )}
-      <p className="mt-3 text-xs text-muted-foreground">
-        Click a stage to open the table filtered to those deals.
-      </p>
+
     </section>
   );
 }

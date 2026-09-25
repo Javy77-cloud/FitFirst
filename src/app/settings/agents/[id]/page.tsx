@@ -208,11 +208,7 @@ export default async function AgentDetailPage({
 
           <section className="ff-card p-4">
             <h2 className="text-sm font-semibold text-navy">Privileges</h2>
-            <p className="mb-3 text-helper text-muted-foreground">
-              Modules are CRM and pipeline. Agency book means the agent sees the whole agency book
-              (same records as admin), still with agent permissions. Office and territory are
-              assignment hooks until a dedicated map lands.
-            </p>
+
             <form action={saveAgentPrivileges} className="space-y-3">
               <input type="hidden" name="userId" value={person.id} />
               <label className="flex items-center gap-2 text-sm">
@@ -249,9 +245,7 @@ export default async function AgentDetailPage({
 
           <section className="ff-card p-4">
             <h2 className="text-sm font-semibold text-navy">Notify</h2>
-            <p className="mb-3 text-helper text-muted-foreground">
-              In-app only. Writes a desk message and an Alerts ping. Nothing emails.
-            </p>
+
             <form action={notifyAgent} className="space-y-3">
               <input type="hidden" name="userId" value={person.id} />
               <Textarea name="body" required className="min-h-20" placeholder="Short note for this agent." />
@@ -279,10 +273,7 @@ export default async function AgentDetailPage({
         <aside className="space-y-3">
           <section className="ff-card p-4">
             <h2 className="text-sm font-semibold text-navy">Performance</h2>
-            <p className="mt-1 text-helper text-muted-foreground">
-              Agent-scoped KPIs and production. Home bot numbers stay on Home when that branch
-              is merged.
-            </p>
+
             <Link
               href={`/scorecards/${person.id}`}
               className="mt-3 inline-block text-sm text-primary hover:underline"

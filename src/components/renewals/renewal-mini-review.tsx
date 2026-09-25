@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -86,7 +85,7 @@ export function RenewalMiniReview({
         <DialogContent className="ff-review-pulse-dialog sm:max-w-md" data-ff-review-pulse="" showCloseButton>
           <DialogHeader>
             <DialogTitle>{headline}</DialogTitle>
-            <DialogDescription>{reviewPulseHint(trigger === "desk" ? "chase" : trigger)}</DialogDescription>
+
           </DialogHeader>
           {question ? (
             <form action={submitRenewalMiniReview} className="ff-review-pulse-form">

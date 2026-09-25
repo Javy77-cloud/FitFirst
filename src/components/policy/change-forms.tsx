@@ -55,10 +55,7 @@ export function EndorsementForm({
   return (
     <form action={fileEndorsement} className="space-y-3">
       <input type="hidden" name="policyId" value={policyId} />
-      <p className="text-base text-muted-foreground">
-        Change in force on this Policy record. Does not open a deal and does not
-        create a new policy.
-      </p>
+
       <div>
         <Label className="text-xs">Reason</Label>
         <FieldSelect name="reason" required className="mt-1">
@@ -116,10 +113,7 @@ export function CancellationForm({ policyId }: { policyId: string }) {
   return (
     <form action={fileCancellation} className="space-y-3">
       <input type="hidden" name="policyId" value={policyId} />
-      <p className="text-base text-muted-foreground">
-        Ends this Policy. Reason and date stay on the record. Documents attach
-        here — not to a replacement quote.
-      </p>
+
       <div>
         <Label className="text-xs">Reason</Label>
         <FieldSelect name="reason" required className="mt-1">
@@ -157,10 +151,7 @@ export function NonRenewalForm({ policyId }: { policyId: string }) {
   return (
     <form action={fileNonRenewal} className="space-y-3">
       <input type="hidden" name="policyId" value={policyId} />
-      <p className="text-base text-muted-foreground">
-        Same end as a cancellation — policy is over — with a non-renewal reason.
-        Docs stay on this Policy.
-      </p>
+
       <div>
         <Label className="text-xs">Reason</Label>
         <FieldSelect name="reason" required className="mt-1">
@@ -198,10 +189,7 @@ export function PolicyAttachForm({ policyId }: { policyId: string }) {
   return (
     <form action={uploadPolicyAttachment} className="space-y-3">
       <input type="hidden" name="policyId" value={policyId} />
-      <p className="text-base text-muted-foreground">
-        Notices and endorsement forms live on the Policy. Shopping decs stay on
-        the deal.
-      </p>
+
       <div>
         <Label className="text-xs">Document type</Label>
         <FieldSelect name="docType" defaultValue="other" className="mt-1">

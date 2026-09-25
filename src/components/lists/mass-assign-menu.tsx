@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -80,9 +79,7 @@ export function MassAssignMenu({
         <DialogContent className="sm:max-w-sm" showCloseButton data-ff-mass-assign-dialog="">
           <DialogHeader>
             <DialogTitle>Assign · {selected.length} selected</DialogTitle>
-            <DialogDescription>
-              {blocked ?? "Change the owner on the selected rows."}
-            </DialogDescription>
+
           </DialogHeader>
           {canAssign ? (
             <div>

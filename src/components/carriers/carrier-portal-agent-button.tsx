@@ -39,9 +39,7 @@ export function CarrierPortalAgentButton({ carrierId }: { carrierId: string }) {
       <Button type="button" size="sm" disabled={busy} onClick={() => void openPortal()}>
         Log in to carrier portal
       </Button>
-      <p className="text-xs text-muted-foreground">
-        Opens the portal in a new tab. FitFirst stays open. Credentials stay with Admin.
-      </p>
+
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );

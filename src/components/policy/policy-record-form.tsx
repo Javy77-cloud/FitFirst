@@ -163,9 +163,7 @@ export function PolicyRecordForm({
       <div className="sm:col-span-2 rounded-md bg-secondary/50 px-3 py-2">
         <div className="text-caption uppercase tracking-wide text-muted-foreground">Policy name</div>
         <div className="text-sm font-semibold text-navy">{autoName}</div>
-        <p className="mt-0.5 text-helper text-muted-foreground">
-          Auto: insured / sub-type / carrier / effective date. Not typed.
-        </p>
+
       </div>
 
       <div>
@@ -353,9 +351,7 @@ export function PolicyRecordForm({
             />
             <span>
               <span className="font-medium text-navy">Insured address same as mailing</span>
-              <span className="mt-0.5 block text-helper text-muted-foreground">
-                Copies the contact or business mailing address onto this policy.
-              </span>
+
             </span>
           </label>
           <div className="sm:col-span-2">

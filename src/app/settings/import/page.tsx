@@ -21,13 +21,7 @@ export default async function ImportSettingsPage({
 
   return (
     <SettingsShell title="Import" current="import">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        CSV import on this page is not wired. The live book path is Zoho JSONL: copy dumps
-        into <code>import/zoho/</code>, then <code>npm run db:import-zoho</code>. Only run{" "}
-        <code>npm run db:wipe-crm</code> when you intend to replace the book. If lists are
-        empty for an agent after an older import, run <code>npm run db:assign-owner</code> —
-        it only fills null <code>owner_id</code>. Do not wipe a live book.
-      </p>
+
       <p className="mb-4 text-sm">
         <Link href={IMPORT_EXPORT_HUB_HREF} className="text-primary hover:underline">
           Back to Import / Export
@@ -37,7 +31,7 @@ export default async function ImportSettingsPage({
       {selected ? (
         <section className="ff-card mb-4 space-y-3 p-4" data-pack={selected.id}>
           <div className="text-sm font-semibold text-navy">{selected.label}</div>
-          <p className="text-sm text-muted-foreground">{selected.blurb}</p>
+
           <div>
             <p className="mb-1 text-xs text-muted-foreground">CSV</p>
             <ChooseFiles name="file" accept=".csv,text/csv" disabled />
@@ -50,9 +44,7 @@ export default async function ImportSettingsPage({
             Import CSV (not configured)
           </button>
         </section>
-      ) : (
-        <p className="mb-4 text-sm text-muted-foreground">Pick a pack. Nothing uploads from here.</p>
-      )}
+      ) : null}
 
       <ul className="grid gap-2 sm:grid-cols-2">
         {IMPORT_EXPORT_PACKS.map((pack) => (
@@ -66,7 +58,7 @@ export default async function ImportSettingsPage({
               }
             >
               {pack.label}
-              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{pack.blurb}</span>
+
             </Link>
           </li>
         ))}

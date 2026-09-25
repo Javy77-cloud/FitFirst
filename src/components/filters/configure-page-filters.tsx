@@ -226,15 +226,6 @@ function ConfigureDialog({
   onRemoveOption: (filterId: string, index: number) => void;
   onSave: () => void;
 }) {
-  const title = titleCaseLabel(
-    module === "businesses"
-      ? "Accounts"
-      : module === "deals-pipeline"
-        ? "Deals Pipeline"
-        : module === "renewals-pipeline"
-          ? "Renewals Pipeline"
-          : module,
-  );
   // All filter cards start collapsed; expand one or more as needed.
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   /** null = not seeded yet. Seed on first non-empty draft (prefs load) without expanding. */
@@ -277,10 +268,7 @@ function ConfigureDialog({
             <h2 id="ff-page-filters-title" className="text-base font-semibold text-[#002868]">
               Configure Page Filters
             </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {title} Filter fields. Keep, disable, delete, reorder, or add filters. Remap onto
-              available fields. Option colors are yours.
-            </p>
+
           </div>
           <Button type="button" size="xs" variant="ghost" onClick={onClose}>
             Close
@@ -288,7 +276,7 @@ function ConfigureDialog({
         </div>
         <div className="flex-1 space-y-3 overflow-auto px-4 py-3">
           {draft.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No filters. Add one or reset to defaults.</p>
+            <p className="text-sm text-muted-foreground">No filters.</p>
           ) : null}
           {(draft ?? []).map((row) => {
             const expanded = expandedIds.includes(row.id);

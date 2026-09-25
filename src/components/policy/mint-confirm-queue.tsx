@@ -92,11 +92,7 @@ export function MintConfirmQueue({
     return (
       <section className="ff-card mx-auto max-w-lg space-y-3 p-5" data-ff-mint-confirm-empty="">
         <h2 className="text-lg font-semibold text-navy">Policy looks good?</h2>
-        <p className="text-sm text-muted-foreground">
-          {blockReason
-            ? blockReason
-            : "Review every field on this policy. When everything looks correct, click Policy looks good to publish."}
-        </p>
+
         <Button
           type="button"
           data-ff-publish-minted-policy=""

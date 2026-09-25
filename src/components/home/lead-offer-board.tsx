@@ -34,11 +34,7 @@ export function LeadOfferBoard({
           <Handshake className="size-3.5 text-fit-flag" />
           Management lead offers
         </h3>
-        <p className="text-[11px] text-muted-foreground">
-          Desk-wide. Referral: agents raise a hand, Admin awards. Inbound email or a routing miss:
-          take ownership and the Lead. Unassigned routing posts here when no territory / line /
-          capacity match.
-        </p>
+
       </div>
       {offers.length === 0 ? (
         <p className="px-4 py-5 text-sm text-muted-foreground">No open or recent offers.</p>

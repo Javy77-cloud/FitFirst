@@ -22,10 +22,7 @@ export function LogClaimForm({
   return (
     <form action={logClaim} className="ff-card space-y-3 p-4">
       <h2 className="text-base font-semibold text-navy">Log a notice</h2>
-      <p className="text-base text-muted-foreground">
-        Use this when the insured asks the agency to record a claim. Then send them to the
-        carrier site — nothing here files FNOL.
-      </p>
+
       {policyId && policies.length === 0 ? (
         <input type="hidden" name="policyId" value={policyId} />
       ) : (

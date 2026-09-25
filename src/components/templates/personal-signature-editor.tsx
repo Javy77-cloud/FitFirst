@@ -30,11 +30,7 @@ export function PersonalSignatureEditor({
           onChange={(event) => setValue(event.target.value)}
           placeholder="Leave blank to use the agency close."
         />
-        <p className="text-xs text-muted-foreground">
-          {usingAgency
-            ? "Empty = inherit the Admin agency signature. Templates still merge {{signature}}."
-            : "This personal close overrides the agency signature on mail you send. It does not fork templates."}
-        </p>
+
       </div>
       <div className="rounded-md border border-border bg-white px-3 py-3">
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

@@ -20,7 +20,7 @@ export default async function EnrollMfaPage({
     return (
       <div className="mx-auto max-w-lg p-6">
         <h1 className="text-xl font-semibold text-navy">2FA already enrolled</h1>
-        <p className="mt-2 text-sm text-muted-foreground">This login can open the desk.</p>
+
         <Link href="/" className="mt-4 inline-block text-sm text-primary hover:underline">
           Back to the desk
         </Link>
@@ -35,10 +35,7 @@ export default async function EnrollMfaPage({
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
         <h1 className="text-2xl font-semibold text-navy">Enroll 2FA before the desk opens</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Password is not enough. Pick SMS stub, email stub, or an authenticator. Javy and Maya
-          are seeded already enrolled so Mac desk-test can skip this gate.
-        </p>
+
         <p className="mt-1 text-sm text-navy">Signed in as {user.name} · {user.email}</p>
       </div>
       <MfaEnrollPanel

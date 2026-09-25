@@ -24,11 +24,7 @@ export default async function DeveloperHubPage() {
 
   return (
     <SettingsShell title="Developer Hub" current="developer-hub">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Same records as Automations. Settings lists this hub once under Automations & Developer —
-        macros stay at /automations/macros. This page is the alias for API, webhooks, widgets,
-        buttons, and scripts. Macros never schedule or auto-fire.
-      </p>
+
       <div className="mb-6 grid gap-3 md:grid-cols-2">
         {DEV_HUB_SECTIONS.map((section) => (
           <Link
@@ -46,7 +42,7 @@ export default async function DeveloperHubPage() {
                     : "Core branch"}
               </span>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">{section.hint}</p>
+
           </Link>
         ))}
       </div>

@@ -33,13 +33,11 @@ export const dynamic = "force-dynamic";
 function OptionList({
   book,
   title,
-  hint,
   options,
   canEdit,
 }: {
   book: "life" | "health";
   title: string;
-  hint: string;
   options: LineSubfilterOption[];
   canEdit: boolean;
 }) {
@@ -47,20 +45,15 @@ function OptionList({
     <CollapsibleListCard
       cardId={`line-${book}`}
       header={
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-semibold tracking-tight text-navy">{title}</h2>
-            <span className="ff-list-count">{options.length}</span>
-          </div>
-          <p className="text-helper text-muted-foreground">{hint}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-sm font-semibold tracking-tight text-navy">{title}</h2>
+          <span className="ff-list-count">{options.length}</span>
         </div>
       }
       items={
         options.length === 0
           ? [
-              <p key="empty" className="px-1 py-1 text-sm text-muted-foreground">
-                No options. Add one below.
-              </p>,
+              <p key="empty" className="px-1 py-1 text-sm text-muted-foreground">No options.</p>,
             ]
           : options.map((option) => (
               <div
@@ -145,10 +138,7 @@ function OrphanLobList({
             <h2 className="text-sm font-semibold tracking-tight text-navy">Unlisted values</h2>
             <span className="ff-list-count">{orphans.length}</span>
           </div>
-          <p className="text-helper text-muted-foreground">
-            Stored deal and policy lines that are not on the catalog. Adopt them as a new line, or
-            map them onto an existing code. Records are never deleted.
-          </p>
+
         </div>
       }
       actions={
@@ -229,19 +219,14 @@ function MasterLobList({
             <h2 className="text-sm font-semibold tracking-tight text-navy">Agency catalog</h2>
             <span className="ff-list-count">{rows.length}</span>
           </div>
-          <p className="text-helper text-muted-foreground">
-            Every deal, policy, and form picks one line from this list. Turn a row off to hide it
-            from pickers. Built-in lines stay; custom lines can be deleted.
-          </p>
+
           <FamilyCountChips rows={rows} />
         </div>
       }
       items={
         rows.length === 0
           ? [
-              <p key="empty" className="px-1 py-1 text-sm text-muted-foreground">
-                No lines yet. Seed the desk or add one below.
-              </p>,
+              <p key="empty" className="px-1 py-1 text-sm text-muted-foreground">No lines yet.</p>,
             ]
           : rows.map((row) => (
               <div
@@ -386,17 +371,7 @@ export default async function LinesSettingsPage() {
 
   return (
     <SettingsShell title="Lines of business" current="lines">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        This is the agency master list. Deals, policies, and forms pick one line from it. Hide Life
-        or Health when this desk does not write those books — navigation and pipeline boards follow
-        the toggles. Selling Agency stays off the day-to-day desk unless you turn the picklists on.
-      </p>
 
-      {!session.isAdmin ? (
-        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Line setup is Admin only. Agents still see only the books this agency writes.
-        </p>
-      ) : null}
 
       <form action={saveWrittenLines} className="ff-list-card mb-4 max-w-2xl">
         <div className="ff-list-card-body space-y-3">
@@ -406,9 +381,7 @@ export default async function LinesSettingsPage() {
             <input type="checkbox" name="writeLife" value="true" defaultChecked={settings.writeLife} className="mt-1" />
             <span>
               <span className="font-medium text-navy">Write Life</span>
-              <span className="mt-0.5 block text-helper text-muted-foreground">
-                Life pipeline, nav, and Life book filters. Off for P&amp;C-only desks.
-              </span>
+
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm">
@@ -421,9 +394,7 @@ export default async function LinesSettingsPage() {
             />
             <span>
               <span className="font-medium text-navy">Write Health</span>
-              <span className="mt-0.5 block text-helper text-muted-foreground">
-                Health pipeline, nav, and Health book filters. Off when you do not write health.
-              </span>
+
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm">
@@ -436,10 +407,7 @@ export default async function LinesSettingsPage() {
             />
             <span>
               <span className="font-medium text-navy">Show selling-agency picklists</span>
-              <span className="mt-0.5 block text-helper text-muted-foreground">
-                Default is hidden. Turn on only if this desk places through more than one selling
-                agency (AFA, First Connect, Agentero, Agility, BackNine).
-              </span>
+
             </span>
           </label>
           {session.isAdmin ? (
@@ -460,14 +428,12 @@ export default async function LinesSettingsPage() {
         <OptionList
           book="life"
           title="Life subfilters"
-          hint="Chips on the Life book: Term Life, Whole Life, IUL, Final Expense. Add or delete for this agency."
           options={settings.lifeOptions}
           canEdit={session.isAdmin}
         />
         <OptionList
           book="health"
           title="Health subfilters"
-          hint="Chips on the Health book: Marketplace, Medicare Advantage, Medicare A&B, Supplemental."
           options={settings.healthOptions}
           canEdit={session.isAdmin}
         />

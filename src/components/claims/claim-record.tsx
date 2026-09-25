@@ -179,9 +179,7 @@ export function ClaimRecord({
 
       <section className="ff-card p-4">
         <h3 className="text-sm font-semibold text-navy">Update FNOL fields</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Desk fields only. Adding a carrier claim number pings the producer again.
-        </p>
+
         <form action={updateClaim} className="mt-3 grid gap-3 sm:grid-cols-2">
           <input type="hidden" name="claimId" value={claim.id} />
           <input type="hidden" name="postedBy" value={postedBy} />

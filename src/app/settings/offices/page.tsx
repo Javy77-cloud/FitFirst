@@ -31,15 +31,9 @@ export default async function OfficesSettingsPage({
 
   return (
     <SettingsShell title="Offices" current="offices">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Physical desks. An agent can sit in more than one office — including offices in different
-        states. Admin assigns people here. Agents cannot open this page.
-      </p>
 
       {officeRows.length === 0 ? (
-        <p className="mb-4 rounded-md border border-dashed border-border bg-card px-3 py-6 text-sm text-muted-foreground">
-          No offices yet. Add Palm Bay or another desk below.
-        </p>
+        <p className="mb-4 rounded-md border border-dashed border-border bg-card px-3 py-6 text-sm text-muted-foreground">No offices yet.</p>
       ) : (
         <ul className="mb-4 grid gap-3 lg:grid-cols-2">
           {officeRows.map((office) => {
@@ -75,9 +69,7 @@ export default async function OfficesSettingsPage({
           <h2 className="text-sm font-semibold text-navy">
             {editing ? `Edit ${editing.name}` : "Add office"}
           </h2>
-          <p className="mt-1 text-helper text-muted-foreground">
-            Name, state(s), address, optional timezone. Check every agent who works this desk.
-          </p>
+
         </div>
         <form action={saveOffice} className="space-y-3">
           {editing ? <input type="hidden" name="id" value={editing.id} /> : null}

@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -120,11 +119,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates?: FollowUpTemp
         <DialogContent className="w-[min(100%-2rem,900px)] max-w-[900px] gap-3 overflow-visible p-5 sm:max-w-[900px]">
           <DialogHeader>
             <DialogTitle>Follow-up Templates</DialogTitle>
-            <DialogDescription>
-              Each template maps to one status. New starts Aggressive. Contacted starts Default.
-              Warm starts Steady. Cold starts Drip. Overrides stay per lead. Each step has Remind
-              via (Task, Pop-up, or Email).
-            </DialogDescription>
+
           </DialogHeader>
           <div className="space-y-3">
             {editing ? (

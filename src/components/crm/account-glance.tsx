@@ -28,9 +28,7 @@ export function AccountGlance({
   return (
     <section className="ff-card mb-4 p-4" data-ff-at-a-glance="" data-ff-glance-open={defaultOpen ? "1" : "0"}>
       <h2 className="text-base font-semibold text-navy">At a Glance</h2>
-      <p className="mt-1 text-helper text-muted-foreground">
-        Related Policies, Shops, And Activity On This Record. Quotes On A Deal Are Not Policies.
-      </p>
+
       <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
         <div>
           <dt className="text-muted-foreground">Policies</dt>

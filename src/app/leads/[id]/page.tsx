@@ -154,7 +154,7 @@ export default async function LeadDetailPage({
           {deal ? <StagePill stage={deal.pipelineStage} /> : null}
           <span className="text-muted-foreground">{sourceLabel(lead.source ?? "manual")}</span>
           <span className="text-muted-foreground">
-            {ownerName ? `Owner · ${ownerName}` : "Unassigned"}
+            {ownerName ? `Producer · ${ownerName}` : "Unassigned"}
           </span>
           {lineLabel ? <span className="text-muted-foreground">{lineLabel}</span> : null}
           {lead.preferredLanguage ? (
@@ -196,9 +196,7 @@ export default async function LeadDetailPage({
       {session.isAdmin && !lead.ownerId && isInboundSocialSource(lead.source) ? (
         <div className="mb-4 ff-card p-4">
           <h2 className="text-sm font-semibold text-navy">Award this inbound</h2>
-          <p className="mb-2 text-helper text-muted-foreground">
-            Agency-level social / inbound. Awarding assigns the Lead and pings that agent.
-          </p>
+
           <AwardLeadForm leadId={lead.id} agents={agents} next={`/leads/${lead.id}`} />
         </div>
       ) : null}
@@ -231,18 +229,14 @@ export default async function LeadDetailPage({
             <section id="activity" className="ff-card space-y-3 p-4" data-ff-lead-activity-section="">
               <div>
                 <h2 className="text-base font-semibold text-navy">Activity</h2>
-                <p className="text-xs text-muted-foreground">
-                  Tasks, Meetings, Calls, Emails, SMS — same set as contacts and deals.
-                </p>
+
               </div>
               <LeadActivityPanels itemsByKind={activityByKind} />
             </section>
             <section id="related" className="ff-card space-y-3 p-4" data-ff-lead-related="">
               <div>
                 <h2 className="text-base font-semibold text-navy">Related</h2>
-                <p className="text-xs text-muted-foreground">
-                  Deal created from this lead — no policy until bind
-                </p>
+
               </div>
               {deal ? (
                 <p className="flex flex-wrap items-center gap-2 text-sm">
@@ -250,10 +244,7 @@ export default async function LeadDetailPage({
                   <StagePill stage={deal.pipelineStage} />
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  No deal yet. Convert when you start the shop. Line files already on this lead come with
-                  it.
-                </p>
+                <p className="text-sm text-muted-foreground">No deal yet.</p>
               )}
             </section>
           </>

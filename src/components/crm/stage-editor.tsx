@@ -9,9 +9,7 @@ export function StageEditor({ stages }: { stages: PipelineStageRow[] }) {
   return (
     <section className="ff-card p-4">
       <h2 className="text-sm font-semibold text-navy">Stage editor</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Add, relabel, or delete columns. Bound is locked — bind is the only way a deal lands there.
-      </p>
+
       <ul className="mt-3 space-y-2">
         {stages.map((stage) => (
           <li key={stage.id} className="flex flex-wrap items-center gap-2">

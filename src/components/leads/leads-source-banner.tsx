@@ -32,16 +32,7 @@ export function LeadsSourceBanner({
       ) : (
         <p className="ff-leads-source-quiet">No source on this queue yet.</p>
       )}
-      <p className="ff-leads-source-leader" data-ff-leads-source-leader="">
-        {leader ? (
-          <>
-            <strong>{leader.label}</strong>
-            <span>{leader.share}% of this queue</span>
-          </>
-        ) : (
-          <span>Set a source when the lead comes in.</span>
-        )}
-      </p>
+
     </section>
   );
 }

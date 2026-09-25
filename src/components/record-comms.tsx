@@ -56,12 +56,7 @@ export function RecordComms({
   const related = { contactId, accountId, policyId, dealId, leadId };
   return (
     <div className="space-y-4">
-      {autoSaveHint || hideManualLogs ? (
-        <p className="text-xs text-muted-foreground">
-          Email, call, or text from this record. The timeline only logs what the desk sends or
-          receives through integrations — there is no typed email or SMS log.
-        </p>
-      ) : null}
+      {autoSaveHint || hideManualLogs ? null : null}
       <div className="flex flex-wrap gap-2">
         {phone ? (
           <a href={`tel:${phone}`} className="rounded-md border border-border px-2.5 py-1 text-sm text-primary">
@@ -100,9 +95,7 @@ export function RecordComms({
           {email ? <input type="hidden" name="toAddress" value={email} /> : null}
           <div className="sm:col-span-2">
             <p className="text-xs font-semibold text-navy">Queue Email</p>
-            <p className="text-[11px] text-muted-foreground">
-              Logs intent on the timeline and the outbound queue. Nothing sends — vendor later.
-            </p>
+
           </div>
           {templates.length ? (
             <div className="sm:col-span-2">
@@ -137,9 +130,7 @@ export function RecordComms({
           {email ? <input type="hidden" name="fromAddress" value={email} /> : null}
           <div className="sm:col-span-2">
             <p className="text-xs font-semibold text-navy">Log inbound email</p>
-            <p className="text-[11px] text-muted-foreground">
-              Same thread as outbound when the subject matches (Re:/Fwd: stripped).
-            </p>
+
           </div>
           <div className="sm:col-span-2">
             <Label className="text-xs">Subject</Label>
@@ -164,9 +155,7 @@ export function RecordComms({
           {hideManualLogs ? <input type="hidden" name="direction" value="outbound" /> : null}
           <div className="sm:col-span-2">
             <p className="text-xs font-semibold text-navy">{hideManualLogs ? "Queue SMS" : "Text / SMS"}</p>
-            <p className="text-[11px] text-muted-foreground">
-              Outbound texts queue as intent. Nothing texts a client from this desk.
-            </p>
+
           </div>
           {hideManualLogs ? null : (
             <div>

@@ -74,10 +74,7 @@ export function ElsewhereCoverageEditor({
     >
       <input type="hidden" name="field_elsewhere_coverage" value={serializeElsewhereCoverage(rows)} />
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground" data-ff-elsewhere-empty="">
-          No coverage on file with another carrier. Add a row when this party has a line elsewhere —
-          renewal date is the chase trigger.
-        </p>
+        <p className="text-sm text-muted-foreground" data-ff-elsewhere-empty="">No coverage on file with another carrier.</p>
       ) : (
         <ul className="space-y-2" data-ff-elsewhere-list="">
           {rows.map((row, index) => (

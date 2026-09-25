@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -92,7 +91,7 @@ export function LinkedBusinessLine({
         <DialogContent className="sm:max-w-md" data-ff-link-business-dialog="">
           <DialogHeader>
             <DialogTitle>Link Account</DialogTitle>
-            <DialogDescription>Search an existing account.</DialogDescription>
+
           </DialogHeader>
           <Input
             className="h-8"

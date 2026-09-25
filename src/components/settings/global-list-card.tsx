@@ -119,7 +119,7 @@ export function GlobalListCard({
               <h2 className="text-sm font-semibold tracking-tight text-navy">{title}</h2>
               <span className="ff-list-count">{sorted.length}</span>
             </div>
-            <p className="text-helper text-muted-foreground">A–Z · click Color for the full palette</p>
+
           </div>
         }
         actions={

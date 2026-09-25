@@ -36,19 +36,13 @@ export function ContactTimeline({ items }: { items: TimelineItem[] }) {
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Nothing from the desk yet. Email, SMS, calls, meetings, and tasks done from this contact
-        land here automatically. There is no typed activity log.
-      </p>
+      <p className="text-sm text-muted-foreground">Nothing from the desk yet.</p>
     );
   }
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
-        Auto-saved from the desk — inbound and outbound. Emails stay as one conversation. SMS,
-        calls, meetings, and tasks share this timeline. Desk stubs only; no Twilio or SendGrid.
-      </p>
+
       {threads.length > 0 ? (
         <ol className="space-y-3">
           {threads.map((thread) => (

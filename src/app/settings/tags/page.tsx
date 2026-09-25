@@ -36,10 +36,7 @@ export default async function ManageTagsPage({
 
   return (
     <SettingsShell title="Manage Tags" current="tags">
-      <p className="mb-4 text-sm text-muted-foreground">
-        Each module has its own catalog. Create, rename, color, merge, or delete here — assigning a
-        tag on a row never creates a new one.
-      </p>
+
       <div className="mb-4 flex flex-wrap gap-2">
         {TAG_MODULES.map((item) => (
           <Link

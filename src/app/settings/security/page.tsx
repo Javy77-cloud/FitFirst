@@ -29,10 +29,6 @@ export default async function SecuritySettingsPage({
 
   return (
     <SettingsShell title="Security" current="security" allowMfaPending>
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Password plus one second factor. SMS and email are stubs — the desk prints the code. TOTP
-        is a real authenticator secret. Seed logins stay enrolled so 7pm desk-test is not blocked.
-      </p>
 
       {params.saved === "password" ? (
         <p className="mb-4 rounded-md bg-fit-green-bg px-3 py-2 text-sm text-navy">Password updated.</p>

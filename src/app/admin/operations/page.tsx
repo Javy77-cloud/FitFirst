@@ -14,17 +14,13 @@ export default async function OperationsHubPage() {
 
   return (
     <AppShell title="Operations">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Agency operations. Agents never see this folder.
-      </p>
+
       <ul className="space-y-2">
         <li>
           <Link href="/admin/operations/carrier-history" className="text-sm text-primary hover:underline">
             Carrier history
           </Link>
-          <p className="text-helper text-muted-foreground">
-            Admin only. Last pull, fields captured, confidence, and correction rules.
-          </p>
+
         </li>
         {links.map((link) => (
           <li key={link.id}>

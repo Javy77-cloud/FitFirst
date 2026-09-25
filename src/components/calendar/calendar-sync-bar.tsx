@@ -161,13 +161,7 @@ export function CalendarSyncBar({
                 <p className="text-xs leading-snug text-navy" data-ff-oauth-wall="">
                   {byoOauthWallCopy(lastOauthError)}
                 </p>
-              ) : notice === "admin-only" ? (
-                <p className="text-xs leading-snug text-navy">Only Agency Admin can connect Google Calendar.</p>
-              ) : (
-                <p className="text-xs leading-snug text-navy">
-                  Show Google events on this desk.
-                </p>
-              )}
+              ) : notice === "admin-only" ? null : null}
               {canConnect ? (
                 <form action={startByoOauth}>
                   <input type="hidden" name="provider" value="google_calendar" />

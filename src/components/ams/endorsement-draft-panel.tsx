@@ -39,9 +39,7 @@ export function EndorsementDraftPanel({
         </p>
       ) : null}
       {drafts.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No endorsement wording stubs on this Policy. Draft one below — it does not file.
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">No endorsement wording stubs on this Policy.</p>
       ) : (
         <ul className="mt-3 divide-y divide-border rounded-md border border-border">
           {drafts.map((draft) => (

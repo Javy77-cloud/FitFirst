@@ -36,15 +36,9 @@ export default async function TerritoriesSettingsPage({
 
   return (
     <SettingsShell title="Territories" current="territories">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Geo books — states, counties, or a freeform label. Link offices when a desk covers that
-        ground. Agents can be assigned here or picked up through a linked office.
-      </p>
 
       {territoryRows.length === 0 ? (
-        <p className="mb-4 rounded-md border border-dashed border-border bg-card px-3 py-6 text-sm text-muted-foreground">
-          No territories yet. Add Space Coast or another book below.
-        </p>
+        <p className="mb-4 rounded-md border border-dashed border-border bg-card px-3 py-6 text-sm text-muted-foreground">No territories yet.</p>
       ) : (
         <ul className="mb-4 grid gap-3">
           {territoryRows.map((territory) => {
@@ -79,10 +73,7 @@ export default async function TerritoriesSettingsPage({
           <h2 className="text-sm font-semibold text-navy">
             {editing ? `Edit ${editing.name}` : "Add territory"}
           </h2>
-          <p className="mt-1 text-helper text-muted-foreground">
-            Linked offices are optional. Home can filter this territory even when offices sit in
-            different states.
-          </p>
+
         </div>
         <form action={saveTerritory} className="space-y-3">
           {editing ? <input type="hidden" name="id" value={editing.id} /> : null}

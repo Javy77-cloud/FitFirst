@@ -552,7 +552,6 @@ export function FieldBuilder({
     setLayout((current) => insertFieldAfter(current, key, copy.key));
   }
 
-
   return (
     <div
       className="space-y-4"
@@ -569,11 +568,7 @@ export function FieldBuilder({
         <input type="hidden" name="layout" value={JSON.stringify(layout)} />
         <input type="hidden" name="fields" value={JSON.stringify(fields)} />
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">
-            {module === "deals"
-              ? "Save applies to every deal."
-              : `Save applies to every ${moduleLabel.toLowerCase()} record.`}
-          </p>
+
           <div className="flex items-center gap-2">
             <Button
               type="button"
