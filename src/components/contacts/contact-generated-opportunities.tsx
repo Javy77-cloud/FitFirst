@@ -36,10 +36,7 @@ export function ContactGeneratedOpportunities({
 
   return (
     <div className="min-w-0 space-y-1.5" data-ff-generated-opportunities="">
-      <p className="text-[11px] text-muted-foreground">
-        Generated from policies in force with us, {CONTACT_EXTERNAL_COVERAGE_LABEL.toLowerCase()},
-        and recent life events. Agents do not type these.
-      </p>
+
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground" data-ff-generated-opportunities-empty="">
           No open household gaps on the lines this desk checks.

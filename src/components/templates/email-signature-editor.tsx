@@ -182,15 +182,11 @@ export function EmailSignatureEditor({
               onChange={(event) => (locale === "en" ? setEn(event.target.value) : setEs(event.target.value))}
               className="font-mono text-sm"
             />
-            <p className="text-[11px] text-muted-foreground">
-              Mobile-safe HTML. Templates insert this close with {`{{signature}}`}.
-            </p>
+
           </div>
           <div className="ff-card space-y-2 p-4" data-ff-signature-preview="">
             <h2 className="text-sm font-semibold text-navy">Live preview</h2>
-            <p className="text-[11px] text-muted-foreground">
-              Sample HO3 to Marcus. Agency tokens resolve. Personal closes override this on send.
-            </p>
+
             <div
               className="min-h-40 rounded-md border border-border bg-white px-3 py-3 text-sm leading-6 text-navy"
               dangerouslySetInnerHTML={{

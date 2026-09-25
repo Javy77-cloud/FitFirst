@@ -94,23 +94,13 @@ export function PolicyDocumentsTab({
             <div className="mt-3">
               <FillCompareFromDecsButton policyId={policy.id} />
             </div>
-          ) : (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Use the Term role column on each file (or filename → Set term role). Mark Prior or
-              Current plus Renewal to unlock Fill Compare.
-            </p>
-          )}
-          <p className="mt-2 text-xs text-muted-foreground">
-            AOR-change renewals use this same Documents home; API later drops into the same place.
-          </p>
+          ) : null}
+
         </section>
       ) : null}
       <section className="ff-card p-4">
         <h2 className="text-base font-semibold text-navy">Policy documents</h2>
-        <p className="mt-1 text-base text-muted-foreground">
-          Auto-tagged by type. Filter / sort below. Re-upload keeps version history. ID / COI /
-          inspection warn at 30 days when an expiry is set.
-        </p>
+
         <PolicyDocumentsAttach
           policyId={policy.id}
           dealId={policy.dealId}
@@ -119,17 +109,13 @@ export function PolicyDocumentsTab({
         {canFillCompare && !showManualRenewalHelp ? (
           <div className="my-3 flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/20 p-3">
             <FillCompareFromDecsButton policyId={policy.id} />
-            <p className="text-xs text-muted-foreground">
-              Extracts Prior/Current + Renewal DECs into Compare (premium $ and %).
-            </p>
+
           </div>
         ) : null}
         <div className="my-3 space-y-2 rounded-md border border-dashed border-border p-3" data-ff-id-cards-quiet="">
           <div>
             <h3 className="text-sm font-semibold text-navy">Upload ID cards</h3>
-            <p className="text-xs text-muted-foreground">
-              Always available here — no reminder popup. Pick, clear, rename, multi-file OK.
-            </p>
+
           </div>
           <IdCardsUploadPanel policyId={policy.id} dealId={policy.dealId} compact />
         </div>
@@ -196,17 +182,11 @@ export function PolicyDocumentsTab({
         envelope={envelope}
         notice={notice}
       />
-      <p className="text-xs text-muted-foreground">
-        In-desk e-sign stub — template packets and per-signer status. Finish-line DocuSign stays
-        parked.
-      </p>
 
       {isAdmin ? (
         <section className="ff-card p-4" data-ff-doc-access-log="">
           <h2 className="text-base font-semibold text-navy">Document access log</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Agency-only. Agents see files, not this log.
-          </p>
+
           {accessLog.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">No access events recorded yet.</p>
           ) : (

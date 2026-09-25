@@ -35,11 +35,7 @@ export function LearningConsentCheckbox({
         />
         <span>
           <span className="block text-sm font-medium text-navy">{LEARNING_POOL_CONSENT_LABEL}</span>
-          <span id="learning-consent-help" className="mt-1 block text-sm text-muted-foreground">
-            {consentLive
-              ? LEARNING_POOL_CONSENT_HELP
-              : "Dormant until purchase. The box stays off. Raw data stays in your agency. You still get the seed library."}
-          </span>
+
           <span className="mt-1 block text-xs text-muted-foreground">
             Terms {LEARNING_POOL_TERMS_VERSION}
           </span>

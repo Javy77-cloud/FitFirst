@@ -19,10 +19,7 @@ export function AccountClaimsPanel({
             Claims on this account
           </div>
           <p className="text-lg font-semibold text-navy">{claimCountsLabel(summary)}</p>
-          <p className="text-base text-muted-foreground">
-            {contactName}: every claim hangs off one policy. Open = inquiry or referred to
-            carrier.
-          </p>
+
         </div>
         <Link href="/claims" className="text-sm text-primary hover:underline">
           All desk claims

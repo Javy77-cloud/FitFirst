@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -90,10 +89,7 @@ function CreateEndorsementDialog({ policyId }: { policyId: string }) {
       <DialogContent className="sm:max-w-md" data-ff-create-endorsement-dialog="">
         <DialogHeader>
           <DialogTitle>Create endorsement</DialogTitle>
-          <DialogDescription>
-            Starts a draft from this policy at Drafted. Advance through submitted → approved → filed
-            → effective on the list.
-          </DialogDescription>
+
         </DialogHeader>
         <form action={createEndorsementDraft} className="space-y-3">
           <input type="hidden" name="policyId" value={policyId} />
@@ -189,9 +185,7 @@ export function PolicyEndorsementsTab({
           Drafted → Submitted → Approved → Filed → Effective
         </p>
         {drafts.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">
-            No endorsement drafts yet. Create one to start at Drafted.
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">No endorsement drafts yet.</p>
         ) : (
           <ul className="mt-3 divide-y divide-border rounded-md border border-border">
             {drafts.map((draft) => {

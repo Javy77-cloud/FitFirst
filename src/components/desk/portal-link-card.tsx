@@ -29,9 +29,7 @@ export function PortalLinkCard({
           Change request
         </Link>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Public token link. No password. Requests land on the work queue — do not rekey.
-      </p>
+
     </div>
   );
 }

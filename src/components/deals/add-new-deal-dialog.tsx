@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -128,11 +127,7 @@ export function AddNewDealDialog({
             <DialogTitle>
               {step === "choose" ? "Add New Deal" : "Existing Contact / Deal"}
             </DialogTitle>
-            <DialogDescription>
-              {step === "choose"
-                ? "Pick products across Personal, Commercial, Life, and Health. Then start blank or copy an existing contact. Nothing is saved until Save Deal."
-                : "Search by deal name or contact name. Picking one opens the create form with details copied — Save Deal creates the record."}
-            </DialogDescription>
+
           </DialogHeader>
 
           <DealFlowRail current="create" />
@@ -182,11 +177,7 @@ export function AddNewDealDialog({
                 className="max-h-56 overflow-auto rounded-md border border-border bg-card"
                 data-ff-add-deal-search-results=""
               >
-                {!query.trim() ? (
-                  <li className="px-3 py-2 text-sm text-muted-foreground">
-                    Type to search deals and contacts.
-                  </li>
-                ) : searching && hits.length === 0 ? (
+                {!query.trim() ? null : searching && hits.length === 0 ? (
                   <li className="px-3 py-2 text-sm text-muted-foreground">Searching…</li>
                 ) : hits.length === 0 ? (
                   <li className="px-3 py-2 text-sm text-muted-foreground">

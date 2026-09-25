@@ -40,7 +40,7 @@ export default async function EmailSettingsPage({
       ) : null}
       {notice === "credentials-saved" ? (
         <p className="mb-3 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-2 text-sm text-navy">
-          Google Client ID and Secret saved. Click Connect Gmail to finish.
+          Google Client ID and Secret saved.
         </p>
       ) : null}
       {notice === "byo-connected" ? (
@@ -49,17 +49,7 @@ export default async function EmailSettingsPage({
         </p>
       ) : null}
       {notice === "oauth-wall" ? <ByoOauthWallNotice lastOauthError={wallError} /> : null}
-      {notice === "admin-only" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
-          Only Agency Admin can connect the agency mailbox (unless People &amp; access allows personal Google).
-        </p>
-      ) : null}
-      <p className="mb-4 text-sm text-muted-foreground">
-        Gmail is one-click Google Connect — Admin can paste, replace, or clear Google Client ID and
-        Secret on the card. Yahoo Mail stays BYO OAuth. Agency Admin connects the agency inbox; a
-        solo Admin who also works the desk can connect personal Gmail. FitFirst does not host mail.
-        Outlook / Zoho stay unwired. Templates and signatures stay under Brand / lists.
-      </p>
+
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link href="/settings/email-templates" className="text-primary hover:underline">
           Email templates

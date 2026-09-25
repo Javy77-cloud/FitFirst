@@ -7,7 +7,6 @@ import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -116,7 +115,7 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
                     {capabilityLabel(pack)}
                   </span>
                 </div>
-                <p className="mt-1 flex-1 text-xs text-muted-foreground">{pack.hint}</p>
+
                 <p className="mt-2 text-[11px] text-muted-foreground">Match: {pack.match}</p>
                 {pack.coming ? <p className="mt-1 text-[11px] text-muted-foreground">{pack.coming}</p> : null}
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -167,9 +166,7 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
 
       <section className="ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Job history</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Who ran the job, when, which entity, rows that landed, and an error CSV when a row failed.
-        </p>
+
         {jobs.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No import or export jobs yet.</p>
         ) : (
@@ -222,9 +219,7 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl" showCloseButton>
           <DialogHeader>
             <DialogTitle>Import {active?.label}</DialogTitle>
-            <DialogDescription>
-              Upload a CSV, dry-run the match, then commit. Import never deletes customer rows.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="space-y-3">
             <ChooseFiles

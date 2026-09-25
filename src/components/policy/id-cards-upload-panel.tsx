@@ -111,12 +111,7 @@ export function IdCardsUploadPanel({
       className={compact ? "space-y-2" : "space-y-3 rounded-md border border-border bg-muted/10 p-3"}
       data-ff-id-cards-upload=""
     >
-      {!compact ? (
-        <p className="text-sm text-muted-foreground">
-          Stores ID cards in this policy’s document folder with the DEC. You can clear a wrong file,
-          rename the display name, and add more than one.
-        </p>
-      ) : null}
+      {!compact ? null : null}
       <div className="space-y-2">
         {rows.map((row) => (
           <div

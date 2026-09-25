@@ -41,18 +41,6 @@ export default async function AppetiteEngineDeveloperPage() {
         </div>
       }
     >
-      <p
-        className="mb-4 max-w-4xl text-sm text-muted-foreground"
-        data-ff-appetite-engine-intro=""
-      >
-        Shadow-mode prediction engine (Javy approved 2026-09-09). Standing rules
-        score silently — <strong>no green/yellow/red in Markets agent UI yet</strong>.
-        Legacy <code className="text-xs">appetite_rules</code> remains the Markets
-        carrier-profile matcher; Standing/Candidate rows live in{" "}
-        <code className="text-xs">appetite_engine_rules</code>. FL HO seed is
-        conservative (mobile→red, coastal≤0.5mi→yellow, year_built≤1960→yellow) —
-        seed not gospel. Floor-only / forced Cov A resolves as yellow when scoring.
-      </p>
 
       <div className="mb-4 flex flex-wrap gap-2" data-ff-appetite-engine-actions="">
         <form action={ensureFlHoPartitionAction}>
@@ -165,9 +153,7 @@ export default async function AppetiteEngineDeveloperPage() {
           Edge-case queue (stub) — open {edgeCases.length}
         </h2>
         {edgeCases.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No open edge cases. Queue is ready for manual notes / mis-scores later.
-          </p>
+          <p className="text-sm text-muted-foreground">No open edge cases.</p>
         ) : (
           <ul className="space-y-2">
             {edgeCases.map((e) => (
@@ -185,10 +171,7 @@ export default async function AppetiteEngineDeveloperPage() {
           Recent shadow predictions ({recentPredictions.length})
         </h2>
         {recentPredictions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            None yet. Call <code className="text-xs">recordShadowPrediction</code> from
-            quote-attempt writeback / Gaya when ready. Not wired into agent Markets.
-          </p>
+          <p className="text-sm text-muted-foreground">None yet.</p>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-border">
             <table className="min-w-full text-left text-sm">

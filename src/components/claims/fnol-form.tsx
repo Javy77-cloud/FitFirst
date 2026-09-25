@@ -72,7 +72,7 @@ export function FnolIntakeForm({
     <form action={logClaim} className="ff-card space-y-4 p-4">
       <div>
         <h2 className="text-sm font-semibold text-navy">FNOL intake</h2>
-        <p className="mt-1 text-xs text-muted-foreground">{FNOL_INTAKE_COPY}</p>
+
       </div>
       <ClaimsDeskNotice compact />
       <input type="hidden" name="postedBy" value={postedBy} />
@@ -108,9 +108,7 @@ export function FnolIntakeForm({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Both sides stay linked. Picking a policy fills the Contact.
-          </p>
+
         </div>
         <div>
           <Label className="text-xs">Date of loss</Label>
@@ -184,25 +182,21 @@ export function FnolIntakeForm({
         <div>
           <Label className="text-xs">Loss photos</Label>
           <ChooseFiles name="photos" multiple accept="image/*" className="mt-1" />
-          <p className="mt-1 text-[11px] text-muted-foreground">Optional. Stored on the claim file.</p>
+
         </div>
       </div>
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="notifyCarrier" value="1" className="mt-1" />
         <span>
           <span className="font-medium text-navy">Notify carrier</span>
-          <span className="mt-0.5 block text-xs text-muted-foreground">
-            Honest stub — stamps carrier notified on the claim. No portal push yet.
-          </span>
+
         </span>
       </label>
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="notifyProducer" value="1" defaultChecked className="mt-1" />
         <span>
           <span className="font-medium text-navy">Notify the producer in-app</span>
-          <span className="mt-0.5 block text-xs text-muted-foreground">
-            Pings the Policy / Contact owner in Alerts. Nothing emails. No reserves, no adjuster assignment.
-          </span>
+
         </span>
       </label>
       <FormPrimaryActions submitLabel="Save FNOL to the claims log" />

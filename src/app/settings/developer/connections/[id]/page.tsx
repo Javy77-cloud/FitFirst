@@ -42,12 +42,6 @@ export default async function DeveloperConnectionDetailPage({
       <div className="mb-4">
         <OauthWall title={`Authorize ${kindLabel}`} provider={kindLabel} />
       </div>
-      {row.kind === "zoho_crm" ? (
-        <p className="mb-4 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Live Zoho stays the book of record. This connector is a named stub. FitFirst does not
-          write to Zoho CRM from Developer Hub.
-        </p>
-      ) : null}
 
       <form action={saveDeveloperConnection} className="ff-card max-w-xl space-y-3 p-4">
         <input type="hidden" name="id" value={row.id} />
@@ -58,9 +52,7 @@ export default async function DeveloperConnectionDetailPage({
         <div>
           <Label className="text-xs">linkName</Label>
           <Input name="linkName" defaultValue={row.linkName} className="mt-1 h-8" />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Functions store this string in metadata. Nothing is invoked live.
-          </p>
+
         </div>
         <div>
           <Label className="text-xs">Kind</Label>

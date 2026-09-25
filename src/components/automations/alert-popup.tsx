@@ -40,9 +40,7 @@ export function AutomationAlertPopup({ alert }: { alert: PopupAlert | null }) {
           <DialogTitle>{alert.title}</DialogTitle>
           <DialogDescription>{alert.body}</DialogDescription>
         </DialogHeader>
-        <p className="text-xs text-muted-foreground">
-          In-desk playbook ping. Nothing emailed Javy or the client.
-        </p>
+
         <DialogFooter>
           {alert.href ? (
             <Link href={alert.href} className={cn(buttonVariants({ size: "sm" }))}>

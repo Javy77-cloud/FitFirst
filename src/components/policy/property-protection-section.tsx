@@ -29,16 +29,9 @@ export function PropertyProtectionSection({
       data-ff="policy-property-protection"
       className="border-amber-200/80"
     >
-      {empty ? (
-        <p className="text-xs text-muted-foreground" data-ff-property-protection-hint="empty">
-          Fills at mint from Risk Profile / DEC.
-        </p>
-      ) : (
+      {empty ? null : (
         <>
-          <p className="mb-3 text-xs text-muted-foreground" data-ff-property-protection-hint="">
-            Snapshot from Risk Profile / issued DEC at mint. Kept on this policy so renewals do not
-            depend on the deal sheet staying editable.
-          </p>
+
           <div className="space-y-4">
             {groups.map((group) => (
               <div key={group.id} data-ff-property-protection-group={group.id}>

@@ -36,16 +36,10 @@ export function LocationsPanel({
       <section className="ff-card overflow-hidden">
         <div className="border-b border-border px-4 py-2">
           <h2 className="text-base font-semibold text-navy">Insured locations</h2>
-          <p className="text-base text-muted-foreground">
-            Premises for Home, Landlord, Flood, and commercial. A client can have more than one
-            property. Cov A stays on the policy — never a Zillow Zestimate.
-          </p>
+
         </div>
         {locations.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No premises on this account yet. Add a street address to hang HO, landlord, flood, or
-            commercial coverage.
-          </p>
+          <p className="px-4 py-6 text-base text-muted-foreground">No premises on this account yet.</p>
         ) : (
           <div className="divide-y divide-border">
             {grouped.map(({ location, occupancy }) => {

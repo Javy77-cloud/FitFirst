@@ -100,12 +100,10 @@ export default async function PhonePage({
         <section className="ff-card overflow-hidden">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-base font-semibold text-navy">Call log</h2>
-            <p className="text-sm text-muted-foreground">Same activities table as Contact and Policy 360.</p>
+
           </div>
           {calls.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">
-              No calls yet. Log a call here or on a Contact.
-            </p>
+            <p className="px-4 py-6 text-sm text-muted-foreground">No calls yet.</p>
           ) : (
             <ul className="divide-y divide-border">
               {calls.map(({ activity, contact, business, policy, deal, lead }) => {

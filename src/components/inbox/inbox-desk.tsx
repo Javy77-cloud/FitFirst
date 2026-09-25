@@ -192,16 +192,13 @@ export function InboxDesk({
     return (
       <section className="ff-inbox-empty" data-ff-inbox-disconnected="">
         <h2>Connect {connectLabel}</h2>
-        <p>FitFirst surfaces the agency mailbox here — reply, send, and jump into Contacts or Deals.</p>
         {canConnect ? (
           <form action={startByoOauth} className="mt-3">
             <input type="hidden" name="provider" value={connectOauthId} />
             <input type="hidden" name="next" value="/inbox" />
             <Button type="submit">Connect {connectLabel}</Button>
           </form>
-        ) : (
-          <p className="mt-3 text-sm text-navy">Ask an Admin to connect {connectLabel} under Settings → Email.</p>
-        )}
+        ) : null}
         <Link href={`/settings/email#${connectOauthId}`} className="mt-2 inline-block text-sm text-primary hover:underline">
           Settings → Email
         </Link>

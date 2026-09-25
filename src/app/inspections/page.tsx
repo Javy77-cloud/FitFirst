@@ -73,11 +73,7 @@ export default async function InspectionsPage({
 
       <section className="ff-card mb-4 p-4">
         <h2 className="text-base font-semibold text-navy">Schedule an inspection</h2>
-        <p className="mt-1 mb-3 text-sm text-muted-foreground">
-          Assign an inspector (vendor), auto-suggested next date by type/state (FL photo →{" "}
-          {suggestPhoto}). Completing does not file an endorsement. Result + photos land on the
-          policy documents when uploaded.
-        </p>
+
         <form action={createPolicyInspection} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <input type="hidden" name="policyId" value={policyId} />
           <input

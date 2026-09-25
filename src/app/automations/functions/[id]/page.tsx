@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireAdminPage } from "@/lib/auth/guards";
-import { DEMO_ORG_API_KEY } from "@/lib/developer-hub/keys";
 import {
   getDeveloperFunction,
   listDeveloperConnections,
@@ -54,11 +53,7 @@ export default async function FunctionDetailPage({
       {fn.exposeAsRest ? (
         <div className="mb-4 rounded-md border border-dashed border-border px-3 py-3 text-sm">
           <div className="font-medium text-navy">REST stub</div>
-          <p className="mt-1 text-muted-foreground">
-            <code>POST /api/dev/functions/{fn.apiName}/execute</code> with{" "}
-            <code>Authorization: Bearer {DEMO_ORG_API_KEY}</code> (seeded demo key) or any live org
-            key.
-          </p>
+
           <StatusChip status="working" className="mt-2" />
         </div>
       ) : null}

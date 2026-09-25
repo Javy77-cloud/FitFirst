@@ -12,10 +12,7 @@ export function HitLostCards({ report, embedded = false }: { report: HitLostRepo
     <section className={embedded ? "overflow-hidden" : "ff-card overflow-hidden"}>
       <div className="border-b border-border bg-[color:var(--ff-wash)] px-4 py-3">
         <h3 className="text-sm font-semibold text-navy">Hit ratio and lost business</h3>
-        <p className="text-helper text-muted-foreground">
-          Admin only. Bound ÷ quoted. Unbound shops count as a miss. Lost reasons come from the
-          declined-quote picklist.
-        </p>
+
       </div>
       <div className="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
@@ -34,17 +31,12 @@ export function HitLostCards({ report, embedded = false }: { report: HitLostRepo
           icon={ShieldAlert}
           label="Declined / lost"
           value={fmt(report.declinedCount)}
-          hint={
-            report.lostReasons[0]
-              ? `Top reason: ${report.lostReasons[0].label}`
-              : "Pick a reason on declined quotes"
-          }
+          hint={report.lostReasons[0] ? `Top reason: ${report.lostReasons[0].label}` : undefined}
         />
         <Stat
           icon={Percent}
           label="Uncoded lost"
           value={fmt(report.uncodedLost)}
-          hint="Declined rows still missing a picklist reason"
         />
       </div>
 
@@ -87,9 +79,7 @@ export function HitLostCards({ report, embedded = false }: { report: HitLostRepo
             Lost-business reasons
           </h4>
           {report.lostReasons.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No picklist reasons yet. On a declined quote, choose why the shop was lost.
-            </p>
+            <p className="text-sm text-muted-foreground">No picklist reasons yet.</p>
           ) : (
             <ul className="space-y-2">
               {report.lostReasons.map((row) => (
@@ -126,7 +116,7 @@ function Stat({
   icon: typeof Percent;
   label: string;
   value: string;
-  hint: string;
+  hint?: string;
 }) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2">
@@ -135,7 +125,7 @@ function Stat({
         {label}
       </div>
       <div className="mt-1 text-xl font-semibold text-navy">{value}</div>
-      <p className="text-helper text-muted-foreground">{hint}</p>
+      {hint ? <p className="text-helper text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }

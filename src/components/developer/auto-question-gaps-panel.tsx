@@ -10,17 +10,9 @@ function formatWhen(value: string): string {
 export function AutoQuestionGapsPanel({ list }: { list: AutoQuestionGapList }) {
   return (
     <div data-ff-auto-question-gaps="">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Running list of Auto carrier questions that are not on the Auto risk profile. The file is{" "}
-        <code className="text-xs">{AUTO_QUESTION_GAPS_RELATIVE_PATH}</code>. Similar wording shares
-        one row: the count goes up and answer choices are combined. The most common phrasing is
-        listed first. This view does not add risk-profile fields.
-      </p>
+
       {list.entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground" data-ff-auto-question-gaps-empty="">
-          Nothing logged yet. A quote pull logs a question here when the carrier asks for something
-          the Auto risk profile does not already have.
-        </p>
+        <p className="text-sm text-muted-foreground" data-ff-auto-question-gaps-empty="">Nothing logged yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">

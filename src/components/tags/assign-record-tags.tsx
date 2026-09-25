@@ -155,9 +155,7 @@ export function AssignRecordTags({
                 {compact ? "Assign tags" : "Pick tags for this record"}
               </p>
               {catalog.length === 0 ? (
-                <p className="px-1 py-2 text-sm text-muted-foreground">
-                  No catalog tags yet. Create them from Manage tags.
-                </p>
+                <p className="px-1 py-2 text-sm text-muted-foreground">No catalog tags yet.</p>
               ) : (
                 <ul className="max-h-56 space-y-0.5 overflow-auto">
                   {catalog.map((row) => {

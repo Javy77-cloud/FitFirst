@@ -113,10 +113,7 @@ export default async function CarrierMarketToolsPage({
 
       {isCalc ? (
         <>
-          <p className="mb-3 text-base text-muted-foreground">
-            Enter Premium To See The Agency Cut From New Vs Renewal Rates Plus Bonus Thresholds On
-            The Carrier Commission Schedule.
-          </p>
+
           <section className="ff-card p-4">
             <CommissionCalculatorPanel
               carriers={carriers}
@@ -132,10 +129,7 @@ export default async function CarrierMarketToolsPage({
         </>
       ) : (
         <>
-          <p className="mb-3 text-base text-muted-foreground">
-            Pick A Line Of Business To See Every Carrier Side By Side — Appetite, Don&apos;t Write,
-            Commission Rates, And AM Best.
-          </p>
+
           <form method="get" className="mb-3 flex flex-wrap items-end gap-3">
             <input type="hidden" name="tool" value="compare" />
             <label className="space-y-1 text-sm">

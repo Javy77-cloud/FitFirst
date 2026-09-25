@@ -19,14 +19,9 @@ export default async function DeveloperGlLearningPage() {
         </Link>
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground" data-ff-gl-learning-intro="">
-        GL learning stub: industry/class, revenue, employees, location. Same site-dev gate as Appetite Log. Stub UI — no rows yet.
-      </p>
+
       <section className="ff-card px-4 py-8" data-ff-gl-learning-sheet="">
-        <p className="text-sm text-muted-foreground">
-          No GL learning rows yet. Quote writes for this line will attach a feature snapshot on 
-          <code className="text-xs">quote_attempt_logs</code> going forward.
-        </p>
+        <p className="text-sm text-muted-foreground">No GL learning rows yet.</p>
       </section>
     </SettingsShell>
   );

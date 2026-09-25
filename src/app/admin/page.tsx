@@ -22,9 +22,7 @@ export default async function AdminHubPage() {
   await requireAdminPage();
   return (
     <AppShell title="Admin" eyebrow="Agency">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Agency-only tools. Agents never see this folder, billing, people, or carrier credentials.
-      </p>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {CARDS.map((card) => (
           <Link

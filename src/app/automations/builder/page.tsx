@@ -49,11 +49,7 @@ export default async function AutomationsBuilderPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        {session.isAdmin
-          ? "Admin writes Trigger → Condition → Action. Prefer Task + in-app Alert. Nothing emails Javy."
-          : "Agents read playbooks they can see. Ask Admin to add or toggle a rule."}
-      </p>
+
       <div className="grid gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
         {session.isAdmin ? (
           <AutomationBuilderForm
@@ -70,9 +66,7 @@ export default async function AutomationsBuilderPage({
         )}
         <section className="ff-card overflow-hidden">
           {rows.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">
-              No automations yet. Save one from the pickers — three examples seed with the desk.
-            </p>
+            <p className="px-4 py-6 text-sm text-muted-foreground">No automations yet.</p>
           ) : (
             <table className="ff-table">
               <thead>
@@ -131,13 +125,7 @@ export default async function AutomationsBuilderPage({
               </tbody>
             </table>
           )}
-          <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            Preview an in-app notify, then open{" "}
-            <Link href="/notifications" className="text-primary hover:underline">
-              Notification board
-            </Link>
-            . That is the agent ping.
-          </p>
+
         </section>
       </div>
     </AppShell>

@@ -62,10 +62,7 @@ export default async function CertificatesPage({
       <div className="mb-4 grid gap-4 lg:grid-cols-2">
         <section className="ff-card p-4">
           <h2 className="text-base font-semibold text-navy">Queue a request</h2>
-          <p className="mt-1 mb-3 text-sm text-muted-foreground">
-            Default Business is Harbor Key Marine (active GL). Issue from the queue after the
-            holder is on file.
-          </p>
+
           <CertificateRequestForm
             accountId={HARBOR_ACCOUNT_ID}
             policyId={HARBOR_POLICY_ID}
@@ -81,9 +78,7 @@ export default async function CertificatesPage({
             Open requests
           </div>
           {requests.filter((row) => row.request.status === "requested").length === 0 ? (
-            <p className="px-4 py-6 text-base text-muted-foreground">
-              No open COI requests. Issued stubs stay on the Business.
-            </p>
+            <p className="px-4 py-6 text-base text-muted-foreground">No open COI requests.</p>
           ) : (
             <ul className="divide-y divide-border">
               {requests

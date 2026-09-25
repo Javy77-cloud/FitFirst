@@ -91,10 +91,7 @@ export function PolicyLabelBuilder({ initial }: { initial: PolicyLabelTemplate }
     <div className="space-y-4" data-ff-policy-label-builder="">
       <section className="ff-card space-y-3 p-4">
         <h2 className="text-base font-semibold text-navy">Fields in order</h2>
-        <p className="text-sm text-muted-foreground">
-          Pick which fields build the policy display name. Empty values are skipped so you never get
-          double separators.
-        </p>
+
         <ul className="space-y-2">
           {POLICY_LABEL_FIELDS.map((field) => {
             const on = fields.includes(field.id);
@@ -112,7 +109,7 @@ export function PolicyLabelBuilder({ initial }: { initial: PolicyLabelTemplate }
                     className="size-4"
                   />
                   <span className="font-medium text-navy">{field.label}</span>
-                  <span className="text-helper text-muted-foreground">{field.hint}</span>
+
                 </label>
                 {on ? (
                   <span className="flex items-center gap-1">

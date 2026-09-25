@@ -86,7 +86,7 @@ export function ByoOauthCard({
                 </span>
               ) : null}
             </div>
-            <p className="mt-0.5 text-helper text-muted-foreground">{item.blurb}</p>
+
           </div>
         </div>
         <ConnectionBadge
@@ -95,19 +95,6 @@ export function ByoOauthCard({
         />
       </div>
 
-      <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>
-      <p className="text-helper text-muted-foreground">{item.byoNote}</p>
-      <p className="mt-1 text-helper text-muted-foreground">{spec.worksWhen}</p>
-      {item.id === "gmail" ? (
-        <p className="mt-1 text-helper text-navy">{gmailConnectCopy(soloDesk, agentsMayConnectPersonalGoogle)}</p>
-      ) : null}
-      {item.hasEnvCredentials ? (
-        <p className="mt-1 text-helper text-navy">
-          {item.hasStoredCredentials
-            ? `Settings-pasted ${spec.vendor} keys override environment. Replace or Clear to change which pair Connect uses.`
-            : `Using ${spec.vendor} client from environment. Saving a Client ID + Secret here overrides it.`}
-        </p>
-      ) : null}
       {connected && item.accountLabel ? (
         <p className="mt-1 text-xs text-navy" data-connected-account="">
           {item.accountLabel}
@@ -162,13 +149,6 @@ export function ByoOauthCard({
               </form>
             ) : null}
           </div>
-          {canEdit ? (
-          <p className="text-caption text-muted-foreground" data-ff-byo-clear-copy="">
-            {item.hasEnvCredentials
-              ? `Clear removes Settings-pasted ${spec.clientIdLabel} and ${spec.clientSecretLabel}. ${spec.vendor} environment credentials still apply after clear.`
-              : `Clear removes Settings-pasted ${spec.clientIdLabel} and ${spec.clientSecretLabel}. Paste a new pair to connect.`}
-          </p>
-          ) : null}
 
           {connected && canEdit ? (
             <div className="flex flex-wrap items-end gap-2">
@@ -226,11 +206,7 @@ export function ByoOauthCard({
           ) : null}
           {ready ? <p className="text-caption text-muted-foreground">{spec.stubbed}</p> : null}
         </div>
-      ) : (
-        <p className="mt-3 text-helper text-muted-foreground">
-          Agency Admin pastes or replaces the {spec.vendor} app and starts OAuth. {AGENCY_PAYS_VENDOR}
-        </p>
-      )}
+      ) : null}
     </article>
   );
 }

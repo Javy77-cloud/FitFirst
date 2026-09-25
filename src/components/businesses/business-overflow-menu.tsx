@@ -176,7 +176,7 @@ export function BusinessOverflowMenu({
         <DialogContent className="sm:max-w-md" data-ff-business-tags-dialog="">
           <DialogHeader>
             <DialogTitle>Tags</DialogTitle>
-            <DialogDescription>Assign Tags For This Account.</DialogDescription>
+
           </DialogHeader>
           <RecordTags
             module="accounts"
@@ -191,14 +191,11 @@ export function BusinessOverflowMenu({
         </DialogContent>
       </Dialog>
 
-
       <Dialog open={layoutOpen} onOpenChange={setLayoutOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Layout Templates</DialogTitle>
-            <DialogDescription>
-              Classic (Dense, one column) or Card (Two column). Saved per agency.
-            </DialogDescription>
+
           </DialogHeader>
           {layoutOpen ? (
             <BusinessLayoutTemplatePicker
@@ -214,7 +211,7 @@ export function BusinessOverflowMenu({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Set Reminder</DialogTitle>
-            <DialogDescription>Logs A Follow-Up Task On This Account.</DialogDescription>
+
           </DialogHeader>
           <form
             className="space-y-3"
@@ -287,10 +284,7 @@ export function BusinessOverflowMenu({
         <DialogContent className="sm:max-w-2xl" data-ff-business-merge-dialog="">
           <DialogHeader>
             <DialogTitle>Merge Accounts</DialogTitle>
-            <DialogDescription>
-              Pick The Surviving Record. Linked Contacts, Policies, And Timeline Move To The
-              Survivor; The Other Account Is Archived.
-            </DialogDescription>
+
           </DialogHeader>
 
           {!pickedId ? (

@@ -45,9 +45,8 @@ export default async function PolicyComparePage({
         </section>
       ) : null}
       <p className="mb-4 text-base text-muted-foreground">
-        Current term vs the carrier&apos;s proposed term. Premium change is dollars and percent —
-        not a rater score. {contact ? `${contact.firstName} ${contact.lastName}` : "Client"} ·{" "}
-        {carrier?.name ?? "carrier"} · {policy.lineOfBusiness}.
+        {contact ? `${contact.firstName} ${contact.lastName}` : "Client"} · {carrier?.name ?? "carrier"} ·{" "}
+        {policy.lineOfBusiness}.
       </p>
 
       <ComparePanel policy={policy} current={current} proposed={proposed} logs={compareLogs} />

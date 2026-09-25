@@ -80,7 +80,7 @@ export default async function AdminExportPage() {
           <section key={file.key} className="ff-card flex flex-col p-4">
             <div className="text-caption uppercase tracking-wide text-muted-foreground">{file.title}</div>
             <div className="mt-1 text-2xl font-semibold text-navy">{file.count}</div>
-            <p className="mt-2 flex-1 text-helper text-muted-foreground">{file.hint}</p>
+
             <a
               href={file.href}
               className="mt-3 inline-flex h-8 items-center justify-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/80"
@@ -93,10 +93,7 @@ export default async function AdminExportPage() {
 
       <section className="ff-card space-y-3 p-4">
         <h2 className="text-sm font-semibold text-navy">Open API</h2>
-        <p className="text-sm text-muted-foreground">
-          List and get contacts, policies, deals, and activities. Same token as the CSV routes. Seeded demo
-          token for Admin (Javy): <code className="font-mono text-xs">{demoToken}</code>
-        </p>
+
         <ul className="space-y-1 text-sm text-navy">
           <li>
             JSON lists: {contacts.length} contacts · {policies.length} policies · {deals.length} deals ·{" "}
@@ -120,10 +117,7 @@ curl -s http://127.0.0.1:43147/api/v1/contacts?q=Elena \\
 curl -s http://127.0.0.1:43147/api/v1/export/policies.csv \\
   -H "Authorization: Bearer ${demoToken}" -o policies.csv`}
         </pre>
-        <p className="text-helper text-muted-foreground">
-          <code className="font-mono">POST /api/v1/auth/token</code> issues another hashed Admin bearer. Tokens
-          live in <code className="font-mono">api_tokens</code>. Agents only see their own book.
-        </p>
+
       </section>
     </SettingsShell>
   );

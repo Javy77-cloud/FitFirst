@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -90,9 +89,7 @@ export function CreateServicingTaskDialog({
         <DialogContent className="sm:max-w-md" data-ff-create-servicing-task-dialog="">
           <DialogHeader>
             <DialogTitle>{label}</DialogTitle>
-            <DialogDescription>
-              Pick when you want the in-app notification. Task due matches that time — nothing emailed.
-            </DialogDescription>
+
           </DialogHeader>
           <form action={action} className="space-y-3">
             <input type="hidden" name="policyId" value={policyId} />

@@ -41,10 +41,7 @@ export function ServiceTimelinePanel({
       ) : null}
 
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No servicing activity on this Policy yet. Tasks and calls stay on the activity timeline
-          below.
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">No servicing activity on this Policy yet.</p>
       ) : (
         <ol className="mt-3 space-y-2">
           {items.map((item) => (

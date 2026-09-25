@@ -66,16 +66,14 @@ export function HealthSherpaCard({
                 </span>
               ) : null}
             </div>
-            <p className="mt-0.5 text-helper text-muted-foreground">{item.blurb}</p>
+
           </div>
         </div>
         <ConnectionBadge connected={ready} label={ready ? "Configured" : "Not configured"} />
       </div>
-      <p className="mt-2 text-helper text-muted-foreground">{HEALTHSHERPA_NO_FF_FEE}</p>
+
       <p className="text-helper text-muted-foreground">{blurb}</p>
-      <p className="mt-2 text-helper text-muted-foreground" data-ff-healthsherpa-external-id="">
-        {HEALTHSHERPA_EXTERNAL_ID_STAMP}
-      </p>
+
       <p className="mt-2 text-helper text-muted-foreground" data-ff-healthsherpa-webhook="">
         {HEALTHSHERPA_INBOUND_BLURB} Destination{" "}
         <code className="text-[11px]">{HEALTHSHERPA_WEBHOOK_PATH}</code>
@@ -88,13 +86,7 @@ export function HealthSherpaCard({
             : " · inbound secret not configured"}
         .
       </p>
-      {!isMedicare ? (
-        <p className="text-helper text-muted-foreground">
-          {aca.configured
-            ? "Marketplace partner key is stored. Sync opens HealthSherpa Marketplace; QuoteConnect runs when ZIP and date of birth are on the deal."
-            : "Needs partner credentials. Medicare path works without this card. Same inbound webhook either way."}
-        </p>
-      ) : null}
+      {!isMedicare ? null : null}
       {isMedicare && medicareBulkReady && medicareBulkOneshot ? (
         <div className="mt-3">
           <MedicareBulkSyncPanel ready={medicareBulkReady} oneshot={medicareBulkOneshot} compact />

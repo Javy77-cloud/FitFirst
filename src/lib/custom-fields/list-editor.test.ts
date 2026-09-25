@@ -155,10 +155,10 @@ describe("admin list editors", () => {
     expect(pickCard).toMatch(/ListOptionRow/);
     expect(pickCard).toMatch(/defaultValue=\{option\.color\}/);
     expect(globalCard).toMatch(/ListOptionRow/);
-    expect(globalCard).toMatch(/click Color for the full palette/);
+    expect(globalCard).not.toMatch(/click Color for the full palette/);
     expect(globalCard).toMatch(/colorAriaLabel="Color for new value"/);
     expect(globalCard).not.toMatch(/function AddValueColor/);
-    expect(pickCard).toMatch(/click Color/);
+    expect(pickCard).not.toMatch(/click Color/);
     expect(source("src/components/settings/collapsible-list-card.tsx")).toMatch(/ff-list-card/);
     expect(source("src/components/settings/list-option-row.tsx")).toMatch(/data-ff-live-color-row/);
     expect(source("src/components/settings/list-option-row.tsx")).toMatch(/onColorChange/);

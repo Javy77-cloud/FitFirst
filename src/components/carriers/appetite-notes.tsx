@@ -30,10 +30,7 @@ export function AppetiteNotesPanel({
           Close
         </Link>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Plain-text Appetite / Don&apos;t Write was replaced by structured rows on the carrier
-        record (date, LOB, risk factors, accept/decline).
-      </p>
+
       {carrierId ? (
         <Link
           href={`/carriers/${carrierId}`}

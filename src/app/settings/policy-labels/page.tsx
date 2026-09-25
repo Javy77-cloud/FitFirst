@@ -20,11 +20,7 @@ export default async function PolicyLabelsSettingsPage() {
 
   return (
     <SettingsShell title="Policy labels" current="policy-labels">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Agency-wide auto-label for policy detail titles (and list name when shown). Order the fields,
-        pick a separator, preview before save. Labels rebuild live when a field on the policy
-        changes. Empty fields are skipped — no double slashes.
-      </p>
+
       <div className="mb-6">
         <PolicyLabelOverrideToggle enabled={allowOverride} overrideCount={overrideCount} />
       </div>

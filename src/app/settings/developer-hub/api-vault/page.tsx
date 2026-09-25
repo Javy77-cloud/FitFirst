@@ -16,7 +16,6 @@ import {
   loadHealthSherpaMedicarePublicStatus,
 } from "@/lib/healthsherpa/vault";
 import { loadMetaPublicStatus } from "@/lib/social/meta-app";
-import { NHTSA_VPIC_SETTINGS_NOTE } from "@/lib/vin-decode";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -47,11 +46,7 @@ export default async function DeveloperApiVaultPage() {
 
   return (
     <SettingsShell title="API vault" current="api-vault">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Site-developer secrets only. Admins see that an API key exists, masked as ****************,
-        with no reveal. Only a site developer can unlock, rotate, or clear. Keys are encrypted at
-        rest with the same AES-256-GCM pattern as carrier portal / PII secrets.
-      </p>
+
       <ApiVaultPanel
         canEdit={session.isSiteDeveloper}
         fedex={fedex}
@@ -64,9 +59,7 @@ export default async function DeveloperApiVaultPage() {
         medicareBulkOneshot={medicareBulkOneshot}
         meta={meta}
       />
-      <p className="mt-4 max-w-3xl text-sm text-muted-foreground" data-ff-nhtsa-vpic-note="">
-        {NHTSA_VPIC_SETTINGS_NOTE}
-      </p>
+
     </SettingsShell>
   );
 }

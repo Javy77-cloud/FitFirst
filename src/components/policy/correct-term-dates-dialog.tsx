@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -76,11 +75,7 @@ export function CorrectTermDatesDialog({
         >
           <DialogHeader>
             <DialogTitle>Correct term dates</DialogTitle>
-            <DialogDescription>
-              Agency override when book dates are wrong. Carrier/API truth stays the default —
-              this logs who changed what and why. Care and renewals recalculate from the new
-              expiration.
-            </DialogDescription>
+
           </DialogHeader>
           <form
             className="space-y-3"
@@ -149,7 +144,7 @@ export function CorrectTermDatesDialog({
                 onChange={(e) => setRenewal(e.target.value)}
                 data-ff-term-override="renewalDate"
               />
-              <p className="mt-1 text-[11px] text-muted-foreground">Optional — leave blank to clear.</p>
+
             </div>
             <div>
               <Label htmlFor="ff-term-reason" className="text-xs">

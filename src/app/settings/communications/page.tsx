@@ -76,10 +76,7 @@ export default async function CommunicationsSettingsPage() {
 
   return (
     <SettingsShell title="Communications" current="communications">
-      <p className="mb-4 text-sm text-muted-foreground">
-        Email, SMS, phone, and video. Each channel is bring-your-own — the agency pays the
-        vendor. Open Integrations to connect the catalog.
-      </p>
+
       <div className="grid gap-3 md:grid-cols-2">
         {CHANNELS.map((channel) => {
           const related = items.filter((item) => channel.categories.includes(item.category));
@@ -118,11 +115,7 @@ export default async function CommunicationsSettingsPage() {
 
       <section id="calendar" className="ff-card mt-6 space-y-3 p-4 scroll-mt-4">
         <h2 className="text-sm font-semibold text-navy">Calendar prefs</h2>
-        <p className="text-sm text-muted-foreground">
-          Sunday tint and US federal holiday labels on the desk calendar. Google Calendar connect
-          lives under Email / Integrations. Agents still schedule over holidays — labels are
-          reference only.
-        </p>
+
         {session.isAdmin ? (
           <form action={saveCalendarAgencySettings} className="space-y-3">
             <label className="flex items-start gap-2 text-sm">
@@ -135,9 +128,7 @@ export default async function CommunicationsSettingsPage() {
               />
               <span>
                 <span className="font-medium text-navy">Mark Sunday as non-working</span>
-                <span className="mt-0.5 block text-helper text-muted-foreground">
-                  Tint Sunday cells light gray on the month grid. Default on.
-                </span>
+
               </span>
             </label>
             <label className="flex items-start gap-2 text-sm">
@@ -150,18 +141,14 @@ export default async function CommunicationsSettingsPage() {
               />
               <span>
                 <span className="font-medium text-navy">Show US federal holidays</span>
-                <span className="mt-0.5 block text-helper text-muted-foreground">
-                  Label observed US federal holidays on the month grid. Default on.
-                </span>
+
               </span>
             </label>
             <Button type="submit" size="sm">
               Save calendar settings
             </Button>
           </form>
-        ) : (
-          <p className="text-sm text-muted-foreground">Only Admin can change agency calendar prefs.</p>
-        )}
+        ) : null}
         <Link href="/calendar" className="inline-block text-sm text-primary hover:underline">
           Open calendar
         </Link>
@@ -170,11 +157,7 @@ export default async function CommunicationsSettingsPage() {
       <form action={saveCommunicationsSettings} className="mt-6 grid gap-4 xl:grid-cols-2 xl:items-start">
         <section className="ff-card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-navy">Meeting rooms</h2>
-          <p className="text-helper text-muted-foreground">
-            {session.isAdmin
-              ? "Paste the room links the desk should open. Preferred provider is used first."
-              : "Admin connects the rooms. You can still open whatever link is saved."}
-          </p>
+
           <fieldset disabled={!session.isAdmin} className="space-y-3">
             <div>
               <Label className="text-xs">Preferred provider</Label>
@@ -233,9 +216,7 @@ export default async function CommunicationsSettingsPage() {
               disabled={!session.isAdmin}
               composeOnConfirm
             />
-            {!session.isAdmin ? (
-              <p className="mt-1 text-helper text-muted-foreground">Only Admin can edit the agency office.</p>
-            ) : null}
+            {!session.isAdmin ? null : null}
           </div>
           <div>
             <Label className="text-xs">Your meeting address</Label>
@@ -246,9 +227,7 @@ export default async function CommunicationsSettingsPage() {
               placeholder="Suite 112 · same building"
               composeOnConfirm
             />
-            <p className="mt-1 text-helper text-muted-foreground">
-              Added to In-Office meetings for {session.name}. Agents edit only this line.
-            </p>
+
           </div>
           <Button type="submit" size="sm">
             Save communications

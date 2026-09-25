@@ -28,10 +28,7 @@ export default async function ClientScriptsPage({
         </Link>
       }
     >
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Module + page (create / edit / detail) + event (onLoad / onChange). The desk runs
-        allowlisted getValue / setValue / showError handlers — it does not eval the body.
-      </p>
+
       <HubNotice notice={notice} />
       <section className="ff-card overflow-hidden">
         {scripts.length === 0 ? (

@@ -43,10 +43,6 @@ export function PipelineStageEditor({
 
   const body = (
     <>
-      <p className="text-xs text-muted-foreground">
-        Pill updates live when you pick a color — check to save, trash to remove. Color applies across
-        all pipeline boards.
-      </p>
 
       <ul className="mt-2 divide-y divide-border/60 rounded-md border border-border/70">
         {stages.map((stage, index) => (

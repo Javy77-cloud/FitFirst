@@ -25,7 +25,7 @@ export type BoardAlert = {
 export function NotificationBoard({ rows }: { rows: BoardAlert[] }) {
   return (
     <div data-testid="notification-board">
-      <p className="mb-4 max-w-2xl text-base text-muted-foreground">{NOTIFICATION_IN_APP_COPY}</p>
+
       <section className="ff-card overflow-hidden">
         <NotificationChecklist
           resetKey={rows.map((row) => row.id).join(",")}

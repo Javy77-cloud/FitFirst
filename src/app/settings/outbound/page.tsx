@@ -12,10 +12,7 @@ export default async function OutboundQueuePage() {
 
   return (
     <SettingsShell title="Outbound queue" current="outbound">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Email and SMS intent from the desk. Jobs draft or hold here. Nothing sends — a later vendor
-        can pick this queue up. Opt-outs hold the job.
-      </p>
+
       <p className="mb-4 text-sm">
         <Link href="/settings/communications" className="text-primary hover:underline">
           Communications
@@ -30,9 +27,7 @@ export default async function OutboundQueuePage() {
           Queued / held
         </div>
         {jobs.length === 0 ? (
-          <p className="px-4 py-6 text-base text-muted-foreground">
-            No outbound jobs yet. Queue email or SMS from a Contact, Business, or Deal.
-          </p>
+          <p className="px-4 py-6 text-base text-muted-foreground">No outbound jobs yet.</p>
         ) : (
           <table className="ff-table">
             <thead>

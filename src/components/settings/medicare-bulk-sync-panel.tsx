@@ -156,15 +156,8 @@ export function MedicareBulkSyncPanel({
           Hide
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">{HEALTHSHERPA_MEDICARE_BULK_ONESHOT}</p>
-      <p className="text-xs text-muted-foreground" data-ff-healthsherpa-medicare-bulk-filter="">
-        {HEALTHSHERPA_MEDICARE_BULK_FILTER}
-      </p>
-      {!ready.configured ? (
-        <p className="text-xs text-navy" data-ff-healthsherpa-medicare-bulk-not-configured="">
-          {ready.message ?? "HealthSherpa Medicare is not configured."}
-        </p>
-      ) : null}
+
+      {!ready.configured ? null : null}
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"

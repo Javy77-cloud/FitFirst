@@ -32,10 +32,7 @@ export function FillWorkspace({
       <form action={scanSuggestForm} className="ff-card space-y-3 p-4">
         <div>
           <h2 className="text-sm font-semibold text-navy">Fill from source</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Upload a PDF or image, paste extracted lines, or use Scan &amp; suggest. OCR is stubbed —
-            suggest pre-fills demo fields (Elena Ruiz Melbourne HO3). Paste wins over demo.
-          </p>
+
         </div>
         <input type="hidden" name="slug" value={slug} />
         {fillId ? <input type="hidden" name="fillId" value={fillId} /> : null}
@@ -94,9 +91,7 @@ export function FillWorkspace({
       <form action={saveFormFill} className="ff-card space-y-3 p-4">
         <div>
           <h2 className="text-sm font-semibold text-navy">Mapped values</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Edit any cell after the stub scan. Save keeps a draft fill on this template.
-          </p>
+
         </div>
         <input type="hidden" name="slug" value={slug} />
         {fillId ? <input type="hidden" name="fillId" value={fillId} /> : null}

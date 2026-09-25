@@ -20,10 +20,7 @@ export default async function RecoverPasswordPage({
         <div>
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Recovery</div>
           <h1 className="text-2xl font-semibold text-navy">Set a new password</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Admin issued this stub link. It is not an email. After save, sign in with the new
-            password.
-          </p>
+
         </div>
         {error === "expired" || (!row && token) ? (
           <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red">

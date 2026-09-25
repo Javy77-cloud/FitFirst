@@ -30,19 +30,6 @@ export default async function EsignSettingsPage({
 
   return (
     <SettingsShell title="E-sign" current="esign">
-      {!session.isAdmin ? (
-        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Connecting DocuSign or Dropbox Sign is Admin-only. Agents still attach signed apps on
-          the Deal. Ask lives on Contact, Policy, and Carrier — not on Deal tabs.
-        </p>
-      ) : (
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          In-desk signing lives on Deal and Policy. DocuSign sandbox OAuth is wired below (free
-          developer account, account-d). Filled Documents can attempt a sandbox envelope after
-          confirm — if credentials are missing, the fill-send loop records a local test envelope.
-          Dropbox Sign stays a preference stub. Signed apps still return on the Deal.
-        </p>
-      )}
       {notice === "esign-stub" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Preference saved. No vendor was called.
@@ -55,12 +42,7 @@ export default async function EsignSettingsPage({
       ) : null}
       {notice === "credentials-saved" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
-          DocuSign app credentials saved. Click Connect DocuSign sandbox to finish OAuth.
-        </p>
-      ) : null}
-      {notice === "needs-credentials" ? (
-        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Paste the DocuSign Integration Key and Secret Key, then Save credentials.
+          DocuSign app credentials saved.
         </p>
       ) : null}
       {notice === "credentials-cleared" ? (

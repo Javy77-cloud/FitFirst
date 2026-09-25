@@ -204,11 +204,7 @@ export function LeadActivitySwitch({
   const selectedId = desk?.selectedId ?? initialId;
   const row = rows.find((item) => item.id === selectedId) ?? null;
   if (!row) {
-    return (
-      <div className="ff-card p-4 text-sm text-muted-foreground" data-ff-standard-activity="">
-        Select a lead. Call, SMS, email, meeting, and task log on this board.
-      </div>
-    );
+    return null;
   }
   return (
     <div className="space-y-3" data-ff-standard-activity="" data-ff-activity-for={row.id}>

@@ -38,7 +38,7 @@ export function MfaEnrollPanel({
         <form action={startSmsEnroll} className="ff-card space-y-2 p-4">
           <input type="hidden" name="next" value={next} />
           <h3 className="text-sm font-semibold text-navy">{MFA_METHOD_LABEL.sms}</h3>
-          <p className="text-xs text-muted-foreground">Desk shows the code. Nothing texts a carrier.</p>
+
           <Label className="text-xs">Mobile</Label>
           <Input name="phone" defaultValue={phone ?? ""} placeholder="(321) 555-0100" className="h-8" />
           <Button type="submit" size="sm" variant={method === "sms" ? "default" : "outline"}>
@@ -48,7 +48,7 @@ export function MfaEnrollPanel({
         <form action={startEmailEnroll} className="ff-card space-y-2 p-4">
           <input type="hidden" name="next" value={next} />
           <h3 className="text-sm font-semibold text-navy">{MFA_METHOD_LABEL.email}</h3>
-          <p className="text-xs text-muted-foreground">Desk shows the code. Nothing hits SendGrid.</p>
+
           <Label className="text-xs">Email</Label>
           <Input name="mfaEmail" type="email" defaultValue={email} className="h-8" />
           <Button type="submit" size="sm" variant={method === "email" ? "default" : "outline"}>
@@ -58,7 +58,7 @@ export function MfaEnrollPanel({
         <form action={startTotpEnroll} className="ff-card space-y-2 p-4">
           <input type="hidden" name="next" value={next} />
           <h3 className="text-sm font-semibold text-navy">{MFA_METHOD_LABEL.totp}</h3>
-          <p className="text-xs text-muted-foreground">Add the secret in Authy / Google Authenticator.</p>
+
           <Button type="submit" size="sm" variant={method === "totp" ? "default" : "outline"}>
             Generate authenticator secret
           </Button>
@@ -86,7 +86,7 @@ export function MfaEnrollPanel({
           <input type="hidden" name="next" value={next} />
           <div>
             <h3 className="text-sm font-semibold text-navy">Confirm {MFA_METHOD_LABEL[method]}</h3>
-            <p className="text-xs text-muted-foreground">Enter the 6-digit code to finish enrollment.</p>
+
           </div>
           <div>
             <Label className="text-xs">Code</Label>

@@ -52,10 +52,7 @@ export default async function AutomationsSignaturesPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Agents write a signature draft. Admin must approve before it is live. The agency default
-        close stays in Settings until someone replaces it.
-      </p>
+
       <div className="grid gap-4 xl:grid-cols-2">
         <form action={saveSignatureDraft} className="ff-card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-navy">
@@ -119,14 +116,10 @@ export default async function AutomationsSignaturesPage({
             <section className="ff-card overflow-hidden">
               <div className="border-b border-border px-4 py-3">
                 <h2 className="text-sm font-semibold text-navy">Admin approval queue</h2>
-                <p className="text-xs text-muted-foreground">
-                  Stub queue. Approve or send back. Nothing emails the agent.
-                </p>
+
               </div>
               {pending.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-muted-foreground">
-                  No signatures waiting. Maya’s draft seeds here after migrate + seed.
-                </p>
+                <p className="px-4 py-6 text-sm text-muted-foreground">No signatures waiting.</p>
               ) : (
                 <ul className="divide-y divide-border">
                   {pending.map(({ signature, owner }) => (
@@ -167,9 +160,7 @@ export default async function AutomationsSignaturesPage({
             <section className="ff-card p-4">
               <h2 className="text-sm font-semibold text-navy">Your submissions</h2>
               {mine.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No drafts yet. Write one and submit it for Admin.
-                </p>
+                <p className="mt-2 text-sm text-muted-foreground">No drafts yet.</p>
               ) : (
                 <ul className="mt-2 space-y-2">
                   {mine.map((row) => (

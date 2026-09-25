@@ -334,13 +334,7 @@ export default async function PolicyDetailPage({
 
       {policyNeedsMintConfirm(policy) ? (
         <>
-          <p
-            className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
-            data-ff-mint-unpublished-banner=""
-          >
-            Unpublished. Confirm flagged fields, review the policy below, then mark Policy looks good.
-            That records your name and the Eastern time.
-          </p>
+
           <MintConfirmQueue
             policyId={policy.id}
             fields={mintPayload?.fields ?? []}

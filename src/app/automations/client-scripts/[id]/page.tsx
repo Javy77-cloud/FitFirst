@@ -34,9 +34,7 @@ export default async function ClientScriptDetailPage({
       <section className="ff-card mt-4 max-w-3xl p-4">
         <h2 className="text-sm font-semibold text-navy">Parsed statements (test log)</h2>
         {statements.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            No allowlisted statements. The body is saved; the desk will not eval it.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">No allowlisted statements.</p>
         ) : (
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
             {statements.map((item, index) => (

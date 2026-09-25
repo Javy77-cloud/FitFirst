@@ -59,13 +59,7 @@ export function PulseTile({
         ) : null}
       </div>
 
-      {card.locked ? (
-        <p className="mt-2 text-xs text-muted-foreground">
-          {showConnectionStatus
-            ? card.lockReason
-            : "Admin has not allowed agents to monitor Google Business Profile."}
-        </p>
-      ) : card.metrics ? (
+      {card.locked ? null : card.metrics ? (
         <>
           <dl className="mt-3 grid grid-cols-3 gap-2">
             <div>
@@ -94,12 +88,7 @@ export function PulseTile({
             </div>
           ) : null}
         </>
-      ) : showConnectionStatus ? (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Connect in Settings → Social. Facebook and Instagram are one-click; other networks still
-          use the agency developer app.
-        </p>
-      ) : null}
+      ) : showConnectionStatus ? null : null}
     </article>
   );
 }

@@ -81,9 +81,7 @@ export function PartyTypeahead({
           data-testid="deal-name-suggestions"
         >
           {suggestions.length === 0 ? (
-            <li className="px-2 py-1.5 text-sm text-muted-foreground">
-              No Contact or Account matches. Keep typing a new name, or check email / phone.
-            </li>
+            <li className="px-2 py-1.5 text-sm text-muted-foreground">No Contact or Account matches.</li>
           ) : (
             suggestions.map((hit) => (
               <li key={`${hit.kind}-${hit.id}`}>
@@ -105,11 +103,7 @@ export function PartyTypeahead({
             ))
           )}
         </ul>
-      ) : (
-        <p className="text-helper text-muted-foreground">
-          Type to pull Contacts and Accounts. Contains match on name, email, or phone.
-        </p>
-      )}
+      ) : null}
       {picked ? (
         <p className="text-xs text-fit-green">
           Linked {picked.kind === "contact" ? "Contact" : "Account"}:{" "}

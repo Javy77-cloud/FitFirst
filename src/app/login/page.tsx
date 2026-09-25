@@ -18,10 +18,7 @@ export default async function LoginPage({
         <div className="text-center sm:text-left">
           <div className="text-caption uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
           <h1 className="text-2xl font-semibold text-navy">Sign in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Use the email or username an Admin created. Admin sees the whole book. Agent sees their
-            own book. Developer is a third profile for API meters — not Admin settings.
-          </p>
+
         </div>
 
         {set ? (
@@ -62,10 +59,7 @@ export default async function LoginPage({
         <form action={loginDesk} className="ff-card space-y-3 p-5">
           <div>
             <h2 className="text-sm font-semibold text-navy">Email or username</h2>
-            <p className="text-helper text-muted-foreground">
-              Password is the one stored for this login. After sign-in the rail shows Admin · all book,
-              Agent · own book, or Developer · API meters.
-            </p>
+
           </div>
           <div className="grid gap-3">
             <div>

@@ -136,13 +136,7 @@ export function PipelineKanban({
             </div>
             {folded ? null : (
               <div data-pipe-cards className="min-h-40 space-y-2 p-2">
-                {column.length === 0 ? (
-                  <p className="px-1 py-8 text-center text-xs text-muted-foreground">
-                    {isQuotesOnlyBoardStage(stage.slug, board.stages) && board.slug !== "won-lost"
-                      ? "Open a deal — late stages change from Quotes"
-                      : "Drop a deal here"}
-                  </p>
-                ) : (
+                {column.length === 0 ? null : (
                   column.map((deal) => (
                     <PipelineDealCard
                       key={deal.id}

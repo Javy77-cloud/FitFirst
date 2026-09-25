@@ -16,7 +16,7 @@ export function ScorecardStatGrid({ card }: { card: ProducerScorecard }) {
         value={card.inForce + card.lapsed > 0 ? formatPct(card.retention) : "—"}
         hint={`${card.inForce} in force · ${card.lapsed} lapsed`}
       />
-      <Stat label="Premium" value={formatMoney(card.premium)} hint="Active + Bound only. Quotes are not written." />
+      <Stat label="Premium" value={formatMoney(card.premium)} />
       <Stat label="Binds" value={String(card.binds)} hint={`Rank ${card.rank} · ${producerStatusLabel(card.status)}`} />
     </div>
   );
@@ -41,9 +41,7 @@ export function ScorecardRankTable({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="px-4 py-6 text-sm text-muted-foreground">
-        No producers on this book yet. Create a login in People / Agents.
-      </p>
+      <p className="px-4 py-6 text-sm text-muted-foreground">No producers on this book yet.</p>
     );
   }
 

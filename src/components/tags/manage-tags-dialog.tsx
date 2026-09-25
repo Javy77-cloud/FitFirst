@@ -71,10 +71,7 @@ export function ManageTagsDialog({
             <h2 id="ff-manage-tags-title" className="text-base font-semibold text-navy">
               Manage {tagModuleLabel(module)} tags
             </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Create, rename, color, merge, or delete the catalog. Every {tagModuleLabel(module).toLowerCase()}{" "}
-              record can use these tags.
-            </p>
+
           </div>
           <Button type="button" size="xs" variant="ghost" onClick={() => onOpenChange(false)}>
             Close

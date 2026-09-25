@@ -28,9 +28,7 @@ export default async function ResetPasswordPage({
           </p>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">
-              Reset for {person.name}. Admin triggered this help link. You choose the new password.
-            </p>
+
             {error === "password" ? (
               <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red">
                 Password must be at least 4 characters and match the confirmation.

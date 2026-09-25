@@ -34,11 +34,9 @@ export function CommitmentsTimeline({
       <header className="ff-commitments-head">
         <div>
           <h2>Commitments</h2>
-          <p>
-            {hot.length > 0
-              ? `${hot.length} overdue or due soon — expanded so they cannot hide in a list.`
-              : "Collapsed. Promises live on the Contact and Deal. This strip opens when something is hot."}
-          </p>
+          {hot.length > 0 ? (
+            <p className="text-xs text-muted-foreground">{hot.length} overdue or due soon</p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <CreateTaskDialog

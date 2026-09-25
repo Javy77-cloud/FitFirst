@@ -34,10 +34,7 @@ export default async function CertificatePreviewPage({
         </div>
       }
     >
-      <p className="ff-no-print mb-4 max-w-3xl text-base text-muted-foreground">
-        Printable Certificate of Insurance stub. Use the browser print dialog. This is not a
-        licensed ACORD form and is not sent by email.
-      </p>
+
       <CertificateStub business={workspace.business} certificate={workspace.certificate} />
     </AppShell>
   );

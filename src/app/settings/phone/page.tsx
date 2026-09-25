@@ -33,12 +33,7 @@ export default async function PhoneSettingsPage({
           </Link>
           .
         </p>
-      ) : (
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          Connect Twilio or a BYO trunk when the agency is ready. FitFirst does not buy numbers,
-          store keys, or place PSTN calls. The call log on Phone still records outcomes.
-        </p>
-      )}
+      ) : null}
       {notice === "telephony-stub" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Preference saved. No vendor was called.

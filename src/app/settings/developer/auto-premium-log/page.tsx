@@ -52,14 +52,6 @@ export default async function DeveloperAutoPremiumLogPage({
         </div>
       }
     >
-      <p className="mb-3 max-w-4xl text-sm text-muted-foreground" data-ff-auto-premium-intro="">
-        Developer-only Auto premium-learning datasheet —{" "}
-        <strong className="text-navy">not</strong> Home appetite decline rules. Every Auto Gaya/API
-        quote write should land a row with a full application feature snapshot (driver, ZIP,
-        vehicle, record) plus carrier premium / outcome. Ranking helper is{" "}
-        <span className="font-semibold text-navy">shadow/stub</span> until sample size grows. Same
-        site-dev gate as Appetite Log (<code className="text-xs">FF_SITE_DEVELOPER_EMAILS</code>).
-      </p>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" data-ff-auto-premium-summary="">
         <div className="ff-card px-3 py-2">

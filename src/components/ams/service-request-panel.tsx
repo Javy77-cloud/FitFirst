@@ -40,12 +40,7 @@ export function ServiceRequestPanel({
   return (
     <section className="ff-card mb-4 p-4">
       <h2 className="text-base font-semibold text-navy">Service request pipeline</h2>
-      <p className="mt-1 text-base text-muted-foreground">
-        Request → start → file. Required: type, reason, effective date, and what the insured
-        asked for. Cancel / non-renew stay on the book until you file. Filing updates this
-        Policy, writes the durable activity log plus an in-app Task, and a work-queue item.
-        Does not open a Deal and does not create a new Policy.
-      </p>
+
       {error ? (
         <p className="mt-2 text-sm text-destructive" role="alert">
           {error}
@@ -113,12 +108,7 @@ export function ServiceRequestPanel({
 
       {inForce ? (
         <ServiceRequestForm policyId={policyId} coverageA={coverageA} premium={premium} />
-      ) : (
-        <p className="mt-3 text-sm text-muted-foreground">
-          This Policy is off the book. Open requests can still be withdrawn; new ones are not
-          queued.
-        </p>
-      )}
+      ) : null}
 
       {closed.length > 0 ? (
         <ul className="mt-4 space-y-1 text-sm text-muted-foreground">

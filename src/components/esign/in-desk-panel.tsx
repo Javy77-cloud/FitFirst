@@ -48,16 +48,7 @@ export function InDeskEsignPanel({
   return (
     <section className="ff-card p-4">
       <h3 className="mb-1 text-base font-semibold text-navy">In-desk signature</h3>
-      <InDeskEsignBanner>
-        Upload or pick a PDF packet, request a signature, then the client or an agent demo draws
-        or types a name. Status and timestamp live on this {recordKind}. Finish-line DocuSign
-        stays parked.
-      </InDeskEsignBanner>
-      {notice === "esign-requested" ? (
-        <p className="mb-3 rounded-md border border-border px-3 py-2 text-sm">
-          Signature requested. Open the client link or run the agent demo.
-        </p>
-      ) : null}
+      <InDeskEsignBanner />
       {notice === "esign-need-packet" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Choose an existing PDF or upload one before requesting a signature.
@@ -157,7 +148,7 @@ export function InDeskEsignPanel({
         </ul>
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">
-          No packet on this {recordKind} yet. Upload a PDF or create the sample packet.
+          No packet on this {recordKind} yet.
         </p>
       )}
     </section>

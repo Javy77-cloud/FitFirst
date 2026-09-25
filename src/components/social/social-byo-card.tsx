@@ -84,19 +84,12 @@ export function SocialByoCard({
                 </span>
               ) : null}
             </div>
-            <p className="mt-0.5 text-helper text-muted-foreground">{item.blurb}</p>
+
           </div>
         </div>
         <ConnectionBadge connected={item.connected && item.connectMode === "byo"} label={statusLabel} />
       </div>
 
-      {hosted ? null : <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>}
-      <p className={`${hosted ? "mt-2" : ""} text-helper text-muted-foreground`}>{item.byoNote}</p>
-      {hosted ? null : (
-        <p className="mt-1 text-helper text-muted-foreground">
-          {spec.kind === "oauth_byo" ? spec.worksWhen : spec.wallBody}
-        </p>
-      )}
       {item.connected && item.accountLabel ? (
         <p className="mt-1 text-xs text-navy">
           {item.accountLabel}
@@ -110,7 +103,7 @@ export function SocialByoCard({
       ) : null}
       {paidWall && !item.lastOauthError ? (
         <p className="mt-2 rounded-md border border-dashed border-border bg-fit-flag-bg px-2.5 py-2 text-helper text-navy">
-          <span className="font-semibold">{spec.wallTitle}.</span> {spec.wallBody}
+          <span className="font-semibold">{spec.wallTitle}.</span>
         </p>
       ) : null}
 
@@ -198,13 +191,8 @@ export function SocialByoCard({
               </form>
             ) : null}
           </div>
-          <p className="text-caption text-muted-foreground">{spec.stubbed}</p>
         </div>
-      ) : (
-        <p className="mt-3 text-helper text-muted-foreground">
-          Admin pastes the agency {spec.vendor} app and starts OAuth. {AGENCY_PAYS_VENDOR}
-        </p>
-      )}
+      ) : null}
     </article>
   );
 }
@@ -222,28 +210,14 @@ function HostedMetaActions({
 }) {
   const missing = platformHostedConnectMissingCopy(item.id === "instagram" ? "instagram" : "facebook");
   if (!canEdit) {
-    return (
-      <p className="mt-3 text-helper text-muted-foreground">
-        Only Admin can connect {item.name}. Agents never connect social.
-      </p>
-    );
+    return null;
   }
   if (!item.hasEnvCredentials) {
-    return (
-      <p
-        className="mt-3 rounded-md border border-dashed border-border bg-fit-flag-bg px-2.5 py-2 text-helper text-navy"
-        data-meta-empty="1"
-      >
-        {missing}. Ask a site developer to set the platform Meta app (env or API vault). Agency
-        owners do not paste App ID or secret here.
-      </p>
-    );
+    return null;
   }
   return (
     <div className="mt-3 space-y-3">
-      <p className="text-helper text-navy">
-        FitFirst hosts the Meta app. Connect opens Meta’s consent screen. Tokens stay on the server.
-      </p>
+
       <div className="flex flex-wrap items-center gap-2">
         <form action={startSocialByoOAuth}>
           <input type="hidden" name="provider" value={item.id} />
@@ -262,7 +236,6 @@ function HostedMetaActions({
           </form>
         ) : null}
       </div>
-      <p className="text-caption text-muted-foreground">{socialByoSpec(item.id as "facebook" | "instagram").stubbed}</p>
     </div>
   );
 }

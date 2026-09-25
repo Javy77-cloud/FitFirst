@@ -31,16 +31,9 @@ export default async function LeadRoutingSettingsPage({
 
   return (
     <SettingsShell title="Lead routing" current="routing">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Rules run on unassigned inbound. First match by priority wins: territory, written line
-        (Home / Auto / …), then producer capacity (open deals under the cap). No match posts the
-        Lead on the Home lead-offer board. Not ML.
-      </p>
 
       {ctx.rules.length === 0 ? (
-        <p className="mb-4 rounded-md border border-dashed border-border bg-card px-3 py-6 text-sm text-muted-foreground">
-          No rules yet. Add Space Coast Home below.
-        </p>
+        <p className="mb-4 rounded-md border border-dashed border-border bg-card px-3 py-6 text-sm text-muted-foreground">No rules yet.</p>
       ) : (
         <ul className="mb-4 grid gap-3">
           {ctx.rules.map((rule) => {

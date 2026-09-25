@@ -49,11 +49,7 @@ export function TemplateLocalePreview({
           Español
         </button>
       </div>
-      {missing ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          {locale === "en" ? "English copy is not on this template yet." : "Aún no hay texto en español."}
-        </p>
-      ) : (
+      {missing ? null : (
         <>
           <p className="mt-3 text-sm font-medium">{subject}</p>
           <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground">{body}</pre>

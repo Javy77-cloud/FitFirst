@@ -55,9 +55,7 @@ export function WidgetForm({ widget }: { widget?: DeskWidget }) {
           placeholder="my-widget.zip"
           className="mt-1 h-8"
         />
-        <p className="mt-1 text-xs text-muted-foreground">
-          Upload is metadata only. No zip is stored on disk in this stub.
-        </p>
+
       </div>
       <label className="inline-flex items-center gap-2 text-sm">
         <input type="checkbox" name="enabled" defaultChecked={widget?.enabled ?? true} />

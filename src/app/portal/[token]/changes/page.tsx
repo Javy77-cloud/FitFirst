@@ -35,11 +35,7 @@ export default async function PortalChangePage({
 
   return (
     <PortalShell session={session} title="Request a policy change">
-      <p className="mb-4 text-sm text-muted-foreground">
-        This does not change the policy on the spot. The agency work queue receives
-        the kind, reason, effective date, and your note so staff file it without
-        rekeying.
-      </p>
+
       {queued ? (
         <p className="mb-4 rounded-md bg-fit-green-bg px-3 py-2 text-sm text-fit-green">
           Request is on the service queue. The desk already has every field you

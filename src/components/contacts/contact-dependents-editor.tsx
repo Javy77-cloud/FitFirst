@@ -64,9 +64,7 @@ export function ContactDependentsEditor({
 
   return (
     <div className="col-span-full space-y-2" data-ff-contact-dependents="">
-      <p className="text-[11px] text-muted-foreground">
-        Dependents / kids — ages for future auto/home cross-sell at 18–20
-      </p>
+
       <input type="hidden" name="field_dependents" form={form} value={JSON.stringify(rows)} />
       {rows.map((row, index) => (
         <div

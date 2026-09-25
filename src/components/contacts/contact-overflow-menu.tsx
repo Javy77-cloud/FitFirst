@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -135,7 +134,7 @@ export function ContactOverflowMenu({
         <DialogContent className="sm:max-w-md" data-ff-contact-tags-dialog="">
           <DialogHeader>
             <DialogTitle>Tags</DialogTitle>
-            <DialogDescription>Assign tags for this contact.</DialogDescription>
+
           </DialogHeader>
           <RecordTags
             module="contacts"
@@ -154,9 +153,7 @@ export function ContactOverflowMenu({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Layout Templates</DialogTitle>
-            <DialogDescription>
-              Classic (Dense, one column) or Card (Two column). Saved per agency.
-            </DialogDescription>
+
           </DialogHeader>
           {layoutOpen ? (
             <ContactLayoutTemplatePicker
@@ -178,10 +175,7 @@ export function ContactOverflowMenu({
         <DialogContent className="sm:max-w-2xl" data-ff-contact-merge-dialog="">
           <DialogHeader>
             <DialogTitle>Merge Contacts</DialogTitle>
-            <DialogDescription>
-              Pick a duplicate, review side-by-side, choose values. Linked records move here; the
-              other is archived.
-            </DialogDescription>
+
           </DialogHeader>
 
           {!pickedId ? (
@@ -336,7 +330,7 @@ export function ContactOverflowMenu({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Opt-Out</DialogTitle>
-            <DialogDescription>Held on the contact. Queue will not send when flagged.</DialogDescription>
+
           </DialogHeader>
           <form
             action={async (fd) => {

@@ -28,9 +28,7 @@ export function FillEsignPanel({
     <form action={confirmFilledFormForEsign} className="ff-card space-y-3 p-4" data-ff-fill-esign="">
       <div>
         <h2 className="text-sm font-semibold text-navy">Confirm and send for eSign</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Review the mapped values, then send. Nothing auto-sends.
-        </p>
+
       </div>
       <input type="hidden" name="slug" value={slug} />
       {fillId ? <input type="hidden" name="fillId" value={fillId} /> : null}
@@ -44,8 +42,8 @@ export function FillEsignPanel({
         </p>
         <p className="mt-1 text-muted-foreground">
           {docusignReady
-            ? `DocuSign sandbox connected${docusignLabel ? ` · ${docusignLabel}` : ""}. Send will try a real envelope.`
-            : "DocuSign sandbox is not connected. Confirm still records a local envelope and opens the in-desk test path."}
+            ? `DocuSign sandbox connected${docusignLabel ? ` · ${docusignLabel}` : ""}`
+            : "DocuSign sandbox is not connected."}
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

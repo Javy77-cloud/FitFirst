@@ -36,12 +36,7 @@ export default async function VideoSettingsPage({
         </p>
       ) : null}
       {notice === "oauth-wall" ? <ByoOauthWallNotice lastOauthError={wallError} /> : null}
-      <p className="mb-4 text-sm text-muted-foreground">
-        Google Meet uses the same one-click Google Connect as Gmail and Calendar. Paste, replace, or
-        clear Client ID + Secret on the card. The helper writes a Meet URL onto calendar events when
-        Google Calendar or Meet is connected. Zoom stays a stub. The agency account, not a FitFirst
-        room.
-      </p>
+
       <div className="grid gap-3 md:grid-cols-2">
         {video.map((item) =>
           isByoOauthProviderId(item.id) ? (

@@ -28,10 +28,7 @@ export function TermHistoryPanel({
           </Link>
         ) : null}
       </div>
-      <p className="mt-1 text-base text-muted-foreground">
-        Auto from effective / expiration. Filing an endorsement or rewrite adds a term. No manual
-        entry on this desk.
-      </p>
+
       {rows.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">
           No terms on file yet — opens automatically from the policy dates on first visit.

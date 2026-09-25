@@ -47,11 +47,7 @@ export function LiveSearchResults({
   }, [initialHits, initialQuery, q]);
 
   if (!q) {
-    return (
-      <p className="text-base text-muted-foreground">
-        Type a name, policy number, or carrier. Results appear as you type.
-      </p>
-    );
+    return null;
   }
   if (loading && hits.length === 0) {
     return <p className="text-base text-muted-foreground">Searching…</p>;

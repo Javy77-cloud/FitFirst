@@ -138,15 +138,9 @@ export function CommissionCalculatorPanel({
       </div>
 
       <section className="rounded-lg border border-[#002868]/20 bg-slate-50 p-4">
-        {!carrier ? (
-          <p className="text-sm text-muted-foreground">Select A Carrier To Calculate.</p>
-        ) : !scheduleRow ? (
-          <p className="text-sm text-muted-foreground">
-            No Commission Schedule On This Carrier Yet. Add Rates On The Carrier Record.
-          </p>
-        ) : !Number.isFinite(premium) || premiumRaw.trim() === "" ? (
-          <p className="text-sm text-muted-foreground">Enter Premium To See The Agency Cut.</p>
-        ) : !result ? (
+        {!carrier ? null : !scheduleRow ? (
+          <p className="text-sm text-muted-foreground">No Commission Schedule On This Carrier Yet.</p>
+        ) : !Number.isFinite(premium) || premiumRaw.trim() === "" ? null : !result ? (
           <p className="text-sm text-[#BF0A30]">
             Could Not Parse The {kind === "new" ? "New Business" : "Renewal"} Rate For This Line.
           </p>

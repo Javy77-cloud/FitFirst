@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -44,10 +43,7 @@ export function AddInstallmentDialog({ policyId }: { policyId: string }) {
         <DialogContent className="sm:max-w-md" data-ff-add-installment-dialog="">
           <DialogHeader>
             <DialogTitle>Add installment</DialogTitle>
-            <DialogDescription>
-              Due date, amount, and Paid or Overdue. Saves into the payment schedule — diary only, no
-              collection.
-            </DialogDescription>
+
           </DialogHeader>
           <form action={createPolicyInstallment} className="space-y-3">
             <input type="hidden" name="policyId" value={policyId} />

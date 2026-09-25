@@ -53,11 +53,6 @@ export default async function CarrierHistoryPage() {
 
   return (
     <AppShell title="Carrier history" eyebrow="Operations">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Admin only. One row per carrier per line. Green is verified, yellow is a single source,
-        red is an override stored as a rule — the next pull applies it. Values on a quote are
-        not patched here.
-      </p>
 
       {rows.length === 0 ? (
         <section className="ff-card px-4 py-8 text-sm text-muted-foreground">

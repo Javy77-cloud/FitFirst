@@ -27,10 +27,6 @@ export default async function CompliancePage() {
       }
     >
       <LogsTabs current="compliance" />
-      <p className="mb-3 text-sm text-muted-foreground">
-        Append-only E&O trail for client email, SMS, calls, meetings, document views, PII reveals,
-        and policy changes. Gap flags stay in Alerts. Nothing emails the producer.
-      </p>
 
       <section className="mb-4 grid gap-3 sm:grid-cols-3">
         <div className="ff-card px-4 py-3">
@@ -50,10 +46,7 @@ export default async function CompliancePage() {
       <h2 className="mb-2 text-base font-semibold text-navy">E&O gap flags</h2>
       <section className="ff-card mb-6 overflow-x-auto">
         {flags.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No E&O gaps on this book right now. Renewal silence, Bound without a signed app, and
-            Quote Sent without a follow-up task will land here.
-          </p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No E&O gaps on this book right now.</p>
         ) : (
           <table className="ff-table">
             <thead>

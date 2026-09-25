@@ -16,9 +16,7 @@ export function MacContinuityToggle({
     >
       <div>
         <p className="text-sm font-semibold text-navy">Mac Continuity</p>
-        <p className="text-helper text-muted-foreground">
-          Use this Mac for Phone and SMS through Continuity, alongside the 8x8 provider.
-        </p>
+
       </div>
       <input type="hidden" name="macContinuity" value={enabled ? "0" : "1"} />
       <Button type="submit" size="sm" variant={enabled ? "default" : "outline"} disabled={!canEdit}>

@@ -68,16 +68,11 @@ export default async function PersonalSettingsPage({
           {params.saved ? (
             <p className="rounded-md bg-fit-green-bg px-3 py-2 text-sm text-navy">Personal settings saved.</p>
           ) : null}
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            Signed in as {session.name}. Profile picture uses your initials in the header. Agency
-            Settings, billing, people, and carrier credentials stay off this path.
-          </p>
+          <p className="max-w-3xl text-sm text-muted-foreground">Signed in as {session.name}.</p>
 
           <section id="profile" className="ff-card space-y-2 p-4">
             <h2 className="text-sm font-semibold text-navy">Profile picture</h2>
-            <p className="text-sm text-muted-foreground">
-              The header avatar uses your name initials. Change the name on Edit Profile.
-            </p>
+
             <Link href="/settings/profile" className="text-sm text-primary hover:underline">
               Edit Profile
             </Link>
@@ -85,7 +80,7 @@ export default async function PersonalSettingsPage({
 
           <section id="password" className="ff-card space-y-2 p-4">
             <h2 className="text-sm font-semibold text-navy">Password</h2>
-            <p className="text-sm text-muted-foreground">Change the password and 2FA on this login.</p>
+
             <Link href="/settings/security" className="text-sm text-primary hover:underline">
               Open password and 2FA
             </Link>
@@ -94,10 +89,7 @@ export default async function PersonalSettingsPage({
           <form action={savePersonalPrefsAction} className="space-y-4">
             <section id="signature" className="ff-card space-y-2 p-4">
               <h2 className="text-sm font-semibold text-navy">Email signature</h2>
-              <p className="text-sm text-muted-foreground">
-                Personal override. The agency close is Admin-owned. Leave this blank to inherit it.
-                Templates still merge {`{{signature}}`}.
-              </p>
+
               <PersonalSignatureEditor
                 defaultValue={personal.emailSignature ?? ""}
                 agencyPreview={agencySignature?.bodyEn ?? ""}
@@ -106,9 +98,7 @@ export default async function PersonalSettingsPage({
 
             <section id="templates" className="ff-card space-y-2 p-4">
               <h2 className="text-sm font-semibold text-navy">Personal templates</h2>
-              <p className="text-sm text-muted-foreground">
-                Your drafts and the shared library. Agency editors stay under Admin.
-              </p>
+
               <div className="flex flex-wrap gap-3 text-sm">
                 <Link href="/automations/templates" className="text-primary hover:underline">
                   Email template library
@@ -133,22 +123,12 @@ export default async function PersonalSettingsPage({
                 />
                 Show in-app alerts on the header bell
               </label>
-              <p className="text-sm text-muted-foreground">
-                Open the{" "}
-                <Link href="/notifications" className="text-primary hover:underline">
-                  notification board
-                </Link>{" "}
-                for recent pings. Nothing emails you from this desk.
-              </p>
-            </section>
 
+            </section>
 
             <section id="date-format" className="ff-card space-y-2 p-4">
               <h2 className="text-sm font-semibold text-navy">Date format</h2>
-              <p className="text-sm text-muted-foreground">
-                How dates show on lists and desk cards for you. Stored values stay ISO; only the
-                display changes. Default is M-D-Y.
-              </p>
+
               <Label className="text-xs">Display format</Label>
               <select
                 name="dateFormat"

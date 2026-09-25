@@ -17,9 +17,7 @@ export function AppointmentRows({
 }) {
   if (appointments.length === 0) {
     return (
-      <p className="text-xs text-muted-foreground">
-        No appointment rows. Missing is unknown — not a skip.
-      </p>
+      <p className="text-xs text-muted-foreground">No appointment rows.</p>
     );
   }
 

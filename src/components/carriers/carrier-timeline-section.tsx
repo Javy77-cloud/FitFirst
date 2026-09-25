@@ -83,9 +83,7 @@ export function CarrierTimelineSection({
 
   if (groups.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground" data-ff-carrier-timeline-empty="">
-        No carrier activity yet. Credential reveals, readiness checks, and field updates will show here.
-      </p>
+      <p className="text-sm text-muted-foreground" data-ff-carrier-timeline-empty="">No carrier activity yet.</p>
     );
   }
 

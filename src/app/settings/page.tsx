@@ -12,11 +12,7 @@ export default async function SettingsPage() {
 
   return (
     <SettingsShell title="Settings" current="overview">
-      <p className="mb-4 text-sm text-muted-foreground">
-        {session.isAdmin
-          ? "Admin settings change the agency. Search, then open an umbrella — Agency, People & access, Communications, Book & desk, Growth, Integrations, Data, or Automations & tools. Security and Billing stay on the rail. Macros and Developer Hub are Advanced / Admin, not agent-primary."
-          : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
-      </p>
+
       <SettingsSearch />
       {session.isAdmin ? <SettingsPinnedLinks /> : null}
       <div className="mb-6">
@@ -29,9 +25,7 @@ export default async function SettingsPage() {
         >
           <div>
             <div className="text-sm font-semibold text-navy">This login · Security</div>
-            <p className="text-helper text-muted-foreground">
-              Signed in as {session.name}. Password, 2FA, and profile stay on this account.
-            </p>
+            <p className="text-helper text-muted-foreground">Signed in as {session.name}.</p>
           </div>
         </Link>
         <Link
@@ -40,9 +34,7 @@ export default async function SettingsPage() {
         >
           <div>
             <div className="text-sm font-semibold text-navy">My desk</div>
-            <p className="text-helper text-muted-foreground">
-              Colors, density, and columns for you — not the agency. Brand lives under Agency.
-            </p>
+
           </div>
         </Link>
       </div>

@@ -34,7 +34,7 @@ export default async function MacroDetailPage({
       <section className="ff-card mt-4 max-w-3xl overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">Run log</div>
         {runs.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-muted-foreground">No runs yet. Use Run Macro on the list.</p>
+          <p className="px-4 py-4 text-sm text-muted-foreground">No runs yet.</p>
         ) : (
           <ul className="divide-y divide-border">
             {runs.map((run) => (

@@ -8,9 +8,7 @@ export default async function CarrierDownloadSettingsPage() {
 
   return (
     <SettingsShell title="Carrier download" current="carrier-download">
-      <p className="mb-3 text-sm text-muted-foreground">
-        Connect IVANS or AL3 when the agency has a feed. Nothing downloads from this desk today.
-      </p>
+
       <div className="grid gap-3 md:grid-cols-2">
         {rows.map((row) => (
           <section key={row.provider} className="ff-card p-4">
@@ -20,10 +18,7 @@ export default async function CarrierDownloadSettingsPage() {
                 Not connected
               </span>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">{row.blurb}</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Bring your own carrier download when the agency is ready.
-            </p>
+
           </section>
         ))}
       </div>

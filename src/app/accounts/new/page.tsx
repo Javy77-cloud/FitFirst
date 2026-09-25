@@ -19,9 +19,7 @@ export default async function NewBusinessPage() {
   return (
     <AppShell title="Add Account">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Same Account layout as detail — fill what you know, Save Account opens the record.
-        </p>
+
         <EditLayoutLink module="businesses" />
       </div>
 

@@ -36,11 +36,7 @@ export default async function ConnectionsPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Named connectors Functions can reference by <code>linkName</code>. Client secrets encrypt
-        at rest. Authorize stays at the OAuth wall — agency BYO later. Zoho CRM sync does not write
-        to live Zoho.
-      </p>
+
       <div className="mb-4">
         <OauthWall title="Authorize · needs OAuth" provider="Every connector" />
       </div>

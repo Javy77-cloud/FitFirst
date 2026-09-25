@@ -79,10 +79,7 @@ export function FunctionForm({
           className="mt-1 min-h-40 font-mono text-xs"
           spellCheck={false}
         />
-        <p className="mt-1 text-xs text-muted-foreground">
-          Allowed ops: identity, pick, wrap, set. Anything else logs the args and returns a stub.
-          Host JavaScript is not executed.
-        </p>
+
       </div>
       <div>
         <Label className="text-xs">Connection (metadata only)</Label>
@@ -103,10 +100,7 @@ export function FunctionForm({
         <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Standalone expose
         </legend>
-        <p className="text-xs text-muted-foreground">
-          REST is a working stub at <code>/api/dev/functions/[apiName]/execute</code> and checks an
-          org API key. OAuth 2.0 is a wall — Connect later.
-        </p>
+
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="exposeAsRest" defaultChecked={fn?.exposeAsRest ?? standaloneDefault} />
           Expose as REST (API Key)

@@ -26,9 +26,7 @@ export function ContestBoard({
             <Trophy className="size-3.5 text-fit-flag" />
             Reward board
           </h3>
-          <p className="text-helper text-muted-foreground">
-            Agency-wide standings. Quotes — including Ana&apos;s $321k HO3 — do not score.
-          </p>
+
         </div>
       </div>
       {!contest ? (

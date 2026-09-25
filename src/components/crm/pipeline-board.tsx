@@ -75,10 +75,7 @@ export function PipelineBoard({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Call or schedule a meeting from the card. Phone and email are already on the shop — do
-          not open the deal just to copy them. Bound stays locked.
-        </p>
+
         <AddNewDealDialog triggerSize="sm" />
       </div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
@@ -163,11 +160,7 @@ export function PipelineBoard({
                               name: option.name,
                             }))}
                           />
-                        ) : deal.pipelineStage === "bound" ? (
-                          <p className="mt-2 text-[11px] text-muted-foreground">
-                            Bound — policy already written
-                          </p>
-                        ) : null}
+                        ) : deal.pipelineStage === "bound" ? null : null}
                       </article>
                     );
                   })

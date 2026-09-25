@@ -34,10 +34,7 @@ export function PolicyClaimsTab({
             Log FNOL
           </Link>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Claim number, loss date, status. Amount is shown only when stored on the claim record
-          (none today — no invented figures).
-        </p>
+
         {claims.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No claims on this policy.</p>
         ) : (

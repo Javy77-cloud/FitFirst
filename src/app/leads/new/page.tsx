@@ -35,9 +35,7 @@ export default async function NewLeadPage() {
   return (
     <AppShell title="Add Lead">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Same Lead layout as detail — fill what you know, Save Lead opens the record.
-        </p>
+
         <EditLayoutLink module="leads" />
       </div>
 

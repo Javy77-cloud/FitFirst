@@ -3,11 +3,7 @@ import type { MarketCompareRow } from "@/lib/carriers/market-compare";
 
 export function MarketCompareTable({ rows, lob }: { rows: MarketCompareRow[]; lob: string }) {
   if (!lob) {
-    return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        Pick A Line Of Business To Compare Carriers Side By Side.
-      </p>
-    );
+    return null;
   }
   if (rows.length === 0) {
     return (

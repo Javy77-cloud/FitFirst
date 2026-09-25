@@ -18,10 +18,6 @@ export default async function ReviewsPage() {
 
   return (
     <AppShell title="Reviews & expirations">
-      <p className="mb-3 text-sm text-muted-foreground">
-        30/60/90 and expiration tasks stay in the desk. Completing a task writes client history.
-        Nothing emails the agent.
-      </p>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="ff-card overflow-hidden">
@@ -29,9 +25,7 @@ export default async function ReviewsPage() {
             Open review tasks
           </div>
           {queue.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">
-              No open tasks. Bind a deal to schedule 30/60/90 and expiration follow-ups.
-            </p>
+            <p className="px-4 py-6 text-sm text-muted-foreground">No open tasks.</p>
           ) : (
             <ul className="divide-y divide-border">
               {queue.map((task) => (

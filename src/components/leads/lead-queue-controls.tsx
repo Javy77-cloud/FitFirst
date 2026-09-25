@@ -272,10 +272,7 @@ function NurtureLeadDialog({
       <DialogContent className="w-[min(100%-2rem,420px)] max-w-[420px] gap-3 p-5 sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle>Nurture</DialogTitle>
-          <DialogDescription>
-            Park this lead and remind yourself when to contact again. Lost stays searchable; this
-            one resurfaces on the date you pick.
-          </DialogDescription>
+
         </DialogHeader>
         <form
           action={(formData) => {
@@ -313,7 +310,7 @@ function NurtureLeadDialog({
                 ))}
               </select>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">Days or months, up to 1 year.</p>
+
           </div>
           <div>
             <Label htmlFor={`nurture-remind-${leadId}`} className="text-xs">

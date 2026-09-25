@@ -34,17 +34,13 @@ export default async function AutomationsTemplatesPage() {
       }
     >
       <AutomationsModuleNav />
-      <p className="mb-2 max-w-3xl text-sm text-muted-foreground">
-        Email library only — system and custom. Documents stay under Documents. Preview only.
-        Playbooks do not send these unless a later gated job already exists.
-      </p>
+
       <p className="mb-4 text-xs text-navy">
-        {session.isAdmin ? "Admin can edit in Settings." : "Agents preview. Admin edits."}{" "}
-        {readyBoth} of {templates.length} ready in both languages. Nothing sends from this page.
+        {readyBoth} of {templates.length} ready in both languages.
       </p>
       {templates.length === 0 ? (
         <section className="ff-card px-4 py-6 text-sm text-muted-foreground">
-          No templates yet. Seed the desk or ask Admin to add one.
+          No templates yet.
         </section>
       ) : (
         <div className="space-y-6" data-ff-email-library="">

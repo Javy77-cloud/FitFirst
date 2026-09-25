@@ -252,9 +252,7 @@ export default async function CarriersPage({
         </div>
       }
     >
-      <p className="mb-3 text-base text-muted-foreground">
-        Quote-ready, skip-decline, and stale markets — scannable for quoting, not every field as a column.
-      </p>
+
       {q && appetiteHits.length > 0 ? (
         <section
           className="mb-3 rounded-lg border border-[#002868]/20 bg-slate-50 p-3"

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { listCatalogByCategory } from "@/lib/integrations/catalog-store";
 import { listUsers } from "@/lib/db/queries";
-import { MAPS_FREE_LINK_NOTE, socialByoSpec } from "@/lib/social/byo";
+import { socialByoSpec } from "@/lib/social/byo";
 import { isSocialPlatformId } from "@/lib/social/platforms";
 import { loadGbpMonitorPolicy } from "@/lib/social/store";
 
@@ -31,11 +31,7 @@ export default async function SocialSettingsPage({
 
   return (
     <SettingsShell title="Social / GBP" current="social">
-      <p className="mb-3 text-sm text-muted-foreground">
-        Facebook and Instagram are one-click Connect on FitFirst’s Meta app — Admin never pastes App
-        ID or secret. LinkedIn and GBP still paste the agency developer app. FitFirst does not
-        subscribe to those APIs or buy ads. {MAPS_FREE_LINK_NOTE}
-      </p>
+
       {notice === "gbp-agents-on" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
           Agents can monitor Google Business Profile on Social pulse.
@@ -52,43 +48,18 @@ export default async function SocialSettingsPage({
           {typeof query.provider === "string" ? query.provider : "Provider"} marked not connected.
         </p>
       ) : null}
-      {notice === "owner-saved" ? (
-        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
-          Account owner saved. Inbound on that account creates a Lead for that agent (or the
-          award pool if Agency).
-        </p>
-      ) : null}
-      {notice === "gbp-agents-off" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Agents see GBP locked until you allow monitoring again.
-        </p>
-      ) : null}
       {notice === "credentials-saved" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
           Agency app credentials saved for{" "}
           {typeof query.provider === "string" && isSocialPlatformId(query.provider)
             ? socialByoSpec(query.provider).product
             : "that platform"}
-          . Secret is encrypted. Click Connect to open the vendor OAuth dialog.
+          .
         </p>
       ) : null}
       {notice === "credentials-cleared" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Agency app keys cleared. Disconnect the account if it was already connected.
-        </p>
-      ) : null}
-      {notice === "needs-credentials" ? (
-        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Paste the agency App ID / Client ID and secret first. FitFirst has no vendor keys to lend.
-        </p>
-      ) : null}
-      {notice === "not-configured" ? (
-        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          {typeof query.provider === "string" && query.provider === "instagram"
-            ? "Instagram Connect isn’t set up on this FitFirst install"
-            : "Facebook Connect isn’t set up on this FitFirst install"}
-          . Site developers set META_APP_ID / META_APP_SECRET (or the API vault). Agency owners do
-          not paste Meta keys.
+          Agency app keys cleared.
         </p>
       ) : null}
       {notice === "paid-wall" ? (
@@ -96,16 +67,6 @@ export default async function SocialSettingsPage({
           {typeof query.provider === "string" && isSocialPlatformId(query.provider)
             ? socialByoSpec(query.provider).wallBody
             : "That vendor requires a paid API. FitFirst does not buy it."}
-        </p>
-      ) : null}
-      {notice === "oauth-wall" ? (
-        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          OAuth stopped at the vendor wall
-          {typeof query.provider === "string" && isSocialPlatformId(query.provider)
-            ? ` (${socialByoSpec(query.provider).vendor})`
-            : ""}
-          . Check the card for the error. Common causes: redirect URI not added, app still in review,
-          or a paid product.
         </p>
       ) : null}
       {notice === "byo-connected" ? (
@@ -118,10 +79,7 @@ export default async function SocialSettingsPage({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-navy">Google Business Profile policy</h2>
-            <p className="mt-1 text-helper text-muted-foreground">
-              Javy’s rule: Admin approval before agents can monitor GBP. Connecting the listing is
-              not enough — turn the toggle on after you trust the plug.
-            </p>
+
           </div>
           <ConnectionBadge connected={Boolean(gbp?.connected)} />
         </div>
@@ -136,9 +94,7 @@ export default async function SocialSettingsPage({
             />
             <span>
               Allow agents to monitor GBP
-              <span className="block text-helper text-muted-foreground">
-                Until this is on, agents see a locked card and cannot open GBP inquiries as Leads.
-              </span>
+
             </span>
           </label>
           <Button type="submit" size="sm">
@@ -161,10 +117,7 @@ export default async function SocialSettingsPage({
       <section className="mt-5 ff-card space-y-3 p-4">
         <div>
           <h2 className="text-sm font-semibold text-navy">Who owns each connected account</h2>
-          <p className="mt-1 text-helper text-muted-foreground">
-            Agent-owned inbound creates a Lead and pings that agent. Agency (unassigned) goes to
-            the Admin award pool. Home bulletin reads the same offers.
-          </p>
+
         </div>
         <ul className="divide-y divide-border rounded-md border border-border">
           {social.map((item) => {

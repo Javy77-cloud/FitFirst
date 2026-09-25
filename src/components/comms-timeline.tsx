@@ -42,11 +42,7 @@ export function CommsTimeline({
   return (
     <div>
       <h3 className="text-sm font-semibold text-navy">{heading}</h3>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Durable log on this record — inbound and outbound. Emails stay as a conversation. SMS,
-        calls, meetings, and tasks stay on the same timeline. Desk stubs only; no Twilio or
-        SendGrid.
-      </p>
+
       {threads.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No communications on this record yet.</p>
       ) : (

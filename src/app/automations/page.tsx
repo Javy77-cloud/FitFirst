@@ -73,26 +73,7 @@ export default async function AutomationsHubPage() {
   return (
     <AppShell title="Automations">
       <AutomationsModuleNav showMacros={showMacros} />
-      <p className="mb-2 max-w-3xl text-sm text-muted-foreground">
-        In-desk automations. Playbooks create Tasks and in-app Alerts. Templates stay EN/ES
-        drafts. Paid campaign and SMS vendors are off. Developer tools (Functions, Macros,
-        Buttons, Client Scripts, Webhooks, API Keys, Connections) live here too — same records as
-        Settings → Automations & tools.
-      </p>
-      <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm">
-        {session.isAdmin ? (
-          <>
-            <span className="font-semibold text-navy">Admin view.</span> Write playbooks, toggle
-            them, and run a fire. Internal pings stay in Alerts / pop-up — nothing emails you.
-          </>
-        ) : (
-          <>
-            <span className="font-semibold text-navy">Agent view.</span> Read the playbooks on
-            your book and the Tasks / Alerts they already fired. You cannot edit rules or connect
-            a vendor.
-          </>
-        )}
-      </p>
+
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Link
           href="/settings/developer-hub"
@@ -121,11 +102,7 @@ export default async function AutomationsHubPage() {
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Developer tools
       </h2>
-      <p className="mb-3 max-w-3xl text-xs text-muted-foreground">
-        Working stubs up to the OAuth wall. Admin creates and runs them. Same tables as Settings.
-        Check rows on Leads, Contacts, Deals, Policies, Tasks, Accounts, Campaigns, or Quotes,
-        then Run Macro. Leads also has Run Follow-up Macro. Same Settings desk_macros rows.
-      </p>
+
       <div className="grid gap-3 md:grid-cols-2">
         {(showMacros ? AUTOMATION_DEV_SECTIONS : AUTOMATION_DEV_SECTIONS.filter((section) => section.id !== "macros")).map((section) => (
           <Link

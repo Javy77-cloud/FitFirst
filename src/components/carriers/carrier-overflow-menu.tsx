@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -139,7 +138,7 @@ export function CarrierOverflowMenu({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Set reminder</DialogTitle>
-            <DialogDescription>Creates a desk task tied to this carrier name.</DialogDescription>
+
           </DialogHeader>
           <Input
             className="h-8"
@@ -162,9 +161,7 @@ export function CarrierOverflowMenu({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Archive carrier?</DialogTitle>
-            <DialogDescription>
-              Sets status to Inactive. Policies stay linked — this does not delete the record.
-            </DialogDescription>
+
           </DialogHeader>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => setArchiveOpen(false)}>
@@ -181,9 +178,7 @@ export function CarrierOverflowMenu({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Merge carrier</DialogTitle>
-            <DialogDescription>
-              Merges the selected carrier into this one — policies, quotes, and portal login move over. The duplicate is retired.
-            </DialogDescription>
+
           </DialogHeader>
           <Input
             className="h-8"
@@ -224,7 +219,7 @@ export function CarrierOverflowMenu({
         <DialogContent className="sm:max-w-md" data-ff-carrier-tags-dialog="">
           <DialogHeader>
             <DialogTitle>Tags</DialogTitle>
-            <DialogDescription>Assign tags for this carrier.</DialogDescription>
+
           </DialogHeader>
           <RecordTags
             module="carriers"
@@ -243,9 +238,7 @@ export function CarrierOverflowMenu({
         <DialogContent className="sm:max-w-sm" data-ff-carrier-assign-dialog="">
           <DialogHeader>
             <DialogTitle>Assign</DialogTitle>
-            <DialogDescription>
-              Carriers stay on the shared appetite book — no owner to assign.
-            </DialogDescription>
+
           </DialogHeader>
           <Button type="button" size="sm" variant="outline" onClick={() => setAssignOpen(false)}>
             Close

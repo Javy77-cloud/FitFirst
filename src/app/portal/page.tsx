@@ -20,11 +20,7 @@ export default async function PortalLandingPage({
   return (
     <PortalShell brand={brand} title="Open your self-serve link">
       <div className="ff-card space-y-4 p-5">
-        <p className="text-sm text-muted-foreground">
-          {brand.agencyName} sent you a stub portal link. Paste the code from that
-          message — there is no password on this slice. Requests go to the agency
-          work queue so staff do not retype holder or change details.
-        </p>
+
         {error ? (
           <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red" role="alert">
             {error}
@@ -55,10 +51,7 @@ export default async function PortalLandingPage({
             Personal stub
           </p>
           <h3 className="mt-1 font-semibold text-navy">Elena Ruiz</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            ID card for HO3-ELENA-2026 and a policy-change request. Ana is not on
-            this portal.
-          </p>
+
         </Link>
         <Link
           href={portalHref(HARBOR_PORTAL_TOKEN)}
@@ -68,10 +61,7 @@ export default async function PortalLandingPage({
             Commercial stub
           </p>
           <h3 className="mt-1 font-semibold text-navy">Harbor Key Marine LLC</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Reuse COI-20260820-0001 or request a new certificate. Change requests
-            queue on GL-HARBOR-2026.
-          </p>
+
         </Link>
       </section>
     </PortalShell>

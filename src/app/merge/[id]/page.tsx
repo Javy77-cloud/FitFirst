@@ -101,12 +101,7 @@ export default async function MergeReviewPage({ params }: { params: Promise<{ id
           Duplicate retired (archived), not deleted. Missing fields were copied onto the keeper.
           Deals, policies, locations, and activities now follow {keeperId === left.person.id ? `${left.person.firstName} ${left.person.lastName}` : `${right.person.firstName} ${right.person.lastName}`}.
         </div>
-      ) : (
-        <p className="mb-4 max-w-3xl text-base text-muted-foreground">
-          Pick the surviving record. Blank fields on that record take values from the other.
-          Filled fields stay put. Notes append so nothing is lost. The duplicate is archived.
-        </p>
-      )}
+      ) : null}
 
       <div className="mb-4 grid gap-4 lg:grid-cols-2">
         {[

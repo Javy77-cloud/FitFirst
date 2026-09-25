@@ -42,11 +42,7 @@ export default async function WebhooksPage({
         notice={typeof query.notice === "string" ? query.notice : undefined}
         error={typeof query.error === "string" ? query.error : undefined}
       />
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Outbound hooks enqueue a delivery row. Send test POSTs to localhost; remote URLs log a stub
-        attempt. Inbound Signals: <code>POST /api/dev/webhooks/inbound/[slug]</code> stores the
-        payload and raises an in-app Alert.
-      </p>
+
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">Outbound</div>
         {hooks.length === 0 ? (

@@ -146,11 +146,6 @@ export function AccountOpportunitiesPanel({
 
   return (
     <div className="space-y-4" data-ff-account-opportunities="">
-      <p className="text-xs text-muted-foreground">
-        Actionable commercial gaps from coverage (with us vs elsewhere), Account Details ops facts
-        (employees, industry), and elsewhere renewals. Each row has a short title, why it matters,
-        and an optional CTA.
-      </p>
 
       {dealRows.length > 0 ? (
         <ul

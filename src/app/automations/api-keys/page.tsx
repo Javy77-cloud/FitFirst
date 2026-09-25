@@ -28,8 +28,7 @@ export default async function ApiKeysPage({
     <AppShell title="API Keys">
       <AutomationsModuleNav />
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Org-level keys for Standalone function REST. The secret is hashed. User-scoped{" "}
-        <code>/api/v1</code> tokens stay separate. Seeded demo key: <code>{DEMO_ORG_API_KEY}</code>.
+        Seeded demo key: <code>{DEMO_ORG_API_KEY}</code>.
       </p>
       {secret ? (
         <div className="mb-4 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-3 text-sm">
@@ -37,9 +36,7 @@ export default async function ApiKeysPage({
             {notice === "regenerated" ? "New secret — copy it now" : "Secret — copy it now"}
           </div>
           <p className="mt-1 break-all font-mono text-xs">{secret}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            FitFirst will not show this again. Revoke or regenerate if it leaves the desk.
-          </p>
+
         </div>
       ) : (
         <AutomationsNotice notice={notice} />

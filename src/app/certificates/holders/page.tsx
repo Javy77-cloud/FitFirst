@@ -70,9 +70,7 @@ export default async function CertificateHoldersPage({
           <h2 className="text-base font-semibold text-navy">
             {editing ? `Edit ${editing.name}` : "Add a holder contact"}
           </h2>
-          <p className="mt-1 mb-3 text-sm text-muted-foreground">
-            Default Business is Harbor Key Marine. Saving a name does not issue the stub.
-          </p>
+
           <HolderContactForm accountId={HARBOR_ACCOUNT_ID} contact={editing} />
           {editing ? (
             <p className="mt-2 text-sm">
@@ -87,9 +85,7 @@ export default async function CertificateHoldersPage({
             Holder contacts
           </div>
           {contacts.length === 0 ? (
-            <p className="px-4 py-6 text-base text-muted-foreground">
-              No holder contacts in this view. Add Palm Bay or Brevard from the form.
-            </p>
+            <p className="px-4 py-6 text-base text-muted-foreground">No holder contacts in this view.</p>
           ) : (
             <ul className="divide-y divide-border">
               {contacts.map(({ contact, account }) => (

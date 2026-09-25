@@ -96,7 +96,7 @@ export function LogCallForm({
 
 export function ActivityLogList({ logs }: { logs: ActivityLog[] }) {
   if (logs.length === 0) {
-    return <p className="text-xs text-muted-foreground">No log yet. Every save writes a durable row.</p>;
+    return <p className="text-xs text-muted-foreground">No log yet.</p>;
   }
   return (
     <ul className="space-y-1.5 text-xs">

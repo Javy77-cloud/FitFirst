@@ -11,17 +11,10 @@ export function RenewalRiskBoard({ rows, embedded = false }: { rows: RenewalRisk
           <ShieldAlert className="size-3.5 text-fit-flag" />
           Renewal-risk flags
         </h3>
-        <p className="text-helper text-muted-foreground">
-          Rule-based. Flags households before the 45–75 day rate-increase window using days to
-          renewal, premium change if known, monoline, lapse history, and no contact 60 days. Not
-          AI.
-        </p>
+
       </div>
       {rows.length === 0 ? (
-        <p className="px-4 py-5 text-sm text-muted-foreground">
-          No households in the 90-day watch. Hale and Nair seed into this list after migrate +
-          seed.
-        </p>
+        <p className="px-4 py-5 text-sm text-muted-foreground">No households in the 90-day watch.</p>
       ) : (
         <ul className="divide-y divide-border">
           {rows.slice(0, 8).map((row) => (

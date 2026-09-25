@@ -50,10 +50,7 @@ export default async function DocumentFillPage({
         </div>
       }
     >
-      <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Fillable form. Field map is the template schema. Scan &amp; suggest is not live OCR.
-        Quote Sheet fill still lives on /forms/[slug].
-      </p>
+
       {notice === "scan-suggested" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Suggested fields applied. Edit anything that looks wrong.
@@ -62,16 +59,6 @@ export default async function DocumentFillPage({
       {notice === "esign-fill-sent" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
           DocuSign sandbox envelope created. Check the signer inbox, then open{" "}
-          <Link href="/esign" className="text-primary hover:underline">
-            E-sign
-          </Link>
-          .
-        </p>
-      ) : null}
-      {notice === "esign-fill-stub" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          Fill confirmed. DocuSign is not connected — local envelope recorded. Connect sandbox in
-          Settings → E-sign, or use the in-desk path on{" "}
           <Link href="/esign" className="text-primary hover:underline">
             E-sign
           </Link>

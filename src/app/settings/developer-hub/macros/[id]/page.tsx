@@ -45,11 +45,7 @@ export default async function EditMacroPage({
       <MacroForm macro={macro} templates={templates.map((row) => ({ id: row.id, name: row.name }))} />
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-semibold text-navy">Recent runs</h2>
-        {runs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Not run yet. Use Run Macro on a list or record for a selected module.
-          </p>
-        ) : (
+        {runs.length === 0 ? null : (
           <ul className="space-y-2 text-sm">
             {runs.slice(0, 8).map((run) => (
               <li key={run.id} className="rounded-md border border-border px-3 py-2">

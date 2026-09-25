@@ -13,10 +13,7 @@ export default async function NewDeveloperWebhookPage() {
 
   return (
     <SettingsShell title="New outbound webhook" current="webhooks">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Subscribe to a desk event. Matching writes enqueue a delivery row. Send test POSTs only
-        when the target is localhost.
-      </p>
+
       <form action={saveDeveloperWebhook} className="ff-card max-w-xl space-y-3 p-4">
         <div>
           <Label className="text-xs">Name</Label>

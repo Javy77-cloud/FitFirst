@@ -16,11 +16,7 @@ export default async function EmailSignaturesPage() {
 
   return (
     <SettingsShell title="Email signatures" current="signatures">
-      {!desk.isAdmin ? (
-        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Signatures are Admin-only. Agents keep a personal override under Me.
-        </p>
-      ) : (
+      {!desk.isAdmin ? null : (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
           Agency-owned close. Templates merge {`{{signature}}`} — also appended when a template
           omits it. Personal closes on{" "}

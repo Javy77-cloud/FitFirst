@@ -27,7 +27,7 @@ export function DocumentVersions({
   return (
     <div className="space-y-2">
       {versions.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground">No versions yet. Replace keeps the current copy.</p>
+        <p className="text-[11px] text-muted-foreground">No versions yet.</p>
       ) : (
         <p className="text-[11px] text-muted-foreground">
           Version {current}

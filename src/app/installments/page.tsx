@@ -55,9 +55,7 @@ export default async function InstallmentsPage({
 
       <section className="ff-card mb-4 p-4">
         <h2 className="text-base font-semibold text-navy">Schedule an installment</h2>
-        <p className="mt-1 mb-3 text-sm text-muted-foreground">
-          Default Policy is Elena HO3. Marking received later does not collect money.
-        </p>
+
         <form action={createPolicyInstallment} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <input type="hidden" name="policyId" value={ELENA_POLICY_ID} />
           <input type="hidden" name="returnTo" value="/installments" />

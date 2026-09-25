@@ -26,16 +26,10 @@ export default async function FillLearningLogsPage() {
       }
     >
       <LogsTabs current="fill-learning" />
-      <p className="mb-3 text-sm text-muted-foreground">
-        Agency memory for Quote Sheet field mapping from dec / wind mit / Four-Point / other source
-        docs. Same idea as the appetite log: a desk correction here is reused on the next extract
-        when the extracted string matches.
-      </p>
+
       <section className="ff-card overflow-x-auto">
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
-            No fill corrections yet. On a Risk Profile, use Mark mapping wrong to save one.
-          </p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No fill corrections yet.</p>
         ) : (
           <table className="ff-table">
             <thead>

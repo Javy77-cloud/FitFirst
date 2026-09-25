@@ -25,10 +25,7 @@ export function LossRunPanel({
       </div>
       <p className="mt-1 text-base text-muted-foreground">{LOSS_RUN_STUB_DISCLAIMER}</p>
       {claims.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No desk claims on this Policy. The CSV still downloads headers so you can send an
-          empty stub.
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">No desk claims on this Policy.</p>
       ) : (
         <table className="ff-table mt-3">
           <thead>

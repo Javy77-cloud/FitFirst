@@ -47,13 +47,6 @@ export default async function PeopleAgentsPage({
 
   return (
     <SettingsShell title="People / Agents" current="agents">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Admin manages every desk login. You set the username or email. The agent chooses a
-        password on the invite link, then enroll 2-step before the desk opens. Freeze locks
-        the desk. Remove is soft — the row stays. Recovery stubs (`/recover/password`,
-        `/recover/mfa`) sit on each row — nothing emails. Javy and Maya are MFA enrolled.
-        Nora Frost is pending enrollment.
-      </p>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <div className="ff-card px-4 py-3">
@@ -95,10 +88,10 @@ export default async function PeopleAgentsPage({
       <section className="ff-card mb-4 overflow-hidden">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-navy">Everyone</h2>
-          <p className="text-helper text-muted-foreground">Status, privileges, and a producer scorecard per person.</p>
+
         </div>
         {people.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">No desk users yet. Create an agent below.</p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No desk users yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
@@ -199,9 +192,7 @@ export default async function PeopleAgentsPage({
 
       <section className="ff-card p-4">
         <h2 className="text-sm font-semibold text-navy">Create agent</h2>
-        <p className="mb-3 text-helper text-muted-foreground">
-          You set the username or email. They pick the password on the invite stub — nothing emails.
-        </p>
+
         <form action={createAgent} className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label className="text-xs">Name</Label>
@@ -231,9 +222,7 @@ export default async function PeopleAgentsPage({
             <input type="checkbox" name="canSeeAgencyWidgets" />
             Can see agency book
           </label>
-          <p className="sm:col-span-2 text-helper text-muted-foreground">
-            Agency book: agent sees the whole agency book (same records as admin), still with agent permissions.
-          </p>
+
           <div className="sm:col-span-2">
             <Button type="submit">Create agent + invite stub</Button>
           </div>

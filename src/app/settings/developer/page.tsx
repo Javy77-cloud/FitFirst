@@ -71,11 +71,7 @@ export default async function DeveloperHubOverviewPage() {
 
   return (
     <SettingsShell title="Developer Hub" current="developer">
-      <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Power-user tools live on Automations and share the Settings Developer Hub sibling tables
-        (<code>developer_*</code> + <code>desk_macros</code>). Working UIs stop at the API / OAuth
-        wall. FitFirst does not call paid vendors and does not write to live Zoho.
-      </p>
+
       {session.isSiteDeveloper ? (
         <>
         <Link
@@ -88,10 +84,7 @@ export default async function DeveloperHubOverviewPage() {
               <div className="text-sm font-semibold text-navy">Appetite Engine</div>
               <StatusChip status="working" />
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Shadow-mode Standing/Candidate predict + accuracy graduation (FL/HO seed). Silent —
-              no Markets agent colors yet. Site developers only.
-            </p>
+
           </div>
         </Link>
         <Link
@@ -104,10 +97,7 @@ export default async function DeveloperHubOverviewPage() {
               <div className="text-sm font-semibold text-navy">Appetite Log</div>
               <StatusChip status="working" />
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Line-scoped appetite training datasheet (Home / Auto / RV / Boat / Flood…) from every
-              quote attempt. Site developers only.
-            </p>
+
           </div>
         </Link>
         <Link
@@ -120,10 +110,7 @@ export default async function DeveloperHubOverviewPage() {
               <div className="text-sm font-semibold text-navy">Auto Premium Learning</div>
               <StatusChip status="working" />
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Premium ranking datasheet (vehicle / driver / ZIP / record) — parallel to Home Appetite
-              Log decline rules. Shadow stub ranking until sample grows. Site developers only.
-            </p>
+
           </div>
         </Link>
 
@@ -137,9 +124,7 @@ export default async function DeveloperHubOverviewPage() {
               <div className="text-sm font-semibold text-navy">Flood Learning</div>
               <StatusChip status="working" />
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Stub: zone / elevation / EC / premiums. Site developers only.
-            </p>
+
           </div>
         </Link>
         <Link
@@ -152,9 +137,7 @@ export default async function DeveloperHubOverviewPage() {
               <div className="text-sm font-semibold text-navy">WC Learning</div>
               <StatusChip status="working" />
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Stub: industry class / employees / payroll / location. Site developers only.
-            </p>
+
           </div>
         </Link>
         <Link
@@ -167,12 +150,9 @@ export default async function DeveloperHubOverviewPage() {
               <div className="text-sm font-semibold text-navy">GL Learning</div>
               <StatusChip status="working" />
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Stub: industry/class / revenue / employees / location. Site developers only.
-            </p>
+
           </div>
         </Link>
-
 
         </>
       ) : null}

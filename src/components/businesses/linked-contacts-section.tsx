@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -127,9 +126,7 @@ export function LinkedContactsSection({
         <DialogContent className="sm:max-w-md" data-ff-link-contact-dialog="">
           <DialogHeader>
             <DialogTitle>Link Contact</DialogTitle>
-            <DialogDescription>
-              Search An Existing Contact. A Contact Can Link To Multiple Accounts.
-            </DialogDescription>
+
           </DialogHeader>
           <Input
             className="h-8"

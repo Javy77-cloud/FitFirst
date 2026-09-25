@@ -249,9 +249,7 @@ export function PolicyInformationCard({
           expirationDate={policy.expirationDate}
           renewalDate={policy.renewalDate}
         />
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          Agency only (admin/owner). Requires a reason; writes Activity + E&O audit.
-        </p>
+
       </div>
     ) : null,
   };

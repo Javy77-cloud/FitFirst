@@ -7,10 +7,7 @@ export function InquiryList({ inquiries }: { inquiries: SocialPulseInquiry[] }) 
     return (
       <div className="ff-card p-4">
         <h3 className="text-sm font-semibold text-navy">Inbound inquiries</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          No inbound inquiries yet. Admin connects accounts under Settings → Social / GBP. GBP stays
-          locked for agents until Admin allows monitoring.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">No inbound inquiries yet.</p>
       </div>
     );
   }
@@ -20,9 +17,7 @@ export function InquiryList({ inquiries }: { inquiries: SocialPulseInquiry[] }) 
       <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-sm font-semibold text-navy">Inbound inquiries</h3>
-          <p className="text-[11px] text-muted-foreground">
-            Social ask → Lead. Same path as Stub social lead. No live vendor sync.
-          </p>
+
         </div>
         <form action={retrieveVisibleSocialInquiries}>
           <Button type="submit" size="sm" variant="outline">

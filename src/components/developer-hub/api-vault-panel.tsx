@@ -25,13 +25,7 @@ import type { MedicareBulkOneshotState } from "@/lib/healthsherpa/bulk-medicare"
 import { MedicareBulkSyncPanel } from "@/components/settings/medicare-bulk-sync-panel";
 
 function SiteDeveloperLockNote() {
-  return (
-    <p className="text-xs text-muted-foreground" data-ff-vault-locked>
-      Site developers only can unlock this vault. Admin can see that the API exists, not the raw key.
-      Grant with <code className="text-[11px]">users.is_site_developer</code> or{" "}
-      <code className="text-[11px]">FF_SITE_DEVELOPER_EMAILS</code>.
-    </p>
-  );
+  return null;
 }
 
 function FedExVaultCard({ canEdit, fedex }: { canEdit: boolean; fedex: VaultPublicStatus }) {
@@ -42,10 +36,7 @@ function FedExVaultCard({ canEdit, fedex }: { canEdit: boolean; fedex: VaultPubl
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-navy">{fedex.label}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Agency BYO. Paste FedEx Developer Portal API Key + Secret Key. FitFirst does not subscribe for the
-            agency. Address fields stay plain text until a key is saved.
-          </p>
+
         </div>
         <span
           className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
@@ -79,16 +70,13 @@ function FedExVaultCard({ canEdit, fedex }: { canEdit: boolean; fedex: VaultPubl
       </div>
       <p className="text-xs text-muted-foreground">
         Environment: {fedex.environment}
-        {fedex.source === "env" ? " · configured from server env (vault row empty)" : null}. Admins see this
-        mask only — there is no reveal.
+        {fedex.source === "env" ? " · configured from server env (vault row empty)" : null}
       </p>
 
       {canEdit ? (
         unlocked ? (
           <form action={saveFedExVaultAction} className="space-y-3 border-t border-border pt-3" data-ff-vault-unlock>
-            <p className="text-xs text-muted-foreground">
-              Vault unlocked. Enter new values to rotate. Previous secrets are never shown.
-            </p>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="fedex-api-key" className="text-xs">
@@ -158,8 +146,6 @@ function SingleKeyVaultCard({
   canEdit,
   status,
   provider,
-  envVar,
-  blurb,
   inputId,
   saveLabel,
   saveAction,
@@ -168,8 +154,6 @@ function SingleKeyVaultCard({
   canEdit: boolean;
   status: VaultPublicStatus;
   provider: string;
-  envVar: string;
-  blurb: string;
   inputId: string;
   saveLabel: string;
   saveAction: (formData: FormData) => void | Promise<void>;
@@ -187,10 +171,7 @@ function SingleKeyVaultCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {blurb} When <code className="text-[11px]">{envVar}</code> is not in{" "}
-            <code className="text-[11px]">.env</code>, paste the key here.
-          </p>
+
         </div>
         <span
           className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
@@ -210,17 +191,11 @@ function SingleKeyVaultCard({
           data-ff-vault-mask="apiKey"
         />
       </div>
-      <p className="text-xs text-muted-foreground">
-        {status.source === "env" ? "Configured from server env (vault row empty). " : null}
-        Admins see this mask only — there is no reveal.
-      </p>
 
       {canEdit ? (
         unlocked ? (
           <form action={saveAction} className="space-y-3 border-t border-border pt-3" data-ff-vault-unlock>
-            <p className="text-xs text-muted-foreground">
-              Vault unlocked. Enter a new key to rotate. Previous secrets are never shown.
-            </p>
+
             <div className="max-w-md">
               <Label htmlFor={inputId} className="text-xs">
                 New API key
@@ -286,12 +261,7 @@ function HealthSherpaMedicareVaultCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Outbound Medicare Partner API key FitFirst sends to HealthSherpa. This is not the inbound
-            webhook secret HealthSherpa posts to FitFirst. v1 uses X-API-Key; agent email is required on
-            each contact sync. Sync to HealthSherpa from FitFirst stamps contact.external_id so later
-            enrollments hit the same contact.
-          </p>
+
         </div>
         <span
           className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
@@ -313,7 +283,6 @@ function HealthSherpaMedicareVaultCard({
       <p className="text-xs text-muted-foreground">
         Environment: {status.environment}
         {status.source === "env" ? " · configured from server env (vault row empty)" : status.source === "vault" ? " · stored in vault" : " · not configured"}
-        . Do not paste the inbound webhook secret here.
       </p>
       {canEdit ? (
         unlocked ? (
@@ -346,10 +315,7 @@ function HealthSherpaMedicareVaultCard({
                 </select>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Leave the API key blank to keep the stored key and only update the agent email. The email is
-              read from this vault row on each sync — it is not hardcoded.
-            </p>
+
             <div className="flex flex-wrap gap-2">
               <Button type="submit" size="sm">
                 Save HealthSherpa Medicare
@@ -393,11 +359,7 @@ function HealthSherpaAcaVaultCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Outbound ICHRA / QuoteConnect partner key. Same HealthSherpa integration as Medicare — not the
-            inbound webhook secret. FitFirst does not quote ACA inside the desk — Sync opens Marketplace
-            and can call QuoteConnect.
-          </p>
+
         </div>
         <span
           className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
@@ -419,7 +381,6 @@ function HealthSherpaAcaVaultCard({
       <p className="text-xs text-muted-foreground">
         Environment: {status.environment}
         {status.source === "env" ? " · configured from server env (vault row empty)" : status.source === "vault" ? " · stored in vault" : " · not configured"}
-        . Do not paste the inbound webhook secret here.
       </p>
       {canEdit ? (
         unlocked ? (
@@ -505,12 +466,7 @@ function HealthSherpaInboundVaultCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Secret HealthSherpa sends <span className="font-medium text-navy">to FitFirst</span> as{" "}
-            <code className="text-[11px]">X-API-Key</code> on{" "}
-            <code className="text-[11px]">POST /api/integrations/healthsherpa/webhook</code>. Do not
-            paste the Medicare Partner API key or the Marketplace / ACA partner key here.
-          </p>
+
         </div>
         <span
           className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
@@ -531,8 +487,7 @@ function HealthSherpaInboundVaultCard({
       </div>
       <p className="text-xs text-muted-foreground" data-ff-inbound-source={status.source}>
         Source: {inboundSourceLabel(status)}. Env fallback:{" "}
-        <code className="text-[11px]">HEALTHSHERPA_WEBHOOK_API_KEY</code>. Admins see this mask only —
-        there is no reveal.
+        <code className="text-[11px]">HEALTHSHERPA_WEBHOOK_API_KEY</code>.
       </p>
       {status.unreadable ? (
         <p className="text-xs text-destructive" data-ff-inbound-unreadable="">
@@ -559,10 +514,7 @@ function HealthSherpaInboundVaultCard({
               }
             }}
           >
-            <p className="text-xs text-muted-foreground">
-              Vault unlocked. Paste the inbound webhook secret HealthSherpa is configured to send. The
-              previous value is never shown, so a masked field cannot overwrite the vault.
-            </p>
+
             <div className="max-w-md">
               <Label htmlFor="healthsherpa-inbound-webhook-secret" className="text-xs">
                 New inbound webhook secret
@@ -620,9 +572,7 @@ function MetaVaultCard({ canEdit, meta }: { canEdit: boolean; meta: VaultPublicS
         <div>
           <h2 className="text-sm font-semibold text-navy">{meta.label}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            FitFirst-owned Meta app for one-click Facebook and Instagram Connect. Agency Admin never
-            sees or pastes these keys. Env fallback:{" "}
-            <code className="text-[11px]">META_APP_ID</code> /{" "}
+            Env fallback: <code className="text-[11px]">META_APP_ID</code> /{" "}
             <code className="text-[11px]">META_APP_SECRET</code>.
           </p>
         </div>
@@ -656,17 +606,11 @@ function MetaVaultCard({ canEdit, meta }: { canEdit: boolean; meta: VaultPublicS
           />
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        {meta.source === "env" ? "Configured from server env (vault row empty). " : null}
-        Admins see this mask only — there is no reveal.
-      </p>
 
       {canEdit ? (
         unlocked ? (
           <form action={saveMetaVaultAction} className="space-y-3 border-t border-border pt-3" data-ff-vault-unlock>
-            <p className="text-xs text-muted-foreground">
-              Vault unlocked. Enter new values to rotate. Previous secrets are never shown.
-            </p>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="meta-app-id" className="text-xs">
@@ -749,8 +693,6 @@ export function ApiVaultPanel({
         canEdit={canEdit}
         status={getParcelData}
         provider="getparceldata"
-        envVar="GETPARCELDATA_API_KEY"
-        blurb='Agency BYO monthly GetParcelData key so Fill can geocode the quote-sheet address and pull parcel details. FitFirst never invents parcels or Coverage A from assessed value.'
         inputId="getparceldata-api-key"
         saveLabel="Save GetParcelData key"
         saveAction={saveGetParcelDataVaultAction}
@@ -760,8 +702,6 @@ export function ApiVaultPanel({
         canEdit={canEdit}
         status={permitStack}
         provider="permitstack"
-        envVar="PERMITSTACK_API_KEY"
-        blurb="Agency BYO PermitStack key so Fill can read property permit history and write roof / HVAC / water-heater years as CHECK when the category and date are confident."
         inputId="permitstack-api-key"
         saveLabel="Save PermitStack key"
         saveAction={savePermitStackVaultAction}

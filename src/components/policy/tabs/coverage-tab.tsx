@@ -21,7 +21,6 @@ type TermRow = {
   source?: string | null;
 };
 
-
 type ScheduleRow = {
   key: string;
   label: string;
@@ -191,15 +190,9 @@ export function PolicyCoverageTab({
     <div className="space-y-4" data-ff-policy-tab="coverage">
       <section className="ff-card p-4">
         <h2 className="text-base font-semibold text-navy">Coverage schedule</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Limit, deductible, premium, and source flag (carrier download | manual). Empty when
-          nothing has been keyed — no demo figures.
-        </p>
+
         {schedule.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">
-            No coverage schedule on file yet. Attach a dec under Documents, or file an endorsement
-            when the carrier confirms changes.
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">No coverage schedule on file yet.</p>
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="ff-table" data-ff-coverage-schedule="">
@@ -232,7 +225,6 @@ export function PolicyCoverageTab({
         )}
       </section>
 
-
       {showInterests ? (
         <div id="mortgagee" data-ff-coverage-mortgagee="">
           <div id="additional-insured" />
@@ -253,11 +245,7 @@ export function PolicyCoverageTab({
                 : "commercial"
             }
           />
-          {readOnly ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Agents can view mortgagee / AI rows; edits follow desk permissions on the form.
-            </p>
-          ) : null}
+          {readOnly ? null : null}
         </div>
       ) : null}
     </div>

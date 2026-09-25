@@ -56,12 +56,7 @@ export function ServicingChecklistCard({
           />
         </div>
       </div>
-      <p className="mt-2 text-base text-muted-foreground">
-        Template by line. Each incomplete item opens a task or collects a packet. Auto-filled from
-        files on the policy when possible — no busywork re-entry. Lender not in system: create the
-        contact once from Coverage. AOR is optional — attach on Documents when you need it; it
-        does not block completion.
-      </p>
+
       <ul className="mt-3 divide-y divide-border rounded-md border border-border">
         {checklist.items.map((item) => {
           const packetKey = (SERVICING_DOC_KEYS as readonly string[]).includes(item.key)
@@ -168,11 +163,7 @@ export function ServicingChecklistCard({
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium text-navy">{SERVICING_DOC_LABELS[key]}</div>
-                <div className="text-sm text-muted-foreground">
-                  {onFile
-                    ? "On this Policy."
-                    : "Optional — upload on Documents when needed. Does not block completion."}
-                </div>
+
                 {openTask ? (
                   <p className="mt-1 text-sm">
                     <Link

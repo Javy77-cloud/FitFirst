@@ -45,11 +45,6 @@ export function AccountCoveragePanel({
 
   return (
     <div className="space-y-5" data-ff-account-coverage="">
-      <p className="text-xs text-muted-foreground">
-        Commercial coverage on this Account. <strong>With us</strong> comes from FitFirst policies.
-        <strong> Elsewhere</strong> is agent-entered — renewal date drives Opportunities chase.
-        Quotes are not coverage.
-      </p>
 
       <section className="space-y-2" data-ff-coverage-with-us="">
         <h3 className="text-sm font-semibold text-[#002868]">With us</h3>
@@ -127,10 +122,7 @@ export function AccountCoveragePanel({
 
       <section className="space-y-2" data-ff-coverage-elsewhere="">
         <h3 className="text-sm font-semibold text-[#002868]">Elsewhere</h3>
-        <p className="text-[11px] text-muted-foreground">
-          Lines the business holds with another carrier. Add / edit / remove — renewal date is the
-          Opportunities chase trigger.
-        </p>
+
         <ElsewhereCoverageEditor recordId={accountId} value={elsewhereCoverage} party="account" />
       </section>
 

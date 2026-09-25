@@ -55,14 +55,6 @@ export default async function DeveloperAppetiteLogPage({
         </div>
       }
     >
-      <p className="mb-3 max-w-4xl text-sm text-muted-foreground" data-ff-appetite-intro="">
-        Line-scoped training datasheet for appetite prediction. Sheets are partitioned by{" "}
-        <code className="text-xs">quote_attempt_logs.line_of_business</code> (Home, Auto, RV, Boat,
-        Flood, …) so predictions use the right sheet. Viewing{" "}
-        <span className="font-semibold text-navy">{lineLabel}</span> — Home-rich feature columns
-        first; other lines keep the same grid for now (VIN/year/make snaps later). Every Gaya/API
-        quote attempt should land a row; sparse older snaps stay blank. Site developers only.
-      </p>
 
       <div className="mb-3 flex flex-wrap gap-1" data-ff-appetite-line-tabs="">
         {APPETITE_LINE_TABS.map((tab) => {

@@ -34,23 +34,8 @@ export default async function EditEmailTemplatePage({
         ) : null
       }
     >
-      {desk.isAdmin ? null : (
-        <p className="mb-4 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Templates are Admin-only. Agents can read the library; use My desk for colors and
-          columns.
-        </p>
-      )}
-      {"isExampleCopy" in template && template.isExampleCopy ? (
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          Example copy for Javier Garcia Insurance (321-429-1182). Edit the body, then uncheck
-          “example copy” so a later seed does not overwrite your voice. Mail sends from the
-          connected inbox — no street address is baked in.
-        </p>
-      ) : (
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          Your edited copy. Seed will not overwrite this template.
-        </p>
-      )}
+      {desk.isAdmin ? null : null}
+      {"isExampleCopy" in template && template.isExampleCopy ? null : null}
       <TemplateForm template={template} readOnly={!desk.isAdmin} />
     </SettingsShell>
   );

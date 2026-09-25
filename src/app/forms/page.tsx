@@ -27,14 +27,9 @@ export default async function FormsPage({
 
   return (
     <AppShell title="Forms">
-      <p className="mb-4 max-w-3xl text-base text-muted-foreground">
-        Style-label catalog only — not a licensed ACORD product. Each form is tied to one agency
-        line of business. Fill from Quote Sheet copies matching keys from the open Deal&apos;s{" "}
-        <code>quote_sheets</code> row (or the last sheet updated). Deal-level Forms Fill still
-        passes the current deal.
-      </p>
+
         {visibleTemplates.length === 0 ? (
-          <p className="text-base text-muted-foreground">No form templates. Run db:seed.</p>
+          <p className="text-base text-muted-foreground">No form templates.</p>
         ) : (
           <ul className="grid gap-3 md:grid-cols-2">
             {visibleTemplates.map((template) => (

@@ -5,7 +5,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { formatAutoCopyPack, formatScheduleCounts, scheduleCounts } from "@/lib/auto-schedule";
+import { formatAutoCopyPack, scheduleCounts } from "@/lib/auto-schedule";
 import {
   formatDob,
   formatVehicleTitle,
@@ -105,11 +105,7 @@ export function AutoSchedulePanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-navy">Auto schedule</h3>
-          <p className="text-base text-muted-foreground">
-            Essential AMS risk objects. {formatScheduleCounts(counts)}. Year / make / model / VIN
-            and license are optional. Copy pack is our data for the Quote Sheet — not a carrier
-            prefill API.
-          </p>
+
         </div>
         <CopyScheduleButton text={copyText} />
       </div>
@@ -119,9 +115,7 @@ export function AutoSchedulePanel({
           Vehicles · {counts.vehicleCount}
         </div>
         {vehicles.length === 0 ? (
-          <p className="px-3 py-4 text-base text-muted-foreground">
-            No vehicles yet. Add a unit even if VIN is still coming from the dec.
-          </p>
+          <p className="px-3 py-4 text-base text-muted-foreground">No vehicles yet.</p>
         ) : (
           <table className="ff-table">
             <thead>
@@ -166,10 +160,7 @@ export function AutoSchedulePanel({
           Drivers · {counts.driverCount}
         </div>
         {drivers.length === 0 ? (
-          <p className="px-3 py-4 text-base text-muted-foreground">
-            No drivers yet. Link a household Contact when that person already exists; otherwise
-            leave contact blank.
-          </p>
+          <p className="px-3 py-4 text-base text-muted-foreground">No drivers yet.</p>
         ) : (
           <table className="ff-table">
             <thead>
