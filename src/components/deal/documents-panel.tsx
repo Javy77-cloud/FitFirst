@@ -11,12 +11,12 @@ import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 import { dealDocumentsTabHref, listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
+import { libraryHref } from "@/lib/documents/library";
 import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
 import {
   filterDocsForProductWindow,
   libraryDocsNotInProductWindow,
 } from "@/lib/documents/product-doc-membership";
-import { LinkDealDocToProduct } from "@/components/deal/link-deal-doc-to-product";
 import { inspectionUploadIds } from "@/lib/quote-sheet/home-inspections";
 import type { DocSlotProduct } from "@/lib/documents/doc-slot-advance";
 import { blobStoreReady } from "@/lib/files/object-store";
@@ -149,18 +149,6 @@ export function DocumentsPanel({
                 No files on this product yet.
               </p>
             ) : null}
-            <LinkDealDocToProduct
-              dealId={dealId}
-              line={formLine}
-              quotingForm={quotingForm ?? sheetQuotingForm}
-              productInstance={productId}
-              candidates={libraryCandidates.map((doc) => ({
-                id: doc.id,
-                filename: doc.filename,
-                docType: doc.docType,
-                tags: Array.isArray(doc.tags) ? doc.tags : [],
-              }))}
-            />
 
             <SourceDocsUpload
               dealId={dealId}
@@ -182,7 +170,7 @@ export function DocumentsPanel({
             />
             <div className="mt-2 flex justify-end">
               <Link
-                href="/documents"
+                href={libraryHref({ library: "shared" })}
                 className="text-xs font-semibold text-primary hover:underline"
                 data-ff-deal-library-link=""
                 data-ff-deal-library-count={libraryCandidates.length}

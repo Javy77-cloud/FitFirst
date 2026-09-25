@@ -67,7 +67,9 @@ describe("deal Documents save must not open error.tsx", () => {
     expect(source("src/components/deal/documents-panel.tsx")).toMatch(/DealDocsErrorBoundary/);
     expect(source("src/components/deal/documents-panel.tsx")).toMatch(/listWorksheetSourceDocs\(docs\)/);
     expect(source("src/components/deal/documents-panel.tsx")).toMatch(/filterDocsForProductWindow/);
-    expect(source("src/components/deal/documents-panel.tsx")).toMatch(/LinkDealDocToProduct/);
+    expect(source("src/components/deal/documents-panel.tsx")).not.toMatch(/LinkDealDocToProduct/);
+    expect(source("src/components/deal/documents-panel.tsx")).not.toMatch(/data-ff-link-deal-doc/);
+    expect(source("src/components/deal/documents-panel.tsx")).toMatch(/libraryHref\(\{ library: "shared" \}\)/);
     expect(source("src/components/deal/documents-panel.tsx")).toMatch(/data-ff-product-docs-empty/);
     expect(source("src/components/deal/deal-docs-error-boundary.tsx")).toMatch(/data-ff-deal-docs-soft-error/);
     expect(source("src/components/deal/deal-docs-error-boundary.tsx")).toMatch(/getDerivedStateFromError/);
