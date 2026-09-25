@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
 import { sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
-import { autoCoverageExtras, autoCoverageSchedule } from "@/lib/policy/auto-coverage";
+import { autoCoverageExtras, autoCoverageSchedule, autoVehicleCoverageBlocks } from "@/lib/policy/auto-coverage";
 import {
   buildPolicyFillAuditInsert,
   classifyFillFields,
@@ -356,19 +356,24 @@ describe("fillPolicyFromDec field map", () => {
       comprehensiveDeductible: patch.term.comprehensiveDeductible,
       collisionDeductible: patch.term.collisionDeductible,
     });
-    const byKey = Object.fromEntries(schedule.map((row) => [row.key, row]));
+    const vehicleRows = autoVehicleCoverageBlocks({
+      coverageLimits: patch.coverageLimits,
+      comprehensiveDeductible: patch.term.comprehensiveDeductible,
+      collisionDeductible: patch.term.collisionDeductible,
+    }).flatMap((block) => block.rows);
+    const byKey = Object.fromEntries([...schedule, ...vehicleRows].map((row) => [row.key, row]));
     expect(byKey.liability_bi).toMatchObject({ limit: "$100/$300", premium: "$412" });
     expect(byKey.liability_pd).toMatchObject({ limit: "$100,000", premium: "$188" });
     expect(byKey.pip).toMatchObject({ limit: "$10,000", deductible: "$1,000", premium: "$220" });
     expect(byKey.med_pay).toMatchObject({ limit: "$5,000", premium: "$18" });
     expect(byKey.um_uim).toMatchObject({ limit: "$100/$300", premium: "$64" });
     expect(byKey.um_pd).toMatchObject({ limit: "$100,000", premium: "$22" });
-    expect(byKey.comprehensive).toMatchObject({ limit: "✓", deductible: "$500", premium: "$90" });
-    expect(byKey.collision).toMatchObject({ limit: "✓", deductible: "$500", premium: "$310" });
-    expect(byKey.rental).toMatchObject({ limit: "$30/$900", premium: "$12" });
-    expect(byKey.towing).toMatchObject({ limit: "$100", premium: "$6" });
-    expect(byKey.glass?.deductible).toMatch(/50/);
-    expect(byKey.glass?.premium).toMatch(/4/);
+    expect(byKey["1:comprehensive"]).toMatchObject({ limit: "✓", deductible: "$500", premium: "$90" });
+    expect(byKey["1:collision"]).toMatchObject({ limit: "✓", deductible: "$500", premium: "$310" });
+    expect(byKey["1:rental"]).toMatchObject({ limit: "$30/$900", premium: "$12" });
+    expect(byKey["1:towing"]).toMatchObject({ limit: "$100", premium: "$6" });
+    expect(byKey["1:glass"]?.deductible).toMatch(/50/);
+    expect(byKey["1:glass"]?.premium).toMatch(/4/);
     expect(autoCoverageExtras({ coverageLimits: patch.coverageLimits })).toEqual([
       { key: "um_stacked", label: "UM stacked", value: "Non-stacked" },
       { key: "discounts", label: "Discounts", value: "Multi-car" },

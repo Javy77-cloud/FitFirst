@@ -429,6 +429,15 @@ type CoverageTarget =
   | "collision_deductible"
   | "glass";
 
+/** Liability, PIP, and UM are the same for every vehicle. Physical damage is not. */
+const POLICY_WIDE_COVERAGE = new Set<CoverageTarget>([
+  "liability_bi",
+  "liability_pd",
+  "um_uim",
+  "um_pd",
+  "pip",
+]);
+
 /** Dec labels vary ("Liability Bodily Injury", "Uninsured Motorist Bodily Injury"). */
 function coverageTargetForLabel(label: string): CoverageTarget | null {
   const key = normKey(label);
@@ -558,17 +567,17 @@ function rememberCoverageSiblings(
   const kind = coverageKind(label);
   if (!kind) return;
   const premiumKey = COVERAGE_PREMIUM_KEY[kind];
+  const perVehicle = !(POLICY_WIDE_COVERAGE.has(kind as CoverageTarget) || kind === "med_pay");
   if (premiumKey && hasPrinted(parts.premium)) {
     const key =
-      vehicleIndex != null && vehicleIndex > 0 ? `vehicle_${vehicleIndex + 1}_${premiumKey}` : premiumKey;
+      perVehicle && vehicleIndex != null && vehicleIndex > 0
+        ? `vehicle_${vehicleIndex + 1}_${premiumKey}`
+        : premiumKey;
     setIfEmpty(out, key, parts.premium);
-    if (vehicleIndex === 0 && (kind === "comp_deductible" || kind === "collision_deductible")) {
-      setIfEmpty(out, `vehicle_1_${premiumKey}`, parts.premium);
-    }
+    if (vehicleIndex === 0 && perVehicle) setIfEmpty(out, `vehicle_1_${premiumKey}`, parts.premium);
   }
   if (kind === "pip" && hasPrinted(parts.deductible)) {
-    const key = vehicleIndex != null && vehicleIndex > 0 ? `vehicle_${vehicleIndex + 1}_pip_deductible` : "pip_deductible";
-    setIfEmpty(out, key, parts.deductible);
+    setIfEmpty(out, "pip_deductible", parts.deductible);
   }
   if (kind === "um_uim" && hasPrinted(parts.stacked)) setIfEmpty(out, "um_stacked", parts.stacked);
 }
@@ -666,23 +675,29 @@ function applyCoverageEntry(
   }
   const gap = fillGapCoverageKey(label);
   if (gap) {
-    const stored =
-      vehicleIndex != null && vehicleIndex > 0
-        ? `fill_gap_vehicle_${vehicleIndex + 1}_${gap.slice("fill_gap_".length)}`
-        : gap;
-    setIfEmpty(out, stored, raw);
+    // Medical payments is policy-wide. Rental and towing stay on the vehicle.
+    if (gap === "fill_gap_med_pay" || vehicleIndex == null || vehicleIndex <= 0) {
+      setIfEmpty(out, gap, raw);
+      return;
+    }
+    setIfEmpty(out, `fill_gap_vehicle_${vehicleIndex + 1}_${gap.slice("fill_gap_".length)}`, raw);
     return;
   }
   const target = coverageTargetForLabel(label);
   if (!target) return;
+  if (POLICY_WIDE_COVERAGE.has(target)) {
+    setIfEmpty(out, target, raw);
+    return;
+  }
   if (vehicleIndex != null && vehicleIndex > 0) {
     setIfEmpty(out, `vehicle_${vehicleIndex + 1}_${target}`, raw);
     if (hasPrinted(out[target]) && textOf(out[target]).trim() !== textOf(raw).trim()) {
       setIfEmpty(out, `fill_gap_vehicle_${vehicleIndex + 1}_${target}`, raw);
-      return;
     }
+    return;
   }
   setIfEmpty(out, target, raw);
+  if (vehicleIndex === 0) setIfEmpty(out, `vehicle_1_${target}`, raw);
 }
 
 function applyPolicyPeriod(out: LooseJson, raw: unknown) {
@@ -1512,10 +1527,42 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
   liftCoverageSiblings(out);
   captureAutoFillGaps(out);
   promoteAutoPolicyFillKeys(out);
+  applyPhysicalDamageLimitMarks(out);
   canonicalizeAutoSheetValues(out);
   normalizeAutoPeople(out);
 
   return out;
+}
+
+/** A dollar comprehensive or collision deductible means that coverage is on. */
+function applyPhysicalDamageLimitMarks(out: LooseJson) {
+  const pairs: Array<[string, string]> = [
+    ["comp_deductible", "comp_limit"],
+    ["collision_deductible", "collision_limit"],
+    ["vehicle_1_comp_deductible", "vehicle_1_comp_limit"],
+    ["vehicle_1_collision_deductible", "vehicle_1_collision_limit"],
+  ];
+  for (let n = 2; n <= 4; n += 1) {
+    pairs.push(
+      [`vehicle_${n}_comp_deductible`, `vehicle_${n}_comp_limit`],
+      [`fill_gap_vehicle_${n}_comp_deductible`, `vehicle_${n}_comp_limit`],
+      [`vehicle_${n}_collision_deductible`, `vehicle_${n}_collision_limit`],
+      [`fill_gap_vehicle_${n}_collision_deductible`, `vehicle_${n}_collision_limit`],
+    );
+  }
+  for (const [deductibleKey, limitKey] of pairs) {
+    if (!dollarDeductibleText(out[deductibleKey])) continue;
+    const limit = textOf(out[limitKey]).trim();
+    if (limit && !/^(none|—|-)$/i.test(limit)) continue;
+    out[limitKey] = "✓";
+  }
+}
+
+function dollarDeductibleText(raw: unknown): boolean {
+  const text = textOf(raw).trim();
+  if (!text || /^(none|n\/a|na|—|-)$/i.test(text)) return false;
+  const cleaned = text.replace(/[$,]/g, "").replace(/\bded(?:uctible)?\b/gi, "").trim();
+  return /^\d+(?:\.\d+)?$/.test(cleaned);
 }
 
 /**

@@ -5,7 +5,12 @@ import {
   canHoldInterests,
   isPersonalLinesPolicy,
 } from "@/lib/ams/additional-interests";
-import { autoCoverageExtras, autoCoverageSchedule } from "@/lib/policy/auto-coverage";
+import {
+  autoCoverageExtras,
+  autoCoverageSchedule,
+  autoVehicleCoverageBlocks,
+  type AutoCoverageVehicle,
+} from "@/lib/policy/auto-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import type { PolicyCoverageLine } from "@/lib/db/schema";
 
@@ -40,6 +45,39 @@ function sourceFlag(source: ScheduleRow["source"]): string {
   if (source === "carrier_download") return "Carrier download";
   if (source === "manual") return "Manual";
   return "—";
+}
+
+function CoverageScheduleTable({ rows }: { rows: ScheduleRow[] }) {
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <table className="ff-table" data-ff-coverage-schedule="">
+        <thead>
+          <tr>
+            <th>Coverage</th>
+            <th>Limit</th>
+            <th>Deductible</th>
+            <th>Premium</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.key}>
+              <td className="font-medium text-navy">{row.label}</td>
+              <td>{row.limit}</td>
+              <td>{row.deductible}</td>
+              <td>{row.premium}</td>
+              <td>
+                <span className="rounded-sm border border-border bg-white px-1.5 py-0.5 text-[11px] font-medium uppercase text-navy">
+                  {sourceFlag(row.source)}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function buildSchedule(
@@ -157,6 +195,7 @@ export function PolicyCoverageTab({
   contactId,
   accountId,
   readOnly = false,
+  vehicles = [],
 }: {
   policy: {
     id: string;
@@ -176,6 +215,7 @@ export function PolicyCoverageTab({
   contactId?: string | null;
   accountId?: string | null;
   readOnly?: boolean;
+  vehicles?: AutoCoverageVehicle[];
 }) {
   const current =
     currentTerm !== undefined
@@ -188,13 +228,21 @@ export function PolicyCoverageTab({
       : current
         ? "manual"
         : "unknown";
+  const autoSource = {
+    coverageLimits: policy.coverageLimits,
+    comprehensiveDeductible: current?.comprehensiveDeductible,
+    collisionDeductible: current?.collisionDeductible,
+    vehicles,
+  };
   const schedule: ScheduleRow[] = auto
-    ? autoCoverageSchedule({
-        coverageLimits: policy.coverageLimits,
-        comprehensiveDeductible: current?.comprehensiveDeductible,
-        collisionDeductible: current?.collisionDeductible,
-      }).map((row) => ({ ...row, source: termSource }))
+    ? autoCoverageSchedule(autoSource).map((row) => ({ ...row, source: termSource }))
     : buildSchedule(policy, current);
+  const vehicleBlocks = auto
+    ? autoVehicleCoverageBlocks(autoSource).map((block) => ({
+        ...block,
+        rows: block.rows.map((row) => ({ ...row, source: termSource })),
+      }))
+    : [];
   const extras = auto
     ? autoCoverageExtras({
         coverageLimits: policy.coverageLimits,
@@ -211,37 +259,18 @@ export function PolicyCoverageTab({
       <section className="ff-card p-4">
         <h2 className="text-base font-semibold text-navy">Coverage schedule</h2>
 
-        {schedule.length === 0 ? (
+        {schedule.length === 0 && vehicleBlocks.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No coverage schedule on file yet.</p>
         ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="ff-table" data-ff-coverage-schedule="">
-              <thead>
-                <tr>
-                  <th>Coverage</th>
-                  <th>Limit</th>
-                  <th>Deductible</th>
-                  <th>Premium</th>
-                  <th>Source</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.map((row) => (
-                  <tr key={row.key}>
-                    <td className="font-medium text-navy">{row.label}</td>
-                    <td>{row.limit}</td>
-                    <td>{row.deductible}</td>
-                    <td>{row.premium}</td>
-                    <td>
-                      <span className="rounded-sm border border-border bg-white px-1.5 py-0.5 text-[11px] font-medium uppercase text-navy">
-                        {sourceFlag(row.source)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {schedule.length > 0 ? <CoverageScheduleTable rows={schedule} /> : null}
+            {vehicleBlocks.map((block) => (
+              <div key={block.key} className="mt-4" data-ff-coverage-vehicle={block.key}>
+                <h3 className="text-sm font-semibold text-navy">{block.heading}</h3>
+                <CoverageScheduleTable rows={block.rows} />
+              </div>
+            ))}
+          </>
         )}
         {extras.length > 0 ? (
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2" data-ff-auto-coverage-extras="">

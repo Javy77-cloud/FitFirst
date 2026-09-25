@@ -1,5 +1,6 @@
 import type { Vehicle } from "@/lib/db/schema";
 import { vehicleUseLabel } from "@/lib/domain";
+import { physicalDamageOverviewMark } from "@/lib/policy/auto-coverage";
 
 function cell(value: string | number | null | undefined) {
   const text = value == null ? "" : String(value).trim();
@@ -34,8 +35,8 @@ export function VehiclesList({
                 <th>Use</th>
                 <th>Bodily injury</th>
                 <th>Damage to property</th>
-                <th>Comp deductible</th>
-                <th>Collision deductible</th>
+                <th>Comprehensive</th>
+                <th>Collision</th>
                 <th>Premium</th>
               </tr>
             </thead>
@@ -49,8 +50,8 @@ export function VehiclesList({
                   <td>{vehicleUseLabel(vehicle.usage)}</td>
                   <td>{cell(bodilyInjury)}</td>
                   <td>{cell(propertyDamage)}</td>
-                  <td>{cell(vehicle.comprehensiveDeductible)}</td>
-                  <td>{cell(vehicle.collisionDeductible)}</td>
+                  <td>{physicalDamageOverviewMark(vehicle.comprehensiveDeductible)}</td>
+                  <td>{physicalDamageOverviewMark(vehicle.collisionDeductible)}</td>
                   <td>{cell(vehicle.premium)}</td>
                 </tr>
               ))}

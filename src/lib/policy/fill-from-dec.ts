@@ -766,17 +766,23 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
     put(out, `${prefix}.garagingZip`, platformOrNone(rawCell(rows, ...garagingZipKeys)));
     put(out, `${prefix}.garagingAddress`, platformOrNone(rawCell(rows, ...garagingAddressKeys)));
     if (index > 1) {
+      const comp = autoDeductible(
+        rawCell(rows, `vehicle_${index}_comp_deductible`, `fill_gap_vehicle_${index}_comp_deductible`),
+      );
+      const collision = autoDeductible(
+        rawCell(rows, `vehicle_${index}_collision_deductible`, `fill_gap_vehicle_${index}_collision_deductible`),
+      );
+      put(out, `vehicle_${index}_comprehensive`, comp);
+      put(out, `vehicle_${index}_collision`, collision);
       put(
         out,
-        `vehicle_${index}_comprehensive`,
-        autoDeductible(rawCell(rows, `vehicle_${index}_comp_deductible`, `fill_gap_vehicle_${index}_comp_deductible`)),
+        `vehicle_${index}_comp_limit`,
+        autoPhysDamLimit(rawCell(rows, `vehicle_${index}_comp_limit`), comp),
       );
       put(
         out,
-        `vehicle_${index}_collision`,
-        autoDeductible(
-          rawCell(rows, `vehicle_${index}_collision_deductible`, `fill_gap_vehicle_${index}_collision_deductible`),
-        ),
+        `vehicle_${index}_collision_limit`,
+        autoPhysDamLimit(rawCell(rows, `vehicle_${index}_collision_limit`), collision),
       );
       put(
         out,
@@ -790,6 +796,11 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
       );
       put(
         out,
+        `vehicle_${index}_glass`,
+        autoDeductible(rawCell(rows, `vehicle_${index}_glass`, `fill_gap_vehicle_${index}_glass`)),
+      );
+      put(
+        out,
         `vehicle_${index}_comp_premium`,
         platformOrNone(rawCell(rows, `vehicle_${index}_comp_premium`), formatDecLimit),
       );
@@ -797,6 +808,21 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
         out,
         `vehicle_${index}_collision_premium`,
         platformOrNone(rawCell(rows, `vehicle_${index}_collision_premium`), formatDecLimit),
+      );
+      put(
+        out,
+        `vehicle_${index}_rental_premium`,
+        platformOrNone(rawCell(rows, `vehicle_${index}_rental_premium`), formatDecLimit),
+      );
+      put(
+        out,
+        `vehicle_${index}_towing_premium`,
+        platformOrNone(rawCell(rows, `vehicle_${index}_towing_premium`), formatDecLimit),
+      );
+      put(
+        out,
+        `vehicle_${index}_glass_premium`,
+        platformOrNone(rawCell(rows, `vehicle_${index}_glass_premium`), formatDecLimit),
       );
     }
   }
@@ -1005,7 +1031,11 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
     put(out, fieldKey, policy?.coverageLimits?.[limitKey]);
   }
   for (const [key, value] of Object.entries(policy?.coverageLimits ?? {})) {
-    if (/^vehicle_[2-4]_(comprehensive|collision|rental|towing|comp_premium|collision_premium)$/.test(key)) {
+    if (
+      /^vehicle_[2-4]_(comprehensive|collision|rental|towing|glass|comp_premium|collision_premium|rental_premium|towing_premium|glass_premium|comp_limit|collision_limit)$/.test(
+        key,
+      )
+    ) {
       put(out, key, value);
     }
   }
@@ -1235,7 +1265,12 @@ export function groupAppliedFill(
     if (value) patch.coverageLimits[limitKey] = value;
   }
   for (const key of allowed) {
-    if (/^vehicle_[2-4]_(comprehensive|collision|rental|towing|comp_premium|collision_premium)$/.test(key) && proposed[key]) {
+    if (
+      /^vehicle_[2-4]_(comprehensive|collision|rental|towing|glass|comp_premium|collision_premium|rental_premium|towing_premium|glass_premium|comp_limit|collision_limit)$/.test(
+        key,
+      ) &&
+      proposed[key]
+    ) {
       patch.coverageLimits[key] = proposed[key]!;
     }
   }

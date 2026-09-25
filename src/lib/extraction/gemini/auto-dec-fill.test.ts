@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { extractWithGeminiPdf } from "./client";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
-import { autoCoverageExtras, autoCoverageSchedule } from "@/lib/policy/auto-coverage";
+import { autoCoverageExtras, autoCoverageSchedule, autoVehicleCoverageBlocks } from "@/lib/policy/auto-coverage";
 import { groupAppliedFill, proposeFillFromDec } from "@/lib/policy/fill-from-dec";
 
 /**
@@ -266,7 +266,12 @@ describe("Auto DEC fill mapping", () => {
       comprehensiveDeductible: patch.term.comprehensiveDeductible,
       collisionDeductible: patch.term.collisionDeductible,
     });
-    const byRow = Object.fromEntries(schedule.map((row) => [row.key, row]));
+    const vehicleRows = autoVehicleCoverageBlocks({
+      coverageLimits: patch.coverageLimits,
+      comprehensiveDeductible: patch.term.comprehensiveDeductible,
+      collisionDeductible: patch.term.collisionDeductible,
+    }).flatMap((block) => block.rows);
+    const byRow = Object.fromEntries([...schedule, ...vehicleRows].map((row) => [row.key, row]));
     expect(byRow.liability_bi?.limit).toMatch(/100/);
     expect(byRow.liability_bi?.premium).toMatch(/412/);
     expect(byRow.liability_pd?.premium).toMatch(/188/);
@@ -277,13 +282,14 @@ describe("Auto DEC fill mapping", () => {
     expect(byRow.um_uim?.premium).toMatch(/64/);
     expect(byRow.um_pd?.limit).toMatch(/100/);
     expect(byRow.um_pd?.premium).toMatch(/22/);
-    expect(byRow.comprehensive?.deductible).toMatch(/500/);
-    expect(byRow.comprehensive?.premium).toMatch(/90/);
-    expect(byRow.collision?.premium).toMatch(/310/);
-    expect(byRow.rental?.premium).toMatch(/12/);
-    expect(byRow.towing?.premium).toMatch(/6/);
-    expect(byRow.glass?.deductible).toMatch(/50/);
-    expect(byRow.glass?.premium).toMatch(/4/);
+    expect(byRow["1:comprehensive"]?.limit).toBe("✓");
+    expect(byRow["1:comprehensive"]?.deductible).toMatch(/500/);
+    expect(byRow["1:comprehensive"]?.premium).toMatch(/90/);
+    expect(byRow["1:collision"]?.premium).toMatch(/310/);
+    expect(byRow["1:rental"]?.premium).toMatch(/12/);
+    expect(byRow["1:towing"]?.premium).toMatch(/6/);
+    expect(byRow["1:glass"]?.deductible).toMatch(/50/);
+    expect(byRow["1:glass"]?.premium).toMatch(/4/);
     const extras = autoCoverageExtras({ coverageLimits: patch.coverageLimits });
     expect(extras.find((row) => row.key === "um_stacked")?.value).toBe("Non-stacked");
     expect(extras.find((row) => row.key === "discounts")?.value).toMatch(/Multi-car/);

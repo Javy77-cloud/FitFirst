@@ -11,11 +11,13 @@ import {
   buildGeminiSystemPrompt,
   buildGeminiUserPrompt,
 } from "@/lib/extraction/gemini/prompt";
+import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
 import {
   PAP_COVERAGE_FILL_KEYS,
   PAP_COVERAGE_FILL_KEYS_BEFORE,
   autoCoverageExtras,
   autoCoverageSchedule,
+  autoVehicleCoverageBlocks,
 } from "./auto-coverage";
 
 describe("personal auto coverage schedule", () => {
@@ -34,12 +36,28 @@ describe("personal auto coverage schedule", () => {
       collisionDeductible: "500",
     });
     const pip = rows.find((row) => row.key === "pip");
-    const comp = rows.find((row) => row.key === "comprehensive");
     expect(pip).toMatchObject({ limit: "$10,000", deductible: "$1,000", premium: "$220" });
-    expect(comp).toMatchObject({ limit: "✓", deductible: "$500", premium: "—" });
-    expect(rows.map((row) => row.label)).toEqual(
-      expect.arrayContaining(["Bodily injury", "Property damage", "PIP", "Comprehensive", "Collision"]),
-    );
+    expect(rows.map((row) => row.label)).toEqual([
+      "Bodily injury",
+      "Property damage",
+      "PIP",
+      "Medical payments",
+      "UM / UIM",
+      "UM property damage",
+    ]);
+    expect(rows.map((row) => row.label)).not.toContain("Comprehensive");
+    const [vehicle] = autoVehicleCoverageBlocks({
+      coverageLimits: {
+        liability_bi: "$100,000/$300,000",
+        comp_premium: "",
+      },
+      comprehensiveDeductible: "500",
+      collisionDeductible: "500",
+    });
+    const comp = vehicle?.rows.find((row) => row.label === "Comprehensive");
+    const collision = vehicle?.rows.find((row) => row.label === "Collision");
+    expect(comp).toMatchObject({ limit: "✓", deductible: "$500", premium: "None" });
+    expect(collision).toMatchObject({ limit: "✓", deductible: "$500", premium: "None" });
     expect(autoCoverageExtras({ coverageLimits: { um_stacked: "Non-stacked", discounts: "Multi-car" } })).toEqual([
       { key: "um_stacked", label: "UM stacked", value: "Non-stacked" },
       { key: "discounts", label: "Discounts", value: "Multi-car" },
@@ -90,8 +108,12 @@ describe("personal auto vehicles section", () => {
     expect(html).toContain("Damage to property");
     expect(html).toContain("$100,000/$300,000");
     expect(html).toContain("$100,000");
-    expect(html).toContain("Comp deductible");
-    expect(html).toContain("Collision deductible");
+    expect(html).toContain("Comprehensive");
+    expect(html).toContain("Collision");
+    expect(html).not.toContain("Comp deductible");
+    expect(html).not.toContain("Collision deductible");
+    expect(html).toContain("✓");
+    expect(html).not.toContain(">500<");
     expect(html).not.toContain("Annual miles");
     expect(html).not.toContain("Garaging");
     expect(html).not.toContain("Lienholder");
@@ -155,5 +177,92 @@ describe("PAP coverage Gemini keys", () => {
     expect(user).toContain("✓");
     expect(system).toMatch(/no dollar deductible/i);
     expect(user).toMatch(/no dollar deductible/i);
+    expect(system).toMatch(/policy-wide/i);
+    expect(system).toContain("vehicle_N_glass");
+    expect(user).toContain("vehicle_N_rental");
+    expect(GEMINI_AUTO_EXTRACT_JSON_KEYS).toContain("vehicle_2_glass");
+  });
+});
+
+describe("Veronica Boyle multi-vehicle coverage", () => {
+  const vehicles = [
+    {
+      id: "v1",
+      year: 2018,
+      make: "Honda",
+      model: "Civic",
+      vin: "2HGFC2F59JH123456",
+      comprehensiveDeductible: "500",
+      collisionDeductible: "500",
+    },
+    {
+      id: "v2",
+      year: 2016,
+      make: "Honda",
+      model: "CR-V",
+      vin: "2HKRM4H75GH123456",
+      comprehensiveDeductible: "None",
+      collisionDeductible: "None",
+    },
+  ] as Vehicle[];
+
+  it("gives each vehicle its own block and does not flatten vehicle 2 into dash rows", () => {
+    const html = renderToStaticMarkup(
+      createElement(PolicyCoverageTab, {
+        policy: {
+          id: "p1",
+          coverageA: null,
+          coverageLimits: {
+            liability_bi: "$100,000/$300,000",
+            liability_pd: "$100,000",
+            pip: "$10,000",
+            um_uim: "$100,000/$300,000",
+            um_stacked: "Non-stacked",
+            rental: "$30/$900",
+            rental_premium: "$12",
+            towing: "$100",
+            glass: "50",
+            vehicle_2_rental: "$40/$1,200",
+            vehicle_2_towing: "None",
+            vehicle_2_glass: "None",
+            vehicle_2_comprehensive: "None",
+            vehicle_2_collision: "None",
+          },
+          faceAmount: null,
+          lineOfBusiness: "AUTO",
+          formType: null,
+          policyType: null,
+        },
+        terms: [],
+        currentTerm: {
+          id: "t1",
+          role: "current",
+          premium: "2109",
+          aopDeductible: null,
+          hurricaneDeductible: null,
+          comprehensiveDeductible: "500",
+          collisionDeductible: "500",
+          coverages: null,
+          termEffective: new Date("2026-09-21"),
+          termExpiration: new Date("2027-03-21"),
+          source: "manual",
+        },
+        vehicles,
+      }),
+    );
+    expect(html).toContain("Vehicle: 2018 Honda Civic — VIN 2HGFC2F59JH123456");
+    expect(html).toContain("Vehicle: 2016 Honda CR-V — VIN 2HKRM4H75GH123456");
+    expect(html).not.toContain("Vehicle 2 comprehensive");
+    expect(html).not.toContain("Vehicle 2 collision");
+    const vehicleTwo = html.split('data-ff-coverage-vehicle="v2"')[1]?.split("data-ff-auto-coverage-extras")[0] ?? "";
+    expect(vehicleTwo).toContain("None");
+    expect(vehicleTwo).not.toContain(">—<");
+    expect(vehicleTwo).toContain("$40/$1,200");
+    expect(vehicleTwo).not.toContain("$30/$900");
+    const vehicleOne = html.split('data-ff-coverage-vehicle="v1"')[1]?.split('data-ff-coverage-vehicle="v2"')[0] ?? "";
+    expect(vehicleOne).toContain("$30/$900");
+    expect(vehicleOne).toContain("✓");
+    expect(vehicleOne).toContain("$500");
+    expect(html).toContain("Bodily injury");
   });
 });

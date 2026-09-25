@@ -435,6 +435,7 @@ export default async function PolicyDetailPage({
             contactId={contact?.id}
             accountId={account?.id}
             readOnly={!isAdmin}
+            vehicles={vehicles}
           />
         ) : null}
 
