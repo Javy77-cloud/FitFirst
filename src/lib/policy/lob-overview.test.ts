@@ -43,12 +43,13 @@ describe("LOB overview templates", () => {
     expect(sections.map((s) => s.id)).toEqual(["dwelling", "mortgagee"]);
     expect(sections.find((s) => s.id === "mortgagee")?.pointer?.href).toContain("tab=coverage");
     const dwelling = sections.find((s) => s.id === "dwelling")?.fields ?? [];
-    expect(dwelling.map((f) => f.key)).toEqual(["coverageA", "yearBuilt", "occupancy"]);
+    expect(dwelling.map((f) => f.key)).toEqual(["coverageA", "yearBuilt", "construction", "occupancy"]);
     expect(dwelling.find((f) => f.key === "yearBuilt")?.label).toBe("Year built");
     expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("1992");
+    expect(dwelling.find((f) => f.key === "construction")?.label).toBe("Construction");
+    expect(dwelling.find((f) => f.key === "construction")?.value).toBe("—");
     expect(dwelling.find((f) => f.key === "occupancy")?.label).toBe("Occupancy");
     expect(dwelling.find((f) => f.key === "occupancy")?.value).toBe("—");
-    expect(dwelling.some((f) => f.key === "construction" || f.label === "Construction")).toBe(false);
     expect(dwelling.some((f) => f.key === "premises" || f.key === "roofYear")).toBe(false);
   });
 
@@ -69,8 +70,8 @@ describe("LOB overview templates", () => {
     expect(dwelling.find((f) => f.key === "yearBuilt")?.label).toBe("Year built");
     expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("2024");
     expect(dwelling.some((f) => f.label === "Year of Construction")).toBe(false);
-    expect(dwelling.some((f) => f.key === "construction" || f.label === "Construction")).toBe(false);
-    expect(dwelling.some((f) => f.value === "Masonry")).toBe(false);
+    expect(dwelling.find((f) => f.key === "construction")?.label).toBe("Construction");
+    expect(dwelling.find((f) => f.key === "construction")?.value).toBe("Masonry");
     expect(dwelling.find((f) => f.key === "roofYear")?.value).toBe("2024");
     expect(dwelling.find((f) => f.key === "occupancy")?.label).toBe("Occupancy");
     expect(dwelling.find((f) => f.key === "occupancy")?.value).toBe("Owner");
@@ -101,11 +102,11 @@ describe("LOB overview templates", () => {
     expect(html).toContain("2024");
     expect(html).toContain("Occupancy");
     expect(html).toContain("Owner");
+    expect(html).toContain(">Construction<");
+    expect(html).toContain("Masonry");
     expect(html).toContain("Dwelling type");
     expect(html).toContain("Single Family");
     expect(html).not.toContain("Year of Construction");
-    expect(html).not.toContain(">Construction<");
-    expect(html).not.toContain("Masonry");
     expect(html).not.toContain("Not on file");
     expect(html).toContain("sm:grid-cols-2 lg:grid-cols-3");
     expect(html).not.toContain("1fr");

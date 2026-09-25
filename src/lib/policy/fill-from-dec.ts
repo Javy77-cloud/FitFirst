@@ -23,6 +23,7 @@ import {
 } from "@/lib/extraction/gemini/auto-deductible";
 import {
   classifyManufacturedHomeForm,
+  formatCoverageLinePremium,
   formatHomeDeductibleAmount,
   formatHomeDollarAmount,
   HOME_DOLLAR_DISPLAY_FILL_KEYS,
@@ -513,7 +514,15 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
 
   const year =
     parsePropertyYear(
-      rawCell(rows, "year_built", "year_constructed", "yr_built", "year_of_construction"),
+      rawCell(
+        rows,
+        "year_built",
+        "year_of_construction",
+        "year_constructed",
+        "construction_year",
+        "yr_of_construction",
+        "yr_built",
+      ),
     ) ?? null;
   if (year) put(out, "yearBuilt", String(year));
   put(out, "construction", rawCell(rows, "construction", "construction_type"));
@@ -584,6 +593,40 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(out, "coverageD", coverageMoney(rows, "coverage_d", "loss_of_use", "additional_living_expense"));
   put(out, "coverageE", coverageMoney(rows, "coverage_e", "personal_liability"));
   put(out, "coverageF", coverageMoney(rows, "coverage_f", "medical_payments_to_others"));
+  put(
+    out,
+    "coverageAPremium",
+    formatCoverageLinePremium(rawCell(rows, "coverage_a_premium", "dwelling_premium")),
+  );
+  put(
+    out,
+    "coverageBPremium",
+    formatCoverageLinePremium(rawCell(rows, "coverage_b_premium", "other_structures_premium")),
+  );
+  put(
+    out,
+    "coverageCPremium",
+    formatCoverageLinePremium(
+      rawCell(rows, "coverage_c_premium", "personal_property_premium", "contents_premium"),
+    ),
+  );
+  put(
+    out,
+    "coverageDPremium",
+    formatCoverageLinePremium(rawCell(rows, "coverage_d_premium", "loss_of_use_premium")),
+  );
+  put(
+    out,
+    "coverageEPremium",
+    formatCoverageLinePremium(rawCell(rows, "coverage_e_premium", "personal_liability_premium")),
+  );
+  put(
+    out,
+    "coverageFPremium",
+    formatCoverageLinePremium(
+      rawCell(rows, "coverage_f_premium", "medical_payments_premium", "medical_payments_to_others_premium"),
+    ),
+  );
   put(out, "ordinanceOrLaw", formatDecDeductible(rawCell(rows, "ordinance_or_law", "ordinance_law")));
   put(
     out,
@@ -635,7 +678,7 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(
     out,
     "ordinanceOrLawPremium",
-    formatOptionalAmount(rawCell(rows, "ordinance_or_law_premium", "ordinance_law_premium")),
+    formatCoverageLinePremium(rawCell(rows, "ordinance_or_law_premium", "ordinance_law_premium")),
   );
   put(
     out,
@@ -1043,6 +1086,12 @@ const LIMIT_KEYS: Record<string, string> = {
   coverage_d: "coverageD",
   coverage_e: "coverageE",
   coverage_f: "coverageF",
+  coverage_a_premium: "coverageAPremium",
+  coverage_b_premium: "coverageBPremium",
+  coverage_c_premium: "coverageCPremium",
+  coverage_d_premium: "coverageDPremium",
+  coverage_e_premium: "coverageEPremium",
+  coverage_f_premium: "coverageFPremium",
   ordinance_or_law: "ordinanceOrLaw",
   wind_hail_deductible: "windHailDeductible",
   sinkhole_deductible: "sinkholeDeductible",
@@ -1377,6 +1426,12 @@ export function groupAppliedFill(
     ["coverageD", "coverage_d"],
     ["coverageE", "coverage_e"],
     ["coverageF", "coverage_f"],
+    ["coverageAPremium", "coverage_a_premium"],
+    ["coverageBPremium", "coverage_b_premium"],
+    ["coverageCPremium", "coverage_c_premium"],
+    ["coverageDPremium", "coverage_d_premium"],
+    ["coverageEPremium", "coverage_e_premium"],
+    ["coverageFPremium", "coverage_f_premium"],
     ["ordinanceOrLaw", "ordinance_or_law"],
     ["windHailDeductible", "wind_hail_deductible"],
     ["sinkholeDeductible", "sinkhole_deductible"],

@@ -106,6 +106,32 @@ describe("home dollar display", () => {
     expect(byKey.roof_year).toBe("2024");
     expect(byKey.year_built).toBe("2024");
     expect(byKey.type_of_residence).toBe("Owner Occupied");
+
+    const premiums = mapGeminiJsonToFields(
+      {
+        coverage_a: "337000",
+        coverage_a_premium: "1310.55",
+        coverage_b_premium: "Included",
+        coverage_e_premium: "12.35",
+        coverage_f_premium: "8.23",
+        year_built: { value: "1990", confidence: 0.5 },
+        year_of_construction: { value: "2024", confidence: 0.97 },
+        all_other_perils: "2500",
+        windstorm_or_hail_other_than_hurricane: "1000",
+      },
+      "dec",
+      "home",
+    );
+    const premiumByKey = Object.fromEntries(
+      premiums.fields.map((field) => [field.fieldKey, field.normalizedValue]),
+    );
+    expect(premiumByKey.coverage_a_premium).toBe("$1,310.55");
+    expect(premiumByKey.coverage_b_premium).toBe("Included");
+    expect(premiumByKey.coverage_e_premium).toBe("$12.35");
+    expect(premiumByKey.coverage_f_premium).toBe("$8.23");
+    expect(premiumByKey.year_built).toBe("2024");
+    expect(premiumByKey.aop_deductible).toBe("$2,500");
+    expect(premiumByKey.wind_hail_deductible).toBe("$1,000");
     expect(byKey.roof_year).not.toContain("$");
     expect(byKey.form).toBeUndefined();
   });

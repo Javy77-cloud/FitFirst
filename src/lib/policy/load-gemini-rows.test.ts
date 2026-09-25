@@ -5,9 +5,11 @@ import { mintFailureToast } from "./mint-gate";
 import {
   autoDecCacheSupportsFill,
   DEC_FILE_MISSING_MESSAGE,
+  homeDecCacheSupportsFill,
   loadGeminiRows,
   readDecPdfBytes,
   shouldForceAutoDecReread,
+  shouldForceHomeDecReread,
   type GeminiMintRow,
 } from "./load-gemini-rows";
 
@@ -456,6 +458,74 @@ describe("auto fill confirm does not re-read Gemini", () => {
         reuseFresh: true,
       }),
     ).toBe(true);
+  });
+
+  it("re-reads a home cache that has dwelling limits and no coverage-row premiums", () => {
+    const now = new Date("2026-09-25T20:00:00.000Z");
+    const stale: GeminiMintRow[] = [
+      ...mintCache,
+      {
+        fieldKey: "coverage_a",
+        normalizedValue: "337000",
+        rawValue: "337000",
+        confidence: 0.9,
+        flagged: false,
+      },
+      {
+        fieldKey: "aop_deductible",
+        normalizedValue: "1000",
+        rawValue: "1000",
+        confidence: 0.9,
+        flagged: false,
+      },
+    ];
+    expect(homeDecCacheSupportsFill(stale)).toBe(false);
+    expect(homeDecCacheSupportsFill(mintCache)).toBe(true);
+    expect(
+      shouldForceHomeDecReread({
+        manualHome: true,
+        rows: stale,
+        newestAt: new Date("2026-09-20T20:00:00.000Z"),
+        now,
+        reuseFresh: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldForceHomeDecReread({
+        manualHome: false,
+        rows: stale,
+        newestAt: new Date("2026-09-20T20:00:00.000Z"),
+        now,
+        reuseFresh: false,
+      }),
+    ).toBe(false);
+    const fresh: GeminiMintRow[] = [
+      ...stale,
+      {
+        fieldKey: "coverage_a_premium",
+        normalizedValue: "1310.55",
+        rawValue: "1310.55",
+        confidence: 0.9,
+        flagged: false,
+      },
+      {
+        fieldKey: "coverage_b_premium",
+        normalizedValue: "Included",
+        rawValue: "Included",
+        confidence: 0.9,
+        flagged: false,
+      },
+    ];
+    expect(homeDecCacheSupportsFill(fresh)).toBe(true);
+    expect(
+      shouldForceHomeDecReread({
+        manualHome: true,
+        rows: fresh,
+        newestAt: new Date("2026-01-01T00:00:00.000Z"),
+        now,
+        reuseFresh: false,
+      }),
+    ).toBe(false);
   });
 
   it("keeps an older cache once deductibles are already stored", () => {

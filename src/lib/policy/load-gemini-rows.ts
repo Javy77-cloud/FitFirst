@@ -131,6 +131,42 @@ export async function readDecPdfBytes(
 /** Policy-level premium is on old caches. Coverage deductibles and line premiums are not. */
 const POLICY_LEVEL_PREMIUM_KEYS = new Set(["premium", "current_premium"]);
 
+const HOME_COVERAGE_LINE_PREMIUM_KEYS = new Set([
+  "coverage_a_premium",
+  "coverage_b_premium",
+  "coverage_c_premium",
+  "coverage_d_premium",
+  "coverage_e_premium",
+  "coverage_f_premium",
+]);
+
+const HOME_DWELLING_COVERAGE_KEYS = new Set([
+  "coverage_a",
+  "coverage_b",
+  "coverage_c",
+  "coverage_d",
+  "dwelling",
+]);
+
+/**
+ * A home cache from before coverage-row premiums has dwelling limits and no
+ * Coverage A–F premium. Re-Fill must read the DEC again. Liability-only caches
+ * with no dwelling limit are left alone.
+ */
+export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
+  let sawDwellingCoverage = false;
+  let sawLinePremium = false;
+  for (const row of rows) {
+    const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
+    if (!value) continue;
+    const key = row.fieldKey.trim().toLowerCase();
+    if (HOME_DWELLING_COVERAGE_KEYS.has(key)) sawDwellingCoverage = true;
+    if (HOME_COVERAGE_LINE_PREMIUM_KEYS.has(key)) sawLinePremium = true;
+  }
+  if (sawDwellingCoverage && !sawLinePremium) return false;
+  return true;
+}
+
 /** A cached auto extract from before the PAP map has mint fields but no deductibles or line premiums. */
 export function autoDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
   return rows.some((row) => {
@@ -155,6 +191,28 @@ export function shouldForceAutoDecReread(input: {
   if (!input.manualAuto) return false;
   if (!evaluateMintExtract(input.rows).ok) return true;
   if (autoDecCacheSupportsFill(input.rows)) return false;
+  if (
+    input.reuseFresh &&
+    input.newestAt &&
+    input.now.getTime() - input.newestAt.getTime() < AUTO_FILL_CACHE_FRESH_MS &&
+    input.now.getTime() >= input.newestAt.getTime()
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/** Manual home Fill re-reads a cache that has dwelling limits and no coverage-row premiums. */
+export function shouldForceHomeDecReread(input: {
+  manualHome: boolean;
+  rows: readonly GeminiMintRow[];
+  newestAt: Date | null;
+  now: Date;
+  reuseFresh: boolean;
+}): boolean {
+  if (!input.manualHome) return false;
+  if (!evaluateMintExtract(input.rows).ok) return true;
+  if (homeDecCacheSupportsFill(input.rows)) return false;
   if (
     input.reuseFresh &&
     input.newestAt &&

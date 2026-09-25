@@ -201,6 +201,7 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
             input.yearBuilt != null ? String(input.yearBuilt) : null,
             { hint: "Year built not on the risk or Risk Profile yet." },
           ),
+          field("construction", "Construction", input.construction, { hint: "" }),
           field(
             "occupancy",
             "Occupancy",

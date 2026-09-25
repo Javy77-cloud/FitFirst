@@ -19,6 +19,8 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   year_built: ["year_built"],
   year_of_construction: ["year_built"],
   year_constructed: ["year_built"],
+  construction_year: ["year_built"],
+  yr_of_construction: ["year_built"],
   stories: ["stories"],
   phone: ["phone"],
   email: ["email"],
@@ -70,6 +72,8 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   aop: ["aop_deductible"],
   all_other_perils: ["aop_deductible"],
   all_other_perils_deductible: ["aop_deductible"],
+  "all_other_perils_(aop)": ["aop_deductible"],
+  all_other_perils_aop: ["aop_deductible"],
   other_perils_deductible: ["aop_deductible"],
   wind_hail_deductible: ["wind_hail_deductible"],
   wind_hail: ["wind_hail_deductible"],
@@ -188,6 +192,20 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   coverage_e: ["coverage_e"],
   personal_liability: ["coverage_e"],
   coverage_f: ["coverage_f"],
+  coverage_a_premium: ["coverage_a_premium"],
+  dwelling_premium: ["coverage_a_premium"],
+  coverage_b_premium: ["coverage_b_premium"],
+  other_structures_premium: ["coverage_b_premium"],
+  coverage_c_premium: ["coverage_c_premium"],
+  personal_property_premium: ["coverage_c_premium"],
+  contents_premium: ["coverage_c_premium"],
+  coverage_d_premium: ["coverage_d_premium"],
+  loss_of_use_premium: ["coverage_d_premium"],
+  coverage_e_premium: ["coverage_e_premium"],
+  personal_liability_premium: ["coverage_e_premium"],
+  coverage_f_premium: ["coverage_f_premium"],
+  medical_payments_premium: ["coverage_f_premium"],
+  medical_payments_to_others_premium: ["coverage_f_premium"],
   sinkhole_deductible: ["sinkhole_deductible"],
   sinkhole: ["sinkhole_deductible"],
   sinkhole_coverage: ["sinkhole_deductible"],
@@ -721,7 +739,29 @@ export function mapGeminiJsonToFields(
 
     const above = printedEnough(sheetKeys[0] ?? geminiKey, payload.confidence, shopLine);
     for (const fieldKey of sheetKeys) {
-      if (seen.has(fieldKey)) continue;
+      if (seen.has(fieldKey)) {
+        if (!above) continue;
+        const existing = fields.find((field) => field.fieldKey === fieldKey);
+        const yearOfConstruction =
+          fieldKey === "year_built" &&
+          (geminiKey === "year_of_construction" ||
+            geminiKey === "year_constructed" ||
+            geminiKey === "construction_year" ||
+            geminiKey === "yr_of_construction");
+        if (!existing || (existing.normalizedValue.trim() && !yearOfConstruction)) continue;
+        const letterValue = normalizeAutoPolicyValue(
+          fieldKey,
+          normalizeOirLetterCode(fieldKey, payload.value),
+        );
+        existing.rawValue = payload.value;
+        existing.normalizedValue = letterValue;
+        existing.confidence = payload.confidence;
+        existing.flagged = false;
+        existing.source = "labeled";
+        existing.blankAfterMatch = false;
+        existing.missReason = undefined;
+        continue;
+      }
       seen.add(fieldKey);
       const letterValue = normalizeAutoPolicyValue(
         fieldKey,
