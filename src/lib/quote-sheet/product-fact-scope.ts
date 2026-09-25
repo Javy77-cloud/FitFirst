@@ -20,6 +20,7 @@ const EXTRA_CROSS_PRODUCT_FACT_KEYS = [
   "effective_date",
   "current_policy_effective_date",
   "expiration_date",
+  "years_with_carrier",
   "lease_term",
   "tenant_name",
   "landlord_liability",

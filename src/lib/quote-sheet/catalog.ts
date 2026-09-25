@@ -107,10 +107,24 @@ import { COMMERCIAL_RISK_PROFILE_FIELDS, isCommercialSheetLine } from "./commerc
 import { isInspectionSectionGroup, orderHomeGroups } from "./home-inspections";
 import { manufacturedHomeFieldsFor } from "./mho-risk-profile";
 import { RECORDS_CHECK_KEY, recordsCheckHiddenOnRiskProfile } from "./records-check";
+import {
+  currentPolicyDateFields,
+  yearsWithCarrierField,
+} from "./policy-term-fields";
 import { fieldIsVisible, visibleQuoteFields } from "./sheet-visibility";
 import type { SheetValueBag } from "./sheet-visibility";
 
 export type { QuoteFieldDef } from "./applicant-core";
+export {
+  CURRENT_POLICY_EFFECTIVE_LABEL,
+  CURRENT_POLICY_EXPIRATION_LABEL,
+  QUOTE_EFFECTIVE_DATE_KEY,
+  QUOTE_EFFECTIVE_DATE_LABEL,
+  YEARS_WITH_CARRIER_KEY,
+  YEARS_WITH_CARRIER_LABEL,
+  currentPolicyDateFields,
+  yearsWithCarrierField,
+} from "./policy-term-fields";
 export {
   APPLICANT_CORE_FIELDS,
   CO_APPLICANT_FIELDS,
@@ -126,45 +140,6 @@ export {
 const HO_LL = ["homeowners", "landlord"] as const;
 const RENT = ["renters"] as const;
 const LL = ["landlord"] as const;
-
-export const QUOTE_EFFECTIVE_DATE_KEY = "quote_effective_date";
-export const QUOTE_EFFECTIVE_DATE_LABEL = "Quote effective date";
-export const CURRENT_POLICY_EFFECTIVE_LABEL = "Current policy effective date";
-export const CURRENT_POLICY_EXPIRATION_LABEL = "Current policy expiration date";
-
-/**
- * New-business submission date plus the in-force term, in one Current policy block.
- * Home and Auto already store the in-force term on effective_date / expiration_date
- * (DEC extract keys stay on those keys). Flood already stores the new-business date
- * on effective_date, so that line passes a different quote key.
- * No extractKey on the quote date — a DEC effective date is the in-force term.
- */
-export function currentPolicyDateFields(opts: {
-  group: string;
-  /** Omit DEC extract keys when this line has no declaration map for the term. */
-  dec?: boolean;
-  quoteKey?: string;
-  currentEffectiveKey?: string;
-}): QuoteFieldDef[] {
-  const dec = opts.dec !== false;
-  const quoteKey = opts.quoteKey ?? QUOTE_EFFECTIVE_DATE_KEY;
-  const currentEffectiveKey = opts.currentEffectiveKey ?? "effective_date";
-  return [
-    { key: quoteKey, label: QUOTE_EFFECTIVE_DATE_LABEL, group: opts.group },
-    {
-      key: currentEffectiveKey,
-      label: CURRENT_POLICY_EFFECTIVE_LABEL,
-      group: opts.group,
-      ...(dec && currentEffectiveKey === "effective_date" ? { extractKey: "effective_date" } : {}),
-    },
-    {
-      key: "expiration_date",
-      label: CURRENT_POLICY_EXPIRATION_LABEL,
-      group: opts.group,
-      ...(dec ? { extractKey: "expiration_date" } : {}),
-    },
-  ];
-}
 
 export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "address1", label: "Property address", group: "Property", extractKey: "address" },
@@ -434,7 +409,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "policy_number", label: "Policy number", group: "Current Policy", extractKey: "policy_number" },
   { key: "current_premium", label: "Current premium", group: "Current Policy", input: "number", extractKey: "current_premium" },
   ...currentPolicyDateFields({ group: "Current Policy" }),
-  { key: "years_with_carrier", label: "Years with carrier", group: "Current Policy", input: "number" },
+  yearsWithCarrierField("Current Policy"),
   { key: "claims_5yr", label: "Claims last 5 years", group: "Current Policy", input: "select", options: [...CLAIMS_5YR_OPTIONS] },
   { key: "mortgagee_name", label: "Mortgagee", group: "Mortgagee", extractKey: "mortgagee" },
   { key: "mortgagee_address", label: "Mortgagee address", group: "Mortgagee", extractKey: "mortgagee_address" },
@@ -773,7 +748,7 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "fleet_size", label: "Fleet size", group: "Commercial auto", input: "number", products: ["commercial_auto"] },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "years_with_carrier", label: "Years with carrier", group: "Current policy", input: "number" },
+  yearsWithCarrierField("Current policy"),
   ...currentPolicyDateFields({ group: "Current policy" }),
   { key: "policy_number", label: "Current policy ID", group: "Current policy", extractKey: "policy_number" },
   {
@@ -806,6 +781,7 @@ export const REC_RV_FIELDS: QuoteFieldDef[] = [
   { key: "full_timer", label: "Full-timer", group: "Unit" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
   ...currentPolicyDateFields({ group: "Current policy", dec: false }),
+  yearsWithCarrierField("Current policy"),
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
@@ -941,6 +917,7 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "nfip_policy", label: "Current NFIP / flood policy number", group: "Current policy", extractKey: "policy_number" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
+  yearsWithCarrierField("Current policy"),
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
@@ -951,6 +928,7 @@ export const UMBRELLA_FIELDS: QuoteFieldDef[] = [
   { key: "um_uim", label: "UM / UIM", group: "Underlying" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
   ...currentPolicyDateFields({ group: "Current policy", dec: false }),
+  yearsWithCarrierField("Current policy"),
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
@@ -1046,6 +1024,8 @@ export const LIFE_FIELDS: QuoteFieldDef[] = [
     group: "Existing coverage",
     showWhen: { key: "existing_coverage", values: ["yes", "Yes"] },
   },
+  ...currentPolicyDateFields({ group: "Existing coverage", dec: false }),
+  yearsWithCarrierField("Existing coverage"),
   {
     key: "existing_face_amount",
     label: "Existing face amount",
@@ -1353,6 +1333,8 @@ export const HEALTH_FIELDS: QuoteFieldDef[] = [
     group: "Existing coverage",
     showWhen: SHOW_WHEN_YES("existing_coverage"),
   },
+  ...currentPolicyDateFields({ group: "Existing coverage", dec: false }),
+  yearsWithCarrierField("Existing coverage"),
   {
     key: "existing_plan_type",
     label: "Current plan type",

@@ -26,7 +26,8 @@ import {
   fieldsForLine,
 } from "@/lib/quote-sheet/catalog";
 import { hideCrossProductDealFacts } from "@/lib/quote-sheet/product-fact-scope";
-import type { ShopLine } from "@/lib/domain";
+import { YEARS_WITH_CARRIER_LABEL } from "@/lib/quote-sheet/policy-term-fields";
+import { SHOP_LINES, type ShopLine } from "@/lib/domain";
 
 const DATE_LABELS = [
   QUOTE_EFFECTIVE_DATE_LABEL,
@@ -61,23 +62,38 @@ describe("Current policy term dates on the Risk Profile", () => {
     }
   });
 
-  it("uses the same three dates on every other Current policy block", () => {
-    for (const line of ["auto", "rec_rv", "umbrella"] as const) {
+  it("exposes the three dates and years with carrier on every quoteable line", () => {
+    for (const line of SHOP_LINES) {
       const fields = fieldsForLine(line);
-      const labels = DATE_LABELS.map((label) => fields.find((field) => field.label === label));
-      expect(labels.every(Boolean), line).toBe(true);
-      for (const field of labels) {
-        expect(field?.group).toBe("Current policy");
+      for (const label of DATE_LABELS) {
+        expect(fields.some((field) => field.label === label), `${line} ${label}`).toBe(true);
       }
-      expect(fields.find((field) => field.key === QUOTE_EFFECTIVE_DATE_KEY)?.extractKey).toBeUndefined();
+      const years = fields.filter((field) => field.key === "years_with_carrier");
+      expect(years, line).toHaveLength(1);
+      expect(years[0]?.label).toBe(YEARS_WITH_CARRIER_LABEL);
+      expect(years[0]?.input).toBe("number");
+      const insurers = fields.filter(
+        (field) => field.key === "current_carrier" || field.key === "existing_carrier",
+      );
+      expect(insurers, line).toHaveLength(1);
     }
-    const auto = fieldsForLine("auto");
-    expect(auto.find((field) => field.key === "effective_date")?.extractKey).toBe("effective_date");
-    expect(auto.find((field) => field.key === "expiration_date")?.extractKey).toBe("expiration_date");
-    for (const line of ["rec_rv", "umbrella"] as const) {
+
+    for (const line of ["life", "health"] as const) {
       const fields = fieldsForLine(line);
-      expect(fields.find((field) => field.key === "effective_date")?.extractKey).toBeUndefined();
-      expect(fields.find((field) => field.key === "expiration_date")?.extractKey).toBeUndefined();
+      expect(fields.find((field) => field.key === "existing_carrier")).toBeTruthy();
+      expect(fields.find((field) => field.key === "current_carrier")).toBeUndefined();
+      expect(fields.find((field) => field.key === QUOTE_EFFECTIVE_DATE_KEY)?.group).toBe("Existing coverage");
+      expect(fields.find((field) => field.key === "years_with_carrier")?.group).toBe("Existing coverage");
+    }
+
+    for (const line of ["workers_comp", "general_liability", "bop"] as const) {
+      const carrier = fieldsForLine(line).find((field) => field.key === "current_carrier");
+      expect(carrier?.label).toBe("Current carrier");
+      expect(carrier?.group).toBe("Current policy");
+      expect(carrier?.visibleWhen).toBeUndefined();
+      expect(fieldsForLine(line).find((field) => field.key === QUOTE_EFFECTIVE_DATE_KEY)?.group).toBe(
+        "Current policy",
+      );
     }
   });
 
@@ -128,6 +144,26 @@ describe("Current policy term dates on the Risk Profile", () => {
     expect(reloaded[QUOTE_EFFECTIVE_DATE_KEY]?.value).toBe("10/15/2026");
     expect(reloaded.effective_date.value).toBe("04/15/2026");
     expect(reloaded.expiration_date.value).toBe("04/15/2027");
+
+    for (const line of ["auto", "life", "workers_comp"] as const) {
+      const blank = emptySheetValues(line);
+      delete blank[QUOTE_EFFECTIVE_DATE_KEY];
+      delete blank.years_with_carrier;
+      const filled = mergeAgentEdits(
+        blank,
+        {
+          [QUOTE_EFFECTIVE_DATE_KEY]: "10/15/2026",
+          effective_date: "04/15/2026",
+          expiration_date: "04/15/2027",
+          years_with_carrier: "3",
+        },
+        line,
+      );
+      expect(filled[QUOTE_EFFECTIVE_DATE_KEY]?.value, line).toBe("10/15/2026");
+      expect(filled.effective_date.value, line).toBe("04/15/2026");
+      expect(filled.expiration_date.value, line).toBe("04/15/2027");
+      expect(filled.years_with_carrier.value, line).toBe("3");
+    }
   });
 
   it("maps a declaration onto the in-force term and not the quote effective date", () => {
@@ -169,10 +205,17 @@ describe("Current policy term dates on the Risk Profile", () => {
       source: "agent",
       sourceLabel: "deal details",
     };
+    sibling.years_with_carrier = {
+      value: "3",
+      status: "check",
+      source: "agent",
+      sourceLabel: "deal details",
+    };
     sibling.named_insured = cell("Gloria Martinez");
     const hidden = hideCrossProductDealFacts(sibling, true);
     expect(hidden[QUOTE_EFFECTIVE_DATE_KEY]?.value).toBe("");
     expect(hidden.effective_date.value).toBe("");
+    expect(hidden.years_with_carrier.value).toBe("");
     expect(hidden.named_insured?.value).toBe("Gloria Martinez");
 
     const own = emptySheetValues("home", "homeowners");
