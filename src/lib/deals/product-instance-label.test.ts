@@ -123,7 +123,7 @@ describe("product instance labels", () => {
     expect(after.get("homeowners~k7f3a2")).toBe("HO3 410 Palm");
   });
 
-  it("builds a compact policy-form label from the form code and the street start", () => {
+  it("builds a policy-form label from the form, house number, and direction only", () => {
     expect(
       policyFormMenuLabel({
         code: "DP3",
@@ -143,7 +143,7 @@ describe("product instance labels", () => {
         state: "FL",
         zip: "34747",
       }),
-    ).toBe("HO3 · 8944 Adriatico · Kissimmee");
+    ).toBe("HO3 · 8944");
     expect(
       policyFormMenuLabel({
         code: "DP3",
@@ -152,7 +152,7 @@ describe("product instance labels", () => {
         city: "Orlando",
         state: "FL",
       }),
-    ).toBe("DP3 · 10358 Corporate · Orlando");
+    ).toBe("DP3 · 10358");
     expect(policyFormMenuLabel({ code: "HO3", fallback: "HO3 8944 Adriatico" })).toBe(
       "HO3 8944 Adriatico",
     );

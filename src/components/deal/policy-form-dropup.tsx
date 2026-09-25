@@ -32,11 +32,13 @@ export function PolicyFormDropup({
     };
   }, [open]);
 
+  const fieldCh = label.length + 5;
   return (
-    <div ref={rootRef} className="relative min-w-0 w-full max-w-full" data-ff-policy-form-field="">
+    <div ref={rootRef} className="relative w-max max-w-full" data-ff-policy-form-field="">
       <button
         type="button"
-        className="flex h-8 w-full min-w-0 items-center gap-1 rounded-md border border-[var(--ff-row-line)] bg-white px-2 text-left text-[12px] font-medium text-[var(--ff-ink)] shadow-sm"
+        style={{ width: `${fieldCh}ch` }}
+        className="flex h-8 max-w-full min-w-0 items-center gap-1 rounded-md border border-[var(--ff-row-line)] bg-white px-2 text-left text-[12px] font-medium text-[var(--ff-ink)] shadow-sm"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -63,7 +65,7 @@ export function PolicyFormDropup({
           className="pointer-events-none absolute -bottom-1 left-4 size-2 rotate-45 border-b border-r border-[var(--ff-border)] bg-white"
           aria-hidden
         />
-        <div className="max-h-64 overflow-y-auto px-3 py-2">{children}</div>
+        <div className="max-h-64 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

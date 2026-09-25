@@ -19,9 +19,7 @@ export type ProductInstanceLabelInput = {
   vehicles?: readonly VehicleLabelFact[] | null;
 };
 
-/** Form code plus street number and the first street word. City only while the line stays short. */
-const COMPACT_POLICY_LABEL = 36;
-
+/** Form code, house number, and street direction only. No street name, city, state, or zip. */
 export function policyFormMenuLabel(input: {
   code: string;
   fallback: string;
@@ -33,11 +31,7 @@ export function policyFormMenuLabel(input: {
   const short = shortStreetStart(input.address);
   if (!short) return input.fallback;
   const code = input.code.trim();
-  const base = code ? `${code} · ${short}` : short;
-  const city = String(input.city ?? "").replace(/\s+/g, " ").trim();
-  if (!city) return base;
-  const withCity = `${base} · ${city}`;
-  return withCity.length <= COMPACT_POLICY_LABEL ? withCity : base;
+  return code ? `${code} · ${short}` : short;
 }
 
 const DIRECTIONALS: Record<string, string> = {
@@ -137,14 +131,27 @@ export function compactStreetLabel(street: string | null | undefined): string {
   return label.length > 42 ? label.slice(0, 42).trim() : label;
 }
 
-/** Street number plus the first street word (direction spelled out). */
+/** House number plus the spelled-out direction word. Street name is left off. */
 function shortStreetStart(street: string | null | undefined): string {
-  const compact = compactStreetLabel(street);
-  if (!compact) return "";
-  const tokens = compact.split(" ").filter(Boolean);
-  if (!tokens.length) return "";
-  if (/^\d+[a-z]?$/i.test(tokens[0]!)) return tokens.slice(0, 2).join(" ");
-  return tokens[0]!;
+  const text = String(street ?? "")
+    .replace(/[,]+/g, " ")
+    .replace(
+      /\b(?:apt|apartment|unit|suite|ste|bldg|building|floor|fl)\b\.?\s*#?\s*[a-z0-9-]*/gi,
+      " ",
+    )
+    .replace(/#\s*[a-z0-9-]+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return "";
+  const tokens = text.split(" ").filter(Boolean);
+  let index = 0;
+  let number = "";
+  if (/^\d+[a-z]?$/i.test(tokens[0] ?? "")) {
+    number = tokens[0]!;
+    index = 1;
+  }
+  const direction = DIRECTIONALS[cleanToken(tokens[index] ?? "")] ?? "";
+  return [number, direction].filter(Boolean).join(" ");
 }
 
 function titleWord(value: string): string {

@@ -159,14 +159,14 @@ export function DealLineSwitcher({
     const activeOption = options.find((row) => row.selected) ?? options[0];
     return (
       <div
-        className="flex w-max max-w-full min-w-0 flex-col gap-1"
+        className="flex w-max max-w-full min-w-0 flex-col items-end gap-1"
         data-ff-deal-product-chip-row=""
         data-ff-deal-products-rail=""
         data-ff-policy-form-line=""
         data-ff-deal-line-switcher=""
       >
         <PolicyFormDropup label={activeOption?.menuLabel ?? ""}>
-          <div className="flex flex-col" data-ff-deal-product-chips="">
+          <div className="flex flex-col divide-y divide-[#e5e7eb]" data-ff-deal-product-chips="">
             {options.map((row) => (
               <Link
                 key={row.product}
@@ -175,7 +175,7 @@ export function DealLineSwitcher({
                 role="option"
                 aria-selected={row.selected}
                 className={cn(
-                  "block whitespace-normal break-words py-1.5 text-left text-[13px] text-[var(--ff-ink)]",
+                  "flex w-full items-center gap-2 whitespace-normal break-words px-3 py-1.5 text-left text-[13px] text-[var(--ff-ink)] hover:bg-[#f3f4f6]",
                   row.selected ? "font-semibold" : "font-medium",
                 )}
                 data-ff-deal-line-chip={row.def.shopLine}
@@ -190,10 +190,10 @@ export function DealLineSwitcher({
                 data-active={row.selected ? "true" : "false"}
                 aria-current={row.selected ? "page" : undefined}
               >
-                <span className="flex items-start gap-2">
+                <span className="flex w-full items-center gap-2">
                   {row.quotesMissing ? (
                     <span
-                      className="mt-1 inline-flex size-2.5 shrink-0 items-center justify-center rounded-full bg-fit-flag text-[8px] text-white"
+                      className="inline-flex size-2.5 shrink-0 items-center justify-center rounded-full bg-fit-flag text-[8px] text-white"
                       aria-label="Incomplete quotes"
                       data-ff-product-missing-quotes-chip=""
                       title={row.gap?.summary ?? "Missing quotes"}
@@ -208,6 +208,15 @@ export function DealLineSwitcher({
                       data-ff-product-done-stamp=""
                     >
                       Done
+                    </span>
+                  ) : null}
+                  {row.selected ? (
+                    <span
+                      className="shrink-0 text-sm font-bold text-[var(--ff-green)]"
+                      data-ff-policy-form-selected=""
+                      aria-label="Selected"
+                    >
+                      ✓
                     </span>
                   ) : null}
                 </span>
