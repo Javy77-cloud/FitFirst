@@ -23,16 +23,23 @@ function card(id: string): BookGlanceCard {
 }
 
 describe("Contacts list header", () => {
-  it("puts every counter on one flat row with no card chrome", () => {
+  it("puts every counter on one flat row of white chips", () => {
     const model = partyBookKpis("contact", [card("a"), card("b")]);
     const html = renderToStaticMarkup(
       <BookKpiStrip label={model.label} items={model.items} flat />,
     );
     expect(html).toContain('data-ff-book-kpi="flat"');
     expect(html).toContain("ff-book-kpi-flat");
-    expect(readFileSync("src/app/globals.css", "utf8")).toMatch(
-      /\.ff-book-kpi-flat \{[^}]*margin:\s*0\.35rem 0 3rem/,
-    );
+    const css = readFileSync("src/app/globals.css", "utf8");
+    const row = css.match(/\.ff-book-kpi-flat \{[^}]*\}/)?.[0] ?? "";
+    const chip = css.match(/\.ff-book-kpi-flat \.ff-book-kpi-item \{[^}]*\}/)?.[0] ?? "";
+    expect(row).toMatch(/margin:\s*0\.35rem 0 3rem/);
+    expect(row).toMatch(/gap:\s*2\.5rem/);
+    expect(row).toMatch(/background:\s*transparent/);
+    expect(row).toMatch(/border:\s*0/);
+    expect(row).toMatch(/box-shadow:\s*none/);
+    expect(chip).toMatch(/background:\s*#fff/);
+    expect(chip).not.toMatch(/background:\s*transparent/);
     expect(html).not.toContain("ff-book-kpi-item is-name");
     expect(html).not.toContain("<em>");
     for (const label of ["People", "With phone", "With email", "Reached lately", "Not reached", "Open deals", "Renewing ≤60d"]) {

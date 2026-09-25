@@ -4658,11 +4658,11 @@ tr[data-ff-activity-selected="true"] {
   text-transform: none;
   font-weight: 650;
 }
-/* Contacts only: one flat counter row. Other books keep the card strip. */
+/* Contacts only: counters sit on the page (no row banner). Each counter is its own white chip. */
 .ff-book-kpi-flat {
   flex-wrap: nowrap;
   align-items: flex-end;
-  gap: 1.75rem;
+  gap: 2.5rem;
   /* About two rows of air before the Contacts actions bar (that bar also has pt-3). */
   margin: 0.35rem 0 3rem;
   padding: 0.15rem 1.5rem 0;
@@ -4673,11 +4673,7 @@ tr[data-ff-activity-selected="true"] {
 }
 .ff-book-kpi-flat .ff-book-kpi-item {
   min-width: max-content;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  background: #fff;
 }
 [data-ff-contacts-command] {
   flex-wrap: nowrap;
