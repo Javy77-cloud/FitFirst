@@ -28,7 +28,11 @@ import { issuedPolicyDocType } from "@/lib/policy/issued-upload";
 import { loadGeminiRows, type GeminiMintRow } from "@/lib/policy/load-gemini-rows";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { writeLicense } from "@/lib/pii/write";
-import { markPolicyDecAsCurrent } from "@/lib/policy/mark-dec-current";
+import { termRoleFromTags } from "@/lib/documents/document-labels";
+import {
+  issueFillShouldPromoteCurrent,
+  promoteArrivingCurrentDec,
+} from "@/lib/policy/promote-current-dec";
 import { riskIdForExtractedFieldsCache } from "@/lib/renewal/fill-compare-from-decs";
 import {
   buildPolicyFillAuditInsert,
@@ -618,7 +622,11 @@ export async function fillPolicyFromDec(input: {
   }
 
   if (input.source === "manual") {
-    const marked = await markPolicyDecAsCurrent({ policyId: policy.id, documentId: doc.id });
+    const marked = await promoteArrivingCurrentDec({
+      policyId: policy.id,
+      documentId: doc.id,
+      advanceTerm: false,
+    });
     if (!marked.ok) return marked;
   }
 
@@ -641,13 +649,23 @@ export async function fillPolicyFromDecOnIssue(input: {
   try {
     const documentId = input.documentId?.trim() ?? "";
     if (documentId) {
-      const marked = await markPolicyDecAsCurrent({ policyId: input.policyId, documentId });
-      if (!marked.ok) {
-        console.error("mark current declaration at issue", {
+      const [row] = await db
+        .select({ tags: documents.tags })
+        .from(documents)
+        .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, documentId)));
+      if (issueFillShouldPromoteCurrent(termRoleFromTags(row?.tags))) {
+        const marked = await promoteArrivingCurrentDec({
           policyId: input.policyId,
           documentId,
-          error: marked.error,
+          advanceTerm: false,
         });
+        if (!marked.ok) {
+          console.error("promote current declaration at issue", {
+            policyId: input.policyId,
+            documentId,
+            error: marked.error,
+          });
+        }
       }
     }
     const result = await fillPolicyFromDec({

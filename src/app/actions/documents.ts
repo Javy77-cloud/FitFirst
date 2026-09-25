@@ -26,6 +26,7 @@ import {
   resolveDeclarationCarrierName,
 } from "@/app/actions/declaration-prompt";
 import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
+import { promoteArrivingCurrentDec } from "@/lib/policy/promote-current-dec";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import { db } from "@/lib/db";
 import { listDealLookup } from "@/lib/db/queries";
@@ -1221,6 +1222,27 @@ export async function setDocumentTermRole(formData: FormData) {
   const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
   if (!doc) return;
 
+  const policyId = doc.policyId || String(formData.get("policyId") ?? "").trim();
+  if (!clear && rawRole === "current" && policyId) {
+    if (!doc.policyId) {
+      await db.update(documents).set({ policyId }).where(eq(documents.id, documentId));
+    }
+    await promoteArrivingCurrentDec({
+      policyId,
+      documentId,
+      advanceTerm: true,
+    });
+    revalidateDocumentPaths({ ...doc, policyId });
+    const href = documentDeleteReturnHref({
+      policyId,
+      dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
+      returnTo: String(formData.get("returnTo") ?? "").trim(),
+      line: String(formData.get("line") ?? "").trim() || null,
+    });
+    if (href) flashAction(href, "document-term-role-updated");
+    return;
+  }
+
   const nextTags = tagsWithTermRole(doc.tags, clear ? null : rawRole);
   // No-op if unchanged
   if (termRoleFromTags(doc.tags) === termRoleFromTags(nextTags)) {
@@ -1235,19 +1257,6 @@ export async function setDocumentTermRole(formData: FormData) {
   }
 
   await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
-  const nextRole = termRoleFromTags(nextTags);
-  if (nextRole === "current" && doc.policyId) {
-    const { advancePolicyCurrentTerm } = await import("@/lib/policy/advance-current-term-apply");
-    await advancePolicyCurrentTerm({
-      policyId: doc.policyId,
-      trigger: "document_term_role",
-    });
-    const { syncPolicyDateAutomations } = await import("@/app/actions/policy-record");
-    await syncPolicyDateAutomations(doc.policyId);
-    revalidatePath(`/policies/${doc.policyId}`);
-    revalidatePath("/policies");
-    revalidatePath("/renewals");
-  }
   revalidateDocumentPaths(doc);
   const href = documentDeleteReturnHref({
     policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
@@ -1276,28 +1285,26 @@ export async function setDocumentTermRoleInline(input: {
   const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
   if (!doc) return { ok: false, error: "Document not found." };
 
+  const policyId = doc.policyId || String(input.policyId ?? "").trim();
+  if (!clear && rawRole === "current" && policyId) {
+    if (!doc.policyId) {
+      await db.update(documents).set({ policyId }).where(eq(documents.id, documentId));
+    }
+    const promoted = await promoteArrivingCurrentDec({
+      policyId,
+      documentId,
+      advanceTerm: true,
+    });
+    if (!promoted.ok) {
+      return { ok: false, error: promoted.error };
+    }
+    revalidateDocumentPaths({ ...doc, policyId });
+    return { ok: true };
+  }
+
   const nextTags = tagsWithTermRole(doc.tags, clear ? null : (rawRole as DocumentTermRole));
   if (termRoleFromTags(doc.tags) !== termRoleFromTags(nextTags)) {
     await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
-    const nextRole = termRoleFromTags(nextTags);
-    if (nextRole === "current" && (doc.policyId || input.policyId)) {
-      const { advancePolicyCurrentTerm } = await import("@/lib/policy/advance-current-term-apply");
-      const policyIdForAdvance = doc.policyId || String(input.policyId ?? "").trim();
-      const advanced = await advancePolicyCurrentTerm({
-        policyId: policyIdForAdvance,
-        trigger: "document_term_role",
-      });
-      if (!advanced.ok) {
-        return { ok: false, error: advanced.error };
-      }
-      if (advanced.advanced) {
-        const { syncPolicyDateAutomations } = await import("@/app/actions/policy-record");
-        await syncPolicyDateAutomations(policyIdForAdvance);
-        revalidatePath(`/policies/${policyIdForAdvance}`);
-        revalidatePath("/policies");
-        revalidatePath("/renewals");
-      }
-    }
     revalidateDocumentPaths(doc);
   }
   return { ok: true };

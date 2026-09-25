@@ -27,6 +27,10 @@ import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 import { textFromUpload } from "@/lib/extraction/pdf";
 import { withFlash } from "@/lib/flash";
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
+import {
+  arrivingDeclarationBecomesCurrent,
+  promoteArrivingCurrentDec,
+} from "@/lib/policy/promote-current-dec";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -186,6 +190,13 @@ export async function uploadDealSlot(formData: FormData) {
     storagePath,
     docType,
   });
+  if (policyId && arrivingDeclarationBecomesCurrent(docType)) {
+    await promoteArrivingCurrentDec({
+      policyId,
+      documentId: id,
+      advanceTerm: false,
+    });
+  }
   if (dealId) revalidatePath(`/deals/${dealId}`);
   if (policyId) revalidatePath(`/policies/${policyId}`);
 }
