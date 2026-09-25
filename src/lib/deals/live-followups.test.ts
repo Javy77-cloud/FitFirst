@@ -140,7 +140,8 @@ describe("Javy live follow-ups after PR #28", () => {
     );
     expect(first).toMatch(/data-ff-sheet-approve-state="first"/);
     expect(first).toMatch(/data-ff-sheet-visual-review/);
-    expect(first).toContain("Confirm opens Markets");
+    expect(first).toMatch(/data-ff-sheet-confirm-next="markets"/);
+    expect(first).not.toContain("Confirm opens Markets");
 
     const reedit = renderToString(
       createElement(SheetApproveGate, {
@@ -155,7 +156,8 @@ describe("Javy live follow-ups after PR #28", () => {
     );
     expect(reedit).toMatch(/data-ff-sheet-approve-state="reapprove"/);
     expect(reedit).toMatch(/data-ff-sheet-visual-review/);
-    expect(reedit).toContain("Confirm opens Quotes");
+    expect(reedit).toMatch(/data-ff-sheet-confirm-next="quotes"/);
+    expect(reedit).not.toContain("Confirm opens Quotes");
     expect(reedit).not.toContain("Go to Markets");
 
     const unshopped = renderToString(
@@ -171,7 +173,7 @@ describe("Javy live follow-ups after PR #28", () => {
       }),
     );
     expect(unshopped).toMatch(/data-ff-sheet-confirm-next="markets"/);
-    expect(unshopped).toContain("Confirm opens Markets");
+    expect(unshopped).not.toContain("Confirm opens Markets");
     expect(unshopped).not.toContain("Confirm opens Quotes");
 
     const afterQuotes = renderToString(

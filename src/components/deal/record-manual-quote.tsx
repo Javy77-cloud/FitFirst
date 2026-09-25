@@ -22,9 +22,6 @@ export function RecordManualQuote({
     >
       <div>
         <h4 className="text-sm font-semibold text-navy">Record manual quote</h4>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Carrier is already on Markets. Enter the premium to create the quote row. No portal pull.
-        </p>
       </div>
       <div className="flex flex-wrap items-end gap-2">
         <input type="hidden" name="dealId" value={dealId} />

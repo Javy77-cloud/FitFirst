@@ -82,10 +82,6 @@ export function ProductPicker({
   return (
     <fieldset className="space-y-3" data-ff-package-lines="" data-ff-product-picker="">
       <legend className="text-sm font-semibold text-navy">Products on this deal</legend>
-      <p className="text-[13px] leading-snug text-muted-foreground">
-        Mix Personal, Commercial, Life, and Health on <span className="font-medium text-navy">one deal</span>.
-        The same product can be added again for another home or vehicle. Nothing is saved until Save Deal.
-      </p>
       <div className="flex flex-wrap items-center gap-1.5" data-ff-product-picker-summary="">
         <span className="rounded-full bg-navy px-2 py-0.5 text-[11px] font-semibold text-white">
           {`${instances.length} selected`}
@@ -135,7 +131,6 @@ export function ProductPicker({
                       </span>
                     ) : null}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">{theme.blurb}</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {items.map((item) => {

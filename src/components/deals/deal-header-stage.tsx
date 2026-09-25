@@ -29,7 +29,6 @@ import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
 import { flashAction } from "@/lib/flash-client";
 import { OPEN_ISSUED_POLICY_UPLOAD } from "@/components/deal/issue-policy-from-dec";
 import { isBoundReadyForIssue, isPolicyIssuedStage, mintFailureFlashText, mintFailureToast } from "@/lib/policy/mint-gate";
-import { OPEN_TRACKING_NOTE } from "@/lib/comms/quote-delivery";
 import { cn } from "@/lib/utils";
 
 function colorForStage(stage: DealStageOption) {
@@ -262,9 +261,6 @@ export function DealHeaderStage({
             {sendError}
           </p>
         ) : null}
-        <p className="text-helper text-muted-foreground" data-ff-open-tracking-note="">
-          {OPEN_TRACKING_NOTE}
-        </p>
         <div className="flex flex-wrap items-center gap-2" data-ff-pipeline-stage-row="">
           <button
             type="button"

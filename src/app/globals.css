@@ -1021,6 +1021,10 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }
+/* Product tabs sit above Quick Communication and grow upward out of the rail. */
+[data-ff-deal-workspace] [data-ff-deal-right-rail] {
+  overflow: visible !important;
+}
 [data-ff-quick-comms-kinds] {
   display: flex !important;
   flex-wrap: nowrap !important;

@@ -267,27 +267,13 @@ function BindRecheckAlertDialog({
             </span>
             {BIND_GATE_COPY.title}
           </DialogTitle>
-          <p
-            className="text-sm leading-snug text-muted-foreground"
-            data-ff-quote-bind-alert-subtitle=""
-          >
-            {BIND_GATE_COPY.subtitle}
-          </p>
-          <p
-            className="text-sm font-medium text-navy"
-            data-ff-quote-bind-alert-verify-prompt=""
-          >
-            {BIND_GATE_COPY.verifyPrompt}
-          </p>
           <DialogDescription>
             {quote ? (
               <>
                 {carrierName} · {formatMoney(quote.premium)} · Cov A {formatMoney(quote.coverageA)} ·
                 AOP {quote.aopDeductible ?? "—"} · Hurricane {quote.hurricaneDeductible ?? "—"}
               </>
-            ) : (
-              "Confirm premium, coverages, and deductibles before bind."
-            )}
+            ) : null}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2" data-ff-quote-bind-alert-checklist="" key={checklistKey}>
@@ -340,9 +326,6 @@ function BindRecheckAlertDialog({
                 {`Accept Coverage A $${floorLabel} for this quote (meet carrier minimum)`}
               </span>
             </label>
-            <p className="text-xs text-muted-foreground" data-ff-quote-bind-alert-floor-help="">
-              {BIND_GATE_COPY.acceptFloorHelp}
-            </p>
           </div>
         ) : null}
         {alreadyAcked && !showFloorOverride ? null : (

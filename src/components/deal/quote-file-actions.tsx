@@ -380,7 +380,7 @@ export function QuoteFileActions({
             files={carrierFiles}
             empty={
               <p className="text-sm text-muted-foreground" data-ff-quote-carrier-files-empty="">
-                No carrier quote files yet. Waiting on carrier API or bot snapshot.
+                No carrier quote files yet.
               </p>
             }
           />
@@ -465,7 +465,7 @@ export function QuoteFileActions({
                 files={agencyFiles}
                 empty={
                   <p className="text-sm text-muted-foreground" data-ff-quote-agency-files-empty="">
-                    No agency quote files uploaded yet.
+                    No agency quote files.
                   </p>
                 }
               />

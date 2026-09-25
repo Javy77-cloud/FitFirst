@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { saveLifeHealthQuoteResultAction } from "@/app/actions/quotes";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
@@ -54,6 +55,7 @@ export function LifeHealthQuotesPanel({
   autoIssue = false,
   canLogGap = false,
   healthSherpaEnrollment = null,
+  createNotice = null,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -80,6 +82,7 @@ export function LifeHealthQuotesPanel({
     product: string;
     policyId: string | null;
   } | null;
+  createNotice?: ReactNode;
 }) {
   const liveQuotes = quotes.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
@@ -126,7 +129,10 @@ export function LifeHealthQuotesPanel({
   const familyLabel = shopLine === "health" ? "Health" : "Life";
 
   return (
-    <div className="space-y-4" data-ff-life-health-quotes="" data-ff-quotes-line={shopLine}>
+    <div className="relative flex flex-col gap-4" data-ff-life-health-quotes="" data-ff-quotes-line={shopLine}>
+      {createNotice ? (
+        <div className="absolute bottom-full left-0 z-20">{createNotice}</div>
+      ) : null}
       {shopLine === "health" && healthSherpaEnrollment ? (
         <section className="ff-card space-y-1 p-4" data-ff-healthsherpa-quote-status="">
           <h3 className="text-sm font-semibold text-navy">HealthSherpa enrollment</h3>
@@ -138,8 +144,7 @@ export function LifeHealthQuotesPanel({
             {healthSherpaEnrollment.confirmationNumber
               ? ` · ${healthSherpaEnrollment.confirmationNumber}`
               : ""}
-            {healthSherpaEnrollment.policyId ? " · unpublished policy on file" : ""}. Manual
-            enrollments may not fire the webhook.
+            {healthSherpaEnrollment.policyId ? " · unpublished policy on file" : ""}
           </p>
         </section>
       ) : null}
@@ -148,10 +153,6 @@ export function LifeHealthQuotesPanel({
           <h3 className="text-sm font-semibold text-navy">
             {productLabel ? `${familyLabel} · ${productLabel}` : `${familyLabel} quote writer`}
           </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Record quote-writer notes and results here. This is not a P&amp;C rate pull — stage and
-            notice stay on the deal header.
-          </p>
         </div>
         <form
           action={saveLifeHealthQuoteResultAction}
@@ -253,8 +254,7 @@ export function LifeHealthQuotesPanel({
 
       {sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground" data-ff-life-health-quotes-empty="">
-          No quote-writer results yet. Add a carrier result above, then use stage and the header
-          notice control.
+          No quote-writer results yet.
         </p>
       ) : (
         <section className="ff-card overflow-hidden" data-ff-quotes-current="">

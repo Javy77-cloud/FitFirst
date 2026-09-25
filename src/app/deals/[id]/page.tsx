@@ -40,10 +40,8 @@ import {
   parseAgentDealTab,
   resolveDealResumeTab,
 } from "@/lib/deals/tabs";
-import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { resolvePartyEmail } from "@/lib/comms/resolve-party-email";
-import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_LOCK } from "@/lib/desk/activity-rail";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { reportFromSheet } from "@/lib/completeness/report";
 import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
@@ -288,7 +286,6 @@ export default async function DealPage({
   const dealFields = dealLayoutBundle?.fields ?? [];
   const dealCfValues = await dealCfValuesPromise;
   const dealValues = { ...dealCfValues, ...(dealLayoutBundle?.stored ?? {}) };
-  const isAna = deal.id === DEAL_ID;
   const visibleDealTitle = displayDealTitle({
     contact,
     account,
@@ -632,6 +629,11 @@ export default async function DealPage({
   const hasRequestedQuotes =
     shopMarketsAction || lineQuotes.some((row) => row.quote.stub !== true);
   const noticeStampVisible = isRenderableNoticeStamp(noticeProps.noticeType);
+  const createNoticeControl = !noticeStampVisible ? (
+    <div data-ff-deal-create-notice="">
+      <DealNotices {...noticeProps} placement="header" />
+    </div>
+  ) : null;
   const titleForm =
     sheetFormForProduct(activeProduct, lineForm) ?? dealProductDef(activeProduct).quotingForm;
   const docSlotProducts = dealProducts.map((id) => {
@@ -816,11 +818,6 @@ export default async function DealPage({
                   {visibleDealTitle}
                 </h1>
                 <PromiseChips commitments={serializeCommitments(dealPromises)} />
-                {!noticeStampVisible ? (
-                  <div className="mt-1.5" data-ff-deal-create-notice="">
-                    <DealNotices {...noticeProps} placement="header" />
-                  </div>
-                ) : null}
               </div>
               <DealPackageShell
                 name={partyName}
@@ -880,10 +877,23 @@ export default async function DealPage({
               />
             </div>
           }
-          subnav={
-              dealProducts.length ? (
-                <>
-                  <DealLineSwitcher
+          subnav={null}
+          corner={
+            <div className="w-full" data-ff-deal-motivation-gap="">
+              <DealMotivation stats={motivation} />
+            </div>
+          }
+          banner={null}
+          sidePanel={
+            <div className="min-w-0 w-full space-y-3" data-ff-deal-rail-stack="">
+              <div className="relative min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
+                {dealProducts.length ? (
+                  <div
+                    className="absolute inset-x-0 bottom-full z-20 w-full"
+                    data-ff-deal-products-column=""
+                  >
+                    <DealLineSwitcher
+                      layout="rail"
                     dealId={deal.id}
                     products={productInstances.map((row) => row.key)}
                     active={activeInstance.key}
@@ -967,33 +977,8 @@ export default async function DealPage({
                       }),
                     )}
                   />
-                </>
-              ) : null
-          }
-          corner={
-            <div
-              className="w-full"
-              style={{ marginBottom: "calc(-50px + 0.75rem)" }}
-              data-ff-deal-motivation-gap=""
-            >
-              <DealMotivation stats={motivation} />
-            </div>
-          }
-          banner={
-            isAna ? (
-              <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
-                Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
-                bind this shop. Quotes are not coverage.
-              </div>
-            ) : null
-          }
-          sidePanel={
-            <div
-              className={ACTIVITY_RAIL_ASIDE_CLASS}
-              data-ff-deal-right-rail=""
-              data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
-            >
-              <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
+                  </div>
+                ) : null}
                 <QuickCommsBoard
                   items={comms}
                   dealId={deal.id}
@@ -1153,6 +1138,7 @@ export default async function DealPage({
                       </div>
                     ) : lifeHealthLine ? (
                       <LifeHealthQuotesPanel
+                        createNotice={createNoticeControl}
                         dealId={deal.id}
                         quotes={lineQuotes}
                         logs={logs}
@@ -1202,6 +1188,7 @@ export default async function DealPage({
                       />
                     ) : (
                       <QuotesPanel
+                        createNotice={createNoticeControl}
                         dealId={deal.id}
                         quotes={lineQuotes}
                         logs={logs}

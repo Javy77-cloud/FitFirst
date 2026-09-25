@@ -135,7 +135,7 @@ export function SectionTabs({
           </div>
         </div>
         <div
-          className="flex items-end justify-end gap-2"
+          className="flex items-start justify-end gap-2"
           style={{ gridColumn: 2, gridRow: 1 }}
           data-ff-deal-quotes-corner=""
         >
@@ -153,7 +153,13 @@ export function SectionTabs({
           className={ACTIVITY_RAIL_ASIDE_CLASS}
           data-ff-deal-right-rail=""
           data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
-          style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: ACTIVITY_RAIL_PX }}
+          style={{
+            gridColumn: 2,
+            gridRow: 2,
+            paddingTop: 50,
+            width: ACTIVITY_RAIL_PX,
+            overflow: "visible",
+          }}
         >
           {sidePanel}
         </aside>

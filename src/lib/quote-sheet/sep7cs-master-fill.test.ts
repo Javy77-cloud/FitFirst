@@ -49,7 +49,7 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(button.match(/data-ff-fill-master-sheet/g)?.length).toBe(1);
     expect(button).toMatch(/MASTER_FILL_STEP_DEAL/);
     expect(button).toMatch(/masterFillStepsForLine/);
-    expect(button).toMatch(/MASTER_FILL_REVIEW_NUDGE/);
+    expect(button).not.toMatch(/MASTER_FILL_REVIEW_NUDGE/);
     expect(button).toMatch(/fillMasterSheetStep/);
     expect(button).not.toMatch(/tab=markets/);
     expect(button).toMatch(/flashAction\(toast\)/);

@@ -110,9 +110,6 @@ export function DocumentsPanel({
         <div className="w-full min-w-0" data-ff-deal-upload>
           <section className="ff-card w-full p-3">
             <h3 className="mb-1 text-sm font-semibold text-navy">Upload</h3>
-            <p className="mb-2 text-helper text-muted-foreground">
-              Type, file, create. Source files stay on this deal.
-            </p>
             {lineGroups.length > 0 ? (
               <div className="mb-2 space-y-2" data-ff-deal-docs-by-line>
                 {lineGroups.map((group) => (
@@ -140,7 +137,7 @@ export function DocumentsPanel({
 
             {lineGroups.length === 0 && windowOtherDocs.length === 0 ? (
               <p className="mb-2 text-helper text-muted-foreground" data-ff-product-docs-empty="">
-                No files on this product yet. Upload here or link one from the deal library.
+                No files on this product yet.
               </p>
             ) : null}
             <LinkDealDocToProduct
@@ -203,7 +200,6 @@ export function DocumentsPanel({
           {health ? (
             <p className="text-helper text-muted-foreground">
               {health.confirmed} confirmed · {health.check} needs review · {health.missing} missing.
-              Confirm the Risk Profile before quotes.
             </p>
           ) : null}
         </div>

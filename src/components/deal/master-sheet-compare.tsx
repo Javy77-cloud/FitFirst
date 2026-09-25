@@ -36,10 +36,8 @@ import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import { InsuredPropertyKindControl } from "@/components/deal/insured-property-kind-control";
 import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/risk-profile-copy";
 import { HealthSherpaHandoff } from "@/components/deal/healthsherpa-handoff";
-import { HEALTHSHERPA_MANUAL_LINES_NOTE, HEALTHSHERPA_SKIP_REKEY } from "@/lib/healthsherpa/copy";
 import {
   healthSherpaCollapsibleGroups,
-  healthSherpaProductForPlan,
   isUsingHealthSherpa,
   USING_HEALTHSHERPA_KEY,
 } from "@/lib/healthsherpa/sheet";
@@ -367,10 +365,9 @@ export function MasterSheetCompare({
             <h3 className="text-sm font-semibold text-navy" data-ff-sheet-title="">
               {RISK_PROFILE_LABEL}
             </h3>
-            <p className="text-helper text-muted-foreground">
-              Empty before extraction. Type a value or confirm what the source pulled.
-              {filled === 0 ? " Fields start blank." : ` ${filled} filled.`}
-            </p>
+            {filled > 0 ? (
+              <p className="text-helper text-muted-foreground">{filled} filled.</p>
+            ) : null}
             {line === "health" ? (
               <label className="mt-2 inline-flex items-center gap-2 text-xs text-navy" data-ff-using-healthsherpa="">
                 <input
@@ -594,13 +591,7 @@ function SheetGroup({
       choices={choices}
       collapsed={homeSection ? !open : undefined}
       onToggleCollapse={homeSection ? () => setOpen((current) => !current) : undefined}
-      extra={
-        collapsible ? (
-          <span className="ml-2 text-[10px] font-normal normal-case text-muted-foreground">
-            {HEALTHSHERPA_SKIP_REKEY}
-          </span>
-        ) : null
-      }
+      extra={null}
       titleCheck={
         inspectionKind ? (
           <InspectionBannerCheck
@@ -720,9 +711,6 @@ function SheetGroup({
       {collapsible && groupVisible ? (
         <details data-ff-healthsherpa-collapse={title}>
           <summary className="cursor-pointer list-none">{header}</summary>
-          {healthSherpaProductForPlan(liveValues.plan_type) === "manual" ? (
-            <p className="px-3 py-1 text-[11px] text-muted-foreground">{HEALTHSHERPA_MANUAL_LINES_NOTE}</p>
-          ) : null}
           {sectionBody}
         </details>
       ) : (

@@ -78,9 +78,6 @@ export function InsuredPropertyKindControl({
           );
         })}
       </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
-        Only a primary residence copies onto the Contact profile address.
-      </p>
       <input type="hidden" name={`field_${INSURED_PROPERTY_KIND_KEY}`} value={current} />
     </div>
   );
