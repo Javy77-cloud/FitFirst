@@ -90,8 +90,20 @@ const LINES: Array<{
   premium?: string[];
   termDeductible?: "comprehensive" | "collision";
 }> = [
-  { key: "liability_bi", label: "Bodily injury", limit: ["liability_bi"], premium: ["liability_bi_premium"] },
-  { key: "liability_pd", label: "Property damage", limit: ["liability_pd"], premium: ["liability_pd_premium"] },
+  {
+    key: "liability_bi",
+    label: "Bodily injury",
+    limit: ["liability_bi"],
+    deductible: ["liability_bi_deductible"],
+    premium: ["liability_bi_premium"],
+  },
+  {
+    key: "liability_pd",
+    label: "Property damage",
+    limit: ["liability_pd"],
+    deductible: ["liability_pd_deductible"],
+    premium: ["liability_pd_premium"],
+  },
   {
     key: "pip",
     label: "PIP",
@@ -99,12 +111,31 @@ const LINES: Array<{
     deductible: ["pip_deductible"],
     premium: ["pip_premium"],
   },
-  { key: "med_pay", label: "Medical payments", limit: ["med_pay"], premium: ["med_pay_premium"] },
-  { key: "um_uim", label: "UM / UIM", limit: ["um_uim"], premium: ["um_uim_premium"] },
-  { key: "um_pd", label: "UM property damage", limit: ["um_pd"], premium: ["um_pd_premium"] },
+  {
+    key: "med_pay",
+    label: "Medical payments",
+    limit: ["med_pay"],
+    deductible: ["med_pay_deductible"],
+    premium: ["med_pay_premium"],
+  },
+  {
+    key: "um_uim",
+    label: "UM / UIM",
+    limit: ["um_uim"],
+    deductible: ["um_uim_deductible"],
+    premium: ["um_uim_premium"],
+  },
+  {
+    key: "um_pd",
+    label: "UM property damage",
+    limit: ["um_pd"],
+    deductible: ["um_pd_deductible"],
+    premium: ["um_pd_premium"],
+  },
   {
     key: "comprehensive",
     label: "Comprehensive",
+    limit: ["comp_limit"],
     deductible: ["comp_deductible", "comprehensive_deductible"],
     premium: ["comp_premium"],
     termDeductible: "comprehensive",
@@ -112,13 +143,32 @@ const LINES: Array<{
   {
     key: "collision",
     label: "Collision",
+    limit: ["collision_limit"],
     deductible: ["collision_deductible"],
     premium: ["collision_premium"],
     termDeductible: "collision",
   },
-  { key: "rental", label: "Rental", limit: ["rental"], premium: ["rental_premium"] },
-  { key: "towing", label: "Towing", limit: ["towing"], premium: ["towing_premium"] },
-  { key: "glass", label: "Glass", deductible: ["glass"], premium: ["glass_premium"] },
+  {
+    key: "rental",
+    label: "Rental",
+    limit: ["rental"],
+    deductible: ["rental_deductible"],
+    premium: ["rental_premium"],
+  },
+  {
+    key: "towing",
+    label: "Towing",
+    limit: ["towing"],
+    deductible: ["towing_deductible"],
+    premium: ["towing_premium"],
+  },
+  {
+    key: "glass",
+    label: "Glass",
+    limit: ["glass_limit"],
+    deductible: ["glass"],
+    premium: ["glass_premium"],
+  },
 ];
 
 export function autoCoverageSchedule(source: AutoCoverageSource): AutoCoverageRow[] {

@@ -328,6 +328,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   towing_premium: ["towing_premium"],
   glass: ["glass"],
   glass_deductible: ["glass"],
+  glass_limit: ["glass_limit"],
   glass_premium: ["glass_premium"],
   full_glass: ["glass"],
   medical_payments: ["med_pay"],
@@ -347,6 +348,15 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   um_stacking: ["um_stacked"],
   stacking: ["um_stacked"],
   stacked: ["um_stacked"],
+  liability_bi_deductible: ["liability_bi_deductible"],
+  liability_pd_deductible: ["liability_pd_deductible"],
+  med_pay_deductible: ["med_pay_deductible"],
+  um_uim_deductible: ["um_uim_deductible"],
+  um_pd_deductible: ["um_pd_deductible"],
+  rental_deductible: ["rental_deductible"],
+  towing_deductible: ["towing_deductible"],
+  comp_limit: ["comp_limit"],
+  collision_limit: ["collision_limit"],
   discounts: ["discounts"],
   vehicle_1_premium: ["vehicle_1_premium"],
   vehicle_1_comp_deductible: ["vehicle_1_comp_deductible"],
@@ -387,6 +397,7 @@ export function normalizeGeminiJsonKey(key: string): string {
 
 export function sheetKeysForGeminiKey(geminiKey: string): string[] {
   const normalized = normalizeGeminiJsonKey(geminiKey);
+  if (normalized === "driver_1_relationship") return [];
   const mapped = GEMINI_KEY_TO_SHEET[normalized] ?? GEMINI_KEY_TO_SHEET[geminiKey] ?? [];
   if (mapped.length > 0) return mapped;
   // vehicle_2_annual_miles and the other repeatable Auto columns are real sheet keys.

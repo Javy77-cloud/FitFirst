@@ -285,7 +285,7 @@ describe("Auto DEC fill mapping", () => {
     const extras = autoCoverageExtras({ coverageLimits: patch.coverageLimits });
     expect(extras.find((row) => row.key === "um_stacked")?.value).toBe("Non-stacked");
     expect(extras.find((row) => row.key === "discounts")?.value).toMatch(/Multi-car/);
-    expect(byRow.liability_bi?.deductible).toBe("—");
+    expect(byRow.liability_bi?.deductible).toBe("None");
   });
 
   it("fills blanks and leaves an agent edit, with a diff", () => {
