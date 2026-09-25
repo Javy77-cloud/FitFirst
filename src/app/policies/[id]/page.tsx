@@ -61,6 +61,8 @@ import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { getRenewalQueueForPolicy } from "@/lib/ams/queries";
 import { getAgentPolicyAccess } from "@/lib/policy/agent-policy-access-prefs";
 import { resolvePolicyViewerAccess } from "@/lib/policy/agent-policy-access";
+import { listDealInspectionDocuments } from "@/lib/documents/deal-inspection-docs";
+import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 
 export const dynamic = "force-dynamic";
 /** Fill from declaration reads a DEC with Gemini. Same ceiling as the deal Fill page. */
@@ -77,6 +79,10 @@ export default async function PolicyDetailPage({
   const query = await searchParams;
   const workspace = await getPolicyWorkspace(id);
   if (!workspace) notFound();
+  const inspectionDealId =
+    resolveLobOverviewFamily(workspace.policy) === "homeowners"
+      ? (workspace.deal?.id ?? workspace.policy.dealId)
+      : null;
   const [
     servicing,
     policyClaims,
@@ -91,6 +97,7 @@ export default async function PolicyDetailPage({
     accessLogRows,
     producerDisplayName,
     agentAccessPref,
+    inspectionDocs,
   ] = await Promise.all([
     loadPolicyServicing(id),
     listClaimsForPolicy(id),
@@ -114,6 +121,7 @@ export default async function PolicyDetailPage({
     listDocumentAccessLogsForPolicy(id).catch(() => []),
     resolvePolicyProducerName(id),
     getAgentPolicyAccess(),
+    inspectionDealId ? listDealInspectionDocuments(inspectionDealId) : Promise.resolve([]),
   ]);
   const {
     policy,
@@ -425,6 +433,7 @@ export default async function PolicyDetailPage({
             showCommission={viewer.commissionBreakdown.read}
             termView={termView}
             renewalHandled={renewalHandled}
+            inspectionDocs={inspectionDocs}
           />
         ) : null}
 

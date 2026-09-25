@@ -22,7 +22,8 @@ import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
-import { PropertyProtectionSection } from "@/components/policy/property-protection-section";
+import { buildHomeOverviewInspections, type HomeInspectionDocument } from "@/lib/policy/home-overview-inspections";
+import { HomeInspectionSections } from "@/components/policy/home-inspection-sections";
 import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { mailingAddressLine } from "@/lib/desk/policy-information";
 
@@ -49,6 +50,7 @@ export function PolicyOverviewTab({
   showCommission = true,
   termView = null,
   renewalHandled = false,
+  inspectionDocs = [],
 }: {
   policy: {
     id: string;
@@ -120,6 +122,7 @@ export function PolicyOverviewTab({
     occupancy?: string | null;
     county?: string | null;
     roofCovering?: string | null;
+    openingProtection?: string | null;
   } | null;
   /** Owner profile Name (person), never AFA / selling agency. */
   producerDisplayName?: string | null;
@@ -128,6 +131,8 @@ export function PolicyOverviewTab({
   termView?: CurrentTermResolution | null;
   /** renewal_queue stage === handled ("Client staying"). */
   renewalHandled?: boolean;
+  /** Deal-library wind mit / four-point files. Ids only — the PDF stays on the deal. */
+  inspectionDocs?: HomeInspectionDocument[];
 }) {
   const offBook = termView ? bandIsOffBook(termView.band) : isOffBookStatus(policy.status);
   const inForce = termView ? termView.countsAsInForce : isInForceStatus(policy.status);
@@ -168,6 +173,16 @@ export function PolicyOverviewTab({
       row.kind === "certificate_holder",
   ).length;
   const dwelling = resolveDwellingFacts({ risk, sheet });
+  const inspectionSections =
+    family === "homeowners"
+      ? buildHomeOverviewInspections({
+          documents: inspectionDocs,
+          risk,
+          sheet,
+          protection: protectionValues,
+          roofInstallDate: limits.date_of_roof_installation,
+        })
+      : [];
   const showRenewalAgreed = showRenewalAgreedStamp({
     clientStaying: renewalHandled,
     // Stored policies.renewal_date. Swap for renewalDateFor(policy) when that helper lands.
@@ -266,7 +281,6 @@ export function PolicyOverviewTab({
           premisesCity: policy.premisesCity,
           premisesState: policy.premisesState,
           premisesZip: policy.premisesZip,
-          roofYear: dwelling.roofYear,
           yearBuilt: dwelling.yearBuilt,
           construction: dwelling.construction,
           vehicleCount: vehicles?.length ?? 0,
@@ -288,17 +302,14 @@ export function PolicyOverviewTab({
               })
             : null,
           mobileHomeUnit: mobileHomeUnit || null,
-          roofMaterial: risk?.roofCovering || protectionValues.roof_covering,
-          roofInstallDate: limits.date_of_roof_installation,
           scheduledStructures: scheduledStructures || null,
         }}
+        insertAfter={
+          family === "homeowners"
+            ? { dwelling: <HomeInspectionSections sections={inspectionSections} /> }
+            : undefined
+        }
       />
-
-      {family === "homeowners" ? (
-        <PropertyProtectionSection
-          snapshot={parsePropertyProtectionSnapshot(policy.propertyProtection)}
-        />
-      ) : null}
 
       {isAuto || family === "auto" ? (
         <VehiclesList

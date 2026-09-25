@@ -9,6 +9,7 @@ export function CollapsibleSection({
   title,
   badge,
   actions,
+  trailing,
   defaultOpen = false,
   open: openControlled,
   onOpenChange,
@@ -21,6 +22,8 @@ export function CollapsibleSection({
   badge?: ReactNode;
   /** Extra controls on the header row (Save, etc). Clicks do not toggle open. */
   actions?: ReactNode;
+  /** Top-right control on the title row. Clicks do not toggle open. */
+  trailing?: ReactNode;
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -60,6 +63,11 @@ export function CollapsibleSection({
             <span className="truncate text-base font-semibold text-navy">{title}</span>
             {badge ? <span className="shrink-0 text-xs text-muted-foreground">{badge}</span> : null}
           </button>
+          {trailing ? (
+            <div className="shrink-0" data-ff-collapse-trailing="" onClick={(event) => event.stopPropagation()}>
+              {trailing}
+            </div>
+          ) : null}
         </div>
         {actions ? (
           <div

@@ -5,6 +5,7 @@
 
 import { appointmentLine } from "@/lib/domain-ams";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import {
   ERRORS_OMISSIONS_SHORT,
   isErrorsOmissionsProduct,
@@ -12,6 +13,7 @@ import {
   liabilityLimitText,
   liabilityRetroDate,
 } from "@/lib/policy/eo";
+import { isResidentialHomeForm } from "@/lib/quote-sheet/home-inspections";
 
 export type LobOverviewFamily =
   | "auto"
@@ -59,7 +61,12 @@ export function resolveLobOverviewFamily(input: {
     .join(" ");
 
   if (line === "AUTO" || /\b(auto|pa|personal.?auto)\b/.test(blob)) return "auto";
-  if (line === "HO" || /\b(home|ho[3456]|dp[13]|homeowner)\b/.test(blob)) return "homeowners";
+  const residentialHome = [input.lineOfBusiness, input.policyType, input.policySubType, input.formType].some(
+    (part) => isResidentialHomeForm(part) || isDwellingFireProduct(part),
+  );
+  if (line === "HO" || residentialHome || /\b(home|ho[3456]|dp[13]|homeowner)\b/.test(blob)) {
+    return "homeowners";
+  }
   if (line === "LIFE" || /\blife\b/.test(blob) || input.insuranceType === "Life") return "life";
   if (line === "HEALTH" || /\bhealth|medicare|marketplace\b/.test(blob) || input.insuranceType === "Health") {
     return "health";
@@ -127,7 +134,6 @@ export type LobOverviewInput = {
   premisesCity?: string | null;
   premisesState?: string | null;
   premisesZip?: string | null;
-  roofYear?: number | null;
   yearBuilt?: number | null;
   construction?: string | null;
   vehicleCount?: number;
@@ -149,8 +155,6 @@ export type LobOverviewInput = {
   personalPropertyReplacementCost?: string | null;
   mailingAddress?: string | null;
   mobileHomeUnit?: string | null;
-  roofMaterial?: string | null;
-  roofInstallDate?: string | null;
   scheduledStructures?: string | null;
 };
 
@@ -158,10 +162,6 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
   const family = resolveLobOverviewFamily(input);
   const covA = input.coverageA != null ? formatMoney(input.coverageA) : null;
   const face = input.faceAmount != null && input.faceAmount !== "" ? formatMoney(input.faceAmount) : null;
-  const roofAge =
-    input.roofYear != null && Number.isFinite(input.roofYear)
-      ? `${new Date().getUTCFullYear() - input.roofYear} yrs (roof ${input.roofYear})`
-      : null;
 
   if (family === "auto") {
     return [
@@ -212,24 +212,6 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
             present("mailingAddress", "Mailing address", input.mailingAddress),
             present("mobileHomeUnit", "Mobile home unit", input.mobileHomeUnit),
             present("scheduledStructures", "Scheduled structures", input.scheduledStructures),
-          ].filter((row): row is LobOverviewField => row != null),
-        ],
-      },
-      {
-        id: "roof",
-        title: "Roof age",
-        fields: [
-          field("roofAge", "Roof age", roofAge, {
-            hint: "Roof year not on the risk yet — pull from the property packet when available.",
-          }),
-          field(
-            "roofYear",
-            "Roof year",
-            input.roofYear != null ? String(input.roofYear) : null,
-          ),
-          ...[
-            present("roofMaterial", "Roof material", input.roofMaterial),
-            present("roofInstallDate", "Roof installation", input.roofInstallDate),
           ].filter((row): row is LobOverviewField => row != null),
         ],
       },

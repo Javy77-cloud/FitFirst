@@ -24,23 +24,41 @@ describe("LOB overview templates", () => {
     ).toBe("gl");
   });
 
-  it("homeowners shows dwelling, roof, mortgagee pointer", () => {
+  it("homeowners keeps dwelling open and leaves roof to the collapsed inspection block", () => {
     const sections = buildLobOverviewSections({
       policyId: "p1",
       lineOfBusiness: "HO3",
       coverageA: 321000,
       yearBuilt: 1992,
-      roofYear: 2018,
       mortgageeCount: 0,
     });
-    expect(sections.map((s) => s.id)).toEqual(["dwelling", "roof", "mortgagee"]);
+    expect(sections.map((s) => s.id)).toEqual(["dwelling", "mortgagee"]);
     expect(sections.find((s) => s.id === "mortgagee")?.pointer?.href).toContain("tab=coverage");
     const dwelling = sections.find((s) => s.id === "dwelling")?.fields ?? [];
     expect(dwelling.map((f) => f.key)).toEqual(["coverageA", "yearBuilt", "construction"]);
     expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("1992");
-    expect(dwelling.some((f) => f.key === "premises")).toBe(false);
-    const roof = sections.find((s) => s.id === "roof")?.fields.find((f) => f.key === "roofAge");
-    expect(roof?.empty).toBe(false);
+    expect(dwelling.some((f) => f.key === "premises" || f.key === "roofYear")).toBe(false);
+  });
+
+  it("treats DP, manufactured home, and rentals as home lines", () => {
+    expect(resolveLobOverviewFamily({ lineOfBusiness: "DP3" })).toBe("homeowners");
+    expect(resolveLobOverviewFamily({ lineOfBusiness: "HO4" })).toBe("homeowners");
+    expect(resolveLobOverviewFamily({ lineOfBusiness: "MHO" })).toBe("homeowners");
+    expect(resolveLobOverviewFamily({ lineOfBusiness: "RENTERS" })).toBe("homeowners");
+    expect(resolveLobOverviewFamily({ lineOfBusiness: "LANDLORD" })).toBe("homeowners");
+    expect(resolveLobOverviewFamily({ formType: "Manufactured Home", lineOfBusiness: "HO" })).toBe(
+      "homeowners",
+    );
+    expect(resolveLobOverviewFamily({ formType: "Dwelling Fire", lineOfBusiness: "DP" })).toBe(
+      "homeowners",
+    );
+    expect(
+      resolveLobOverviewFamily({
+        lineOfBusiness: "HEALTH",
+        policySubType: "HMO",
+        insuranceType: "Health",
+      }),
+    ).toBe("health");
   });
 
   it("life shows honest empties for beneficiary and riders", () => {
