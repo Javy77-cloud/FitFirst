@@ -4573,7 +4573,7 @@ tr[data-ff-activity-selected="true"] {
 .ff-book-card {
   align-items: flex-start;
 }
-/* Current-band corner chip. Sits above the renews line so a 16rem column stays readable. */
+/* Corner chip on every band. Sits above the name row so a 16rem column stays readable. */
 .ff-book-card.is-renewal-agreed {
   position: relative;
   /* Reserved strip so the corner chip stays off the name and the Open action. */
@@ -5631,6 +5631,31 @@ tr[data-ff-activity-selected="true"] {
   align-items: center;
   gap: 0.35rem;
   min-width: 0;
+}
+/* Band name keeps the form visible when the holder name is long. */
+.ff-book-card .ff-stack-name-with-form {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  max-width: 100%;
+}
+.ff-policy-band-insured {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ff-policy-band-form {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+/* Short wide pill so Open stays on the name row beside the form. */
+.ff-book-board .ff-band-open {
+  align-self: flex-start;
+  margin-top: 0.12rem;
+  padding: 0.12rem 1rem;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 .ff-book-peek,
 .ff-book-channels,

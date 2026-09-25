@@ -184,28 +184,27 @@ function policyCard(overrides: Partial<BookGlanceCard> = {}): BookGlanceCard {
   };
 }
 
-describe("Current band Renewal agreed badge", () => {
-  it("renders a corner badge on Current policy cards and leaves the renews line alone", () => {
-    const html = renderToStaticMarkup(<BookGlanceCardView card={policyCard()} layoutMode="bands" />);
-    expect(html).toContain(`>${RENEWAL_AGREED_LABEL}<`);
-    expect(html).toContain('data-ff-renewal-agreed=""');
-    expect(html).toContain("ff-renewal-agreed-badge");
-    expect(html).toContain("is-renewal-agreed");
-    expect(html).toContain("Renews in 12d");
-    expect(html).not.toMatch(/Renews in 12d[^<]*Renewal agreed/);
+describe("Policy band Renewal agreed badge", () => {
+  it("renders the same corner badge on every band and leaves the renews line alone", () => {
+    for (const column of ["now", "watch", "current", "lapsed"] as const) {
+      const html = renderToStaticMarkup(
+        <BookGlanceCardView card={policyCard({ column })} layoutMode="bands" />,
+      );
+      expect(html, column).toContain(`>${RENEWAL_AGREED_LABEL}<`);
+      expect(html, column).toContain('data-ff-renewal-agreed=""');
+      expect(html, column).toContain("ff-renewal-agreed-badge");
+      expect(html, column).toContain("is-renewal-agreed");
+      expect(html, column).toContain("Renews in 12d");
+      expect(html, column).not.toMatch(/Renews in 12d[^<]*Renewal agreed/);
+    }
   });
 
-  it("keeps the corner badge off the stack view, other bands, and policies that are not Client staying", () => {
+  it("keeps the corner badge off the stack view and off policies that are not Client staying", () => {
     const stack = renderToStaticMarkup(<BookGlanceCardView card={policyCard()} layoutMode="stack" />);
     expect(stack).not.toContain("ff-renewal-agreed-badge");
     expect(stack).not.toContain("is-renewal-agreed");
     expect(stack).toContain("Renews in 12d");
-
-    const watch = renderToStaticMarkup(
-      <BookGlanceCardView card={policyCard({ column: "watch" })} layoutMode="bands" />,
-    );
-    expect(watch).not.toContain("data-ff-renewal-agreed");
-    expect(watch).not.toContain("is-renewal-agreed");
+    expect(stack).toContain("ff-policy-renewal-agreed");
 
     const open = renderToStaticMarkup(
       <BookGlanceCardView

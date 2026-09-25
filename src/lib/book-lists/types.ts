@@ -103,7 +103,7 @@ export type BookGlanceCard = {
   inboxHref?: string | null;
   /**
    * Dates for the render-time "Renewal agreed" mark.
-   * The stack stamp and the Current-band badge both read this.
+   * The stack stamp and the band badge both read this.
    * Visibility is not stored here — each surface computes it.
    */
   renewalAgreed?: {
