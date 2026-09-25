@@ -3,6 +3,7 @@ import {
   docBelongsToProductWindow,
   filterDocsForProductWindow,
   libraryDocsNotInProductWindow,
+  liveDealLibraryDocs,
   linkDocToProductTags,
   membershipTagsForUpload,
   multiProductMembershipWarning,
@@ -161,6 +162,16 @@ describe("product document membership", () => {
     expect(libraryDocsNotInProductWindow(docs, { shopLine: "flood" }).map((d) => d.id)).toEqual([
       "home",
     ]);
+  });
+
+  it("keeps deleted and untagged leftovers out of the deal document library", () => {
+    const docs = [
+      { id: "live", tags: ["line:home", "form:HO3"], status: "uploaded", slot: "source_doc", docType: "dec" },
+      { id: "copy", tags: ["instance:homeowners~88uvyj"], status: "uploaded", slot: "source_doc", docType: "dec" },
+      { id: "hidden", tags: ["line:home", "form:DP3"], status: "hidden", slot: "source_doc", docType: "dec" },
+      { id: "untagged", tags: [], status: "extracted", slot: "source_doc", docType: "dec" },
+    ];
+    expect(liveDealLibraryDocs(docs).map((doc) => doc.id)).toEqual(["live", "copy"]);
   });
 
   it("warns before hard-delete when a file is on multiple products", () => {

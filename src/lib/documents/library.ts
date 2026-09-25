@@ -40,10 +40,12 @@ export function libraryHref(input: {
   library?: string | null;
   folderId?: string | null;
   notice?: string | null;
+  dealId?: string | null;
 }): string {
   const q = new URLSearchParams();
   q.set("library", parseLibrary(input.library));
   if (input.folderId) q.set("folder", input.folderId);
+  if (input.dealId) q.set("deal", input.dealId);
   if (input.notice) q.set("notice", input.notice);
   return `/documents?${q.toString()}`;
 }
