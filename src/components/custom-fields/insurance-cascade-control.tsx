@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   cascadeFromDeal,
   categoriesForType,
@@ -49,6 +49,7 @@ export function InsuranceCascadeControl({
   activePackageLine = null,
   lineSettings,
   variant = "stack",
+  afterPipeline,
   onPolicyFormChange,
 }: {
   /** Hidden input name for parent Insurance Type (PC / Life / Health). */
@@ -77,6 +78,8 @@ export function InsuranceCascadeControl({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   /** Horizontal required strip on Deal Details; stacked elsewhere. */
   variant?: "stack" | "strip";
+  /** Strip only: sits between Pipeline and Insurance type (Selling agency). */
+  afterPipeline?: ReactNode;
   /** Selected policy form label, so MHO-only Details can show or hide live. */
   onPolicyFormChange?: (formLabel: string) => void;
 }) {
@@ -182,17 +185,20 @@ export function InsuranceCascadeControl({
     `mt-1 h-8 w-full rounded-md border bg-background px-2 text-sm text-navy ${
       mustFill && empty ? "border-red-600" : "border-border"
     }`;
+  const stripColumns = variant === "strip" && afterPipeline ? 4 : 3;
+  const labelClass = "block min-w-0 text-xs font-medium text-red-700";
 
   return (
     <div
       className={
         variant === "strip"
-          ? "grid grid-cols-3 gap-3 max-[699px]:grid-cols-1"
+          ? `grid gap-3 max-[699px]:grid-cols-1 ${stripColumns === 4 ? "grid-cols-4" : "grid-cols-3"}`
           : "mt-1 space-y-2"
       }
       data-ff-insurance-cascade={family}
       data-ff-cascade-levels="3"
       data-ff-cascade-variant={variant}
+      data-ff-pipeline-columns={variant === "strip" ? String(stripColumns) : undefined}
     >
       <input type="hidden" name={typeName} value={storedType} form={form} data-ff-cascade-type-value={storedType} />
       <input
@@ -209,7 +215,7 @@ export function InsuranceCascadeControl({
         form={form}
         data-ff-cascade-subtype-value={storedSubtype}
       />
-      <label className="block text-xs font-medium text-red-700" data-ff-required-field="pipeline">
+      <label className={labelClass} data-ff-required-field="pipeline">
         Pipeline{" "}
         <span aria-hidden="true">*</span>
         <select
@@ -231,7 +237,8 @@ export function InsuranceCascadeControl({
           ))}
         </select>
       </label>
-      <label className="block text-xs font-medium text-red-700" data-ff-required-field="insurance-type">
+      {variant === "strip" ? afterPipeline : null}
+      <label className={labelClass} data-ff-required-field="insurance-type">
         Insurance type{" "}
         <span aria-hidden="true">*</span>
         <select
@@ -257,7 +264,7 @@ export function InsuranceCascadeControl({
           ))}
         </select>
       </label>
-      <label className="block text-xs font-medium text-red-700" data-ff-required-field="policy-form">
+      <label className={labelClass} data-ff-required-field="policy-form">
         Policy form{" "}
         <span aria-hidden="true">*</span>
         <select

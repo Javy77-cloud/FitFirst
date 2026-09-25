@@ -1064,6 +1064,22 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
 [data-ff-deal-workspace] [data-ff-deal-products-column] {
   bottom: calc(100% + var(--ff-deal-products-qc-gap));
 }
+/* Documents tab: Document Upload disclosure. Up chevron while open, down while closed. */
+.ff-document-upload-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  list-style: none;
+  cursor: pointer;
+}
+.ff-document-upload-summary::-webkit-details-marker {
+  display: none;
+}
+[data-ff-document-upload][open] [data-ff-document-upload-chevron="down"],
+[data-ff-document-upload]:not([open]) [data-ff-document-upload-chevron="up"] {
+  display: none;
+}
 [data-ff-quick-comms-kinds] {
   display: flex !important;
   flex-wrap: nowrap !important;

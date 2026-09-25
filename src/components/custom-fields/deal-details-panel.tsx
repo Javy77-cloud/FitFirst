@@ -15,7 +15,7 @@ import {
   usesBusinessIdentityDetails,
 } from "@/lib/deals/product-layout";
 import { BUSINESS_IDENTITY_FIELDS } from "@/lib/custom-fields/business-identity-fields";
-import type { DeskLineSettings } from "@/lib/desk/line-settings";
+import { dealPipelineShowsSellingAgency, type DeskLineSettings } from "@/lib/desk/line-settings";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, sectionDensityOf, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
 import { isPipelineStripSection } from "@/lib/custom-fields/insurance-quote-section";
@@ -308,7 +308,7 @@ function SellingAgencyStripField({
   const empty = !value.trim();
   return (
     <label
-      className="mt-3 block text-xs font-medium text-red-700"
+      className="block min-w-0 text-xs font-medium text-red-700"
       data-ff-required-field="selling-agency"
       htmlFor={`field_${DEAL_SELLING_AGENCY_KEY}`}
     >
@@ -474,11 +474,12 @@ export function DealDetailsPanel({
         {productInstance ? <input type="hidden" name="productInstance" value={productInstance} /> : null}
         {activePackageLine ? <input type="hidden" name="activePackageLine" value={activePackageLine} /> : null}
       <section
-        className="mb-3 rounded-md border border-border/70 bg-background p-3"
+        className="ff-card mb-3 space-y-2 overflow-hidden p-3"
         data-ff-deal-section="pipeline"
         data-ff-pipeline-strip=""
+        data-ff-pipeline-row="1"
       >
-        <LayoutSectionHeader title="Pipeline" />
+        <LayoutSectionHeader title="Pipeline" tone="required" />
         <InsuranceCascadeControl
           typeName="field_insurance_type"
           categoryName="field_insurance_category"
@@ -499,15 +500,19 @@ export function DealDetailsPanel({
           lineSettings={lineSettings}
           variant="strip"
           onPolicyFormChange={setPolicyForm}
-        />
-        <SellingAgencyStripField
-          field={byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD}
-          value={
-            liveValues[DEAL_SELLING_AGENCY_KEY] ||
-            defaultSellingAgencyValue((byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD).options)
+          afterPipeline={
+            dealPipelineShowsSellingAgency(lineSettings) ? (
+              <SellingAgencyStripField
+                field={byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD}
+                value={
+                  liveValues[DEAL_SELLING_AGENCY_KEY] ||
+                  defaultSellingAgencyValue((byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD).options)
+                }
+                formId={formId}
+                onValueChange={(next) => patchValue(DEAL_SELLING_AGENCY_KEY, next)}
+              />
+            ) : null
           }
-          formId={formId}
-          onValueChange={(next) => patchValue(DEAL_SELLING_AGENCY_KEY, next)}
         />
       </section>
       <div

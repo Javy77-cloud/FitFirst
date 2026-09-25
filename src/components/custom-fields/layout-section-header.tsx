@@ -23,17 +23,24 @@ export function LayoutSectionHeader({
   action?: ReactNode;
   help?: ReactNode;
   /** Contact Details uses a quieter left title so field values carry the page. */
-  tone?: "default" | "contact";
+  tone?: "default" | "contact" | "required";
 }) {
   const contact = tone === "contact";
+  const required = tone === "required";
   return (
-    <div className={contact ? "mb-0.5" : "mb-1"} data-ff-layout-section-header="">
+    <div
+      className={contact ? "mb-0.5" : "mb-1"}
+      data-ff-layout-section-header=""
+      data-ff-section-title-tone={required ? "required" : contact ? "contact" : "default"}
+    >
       <div className={contact ? "flex items-center gap-1.5" : "flex items-center justify-center gap-1.5"}>
         <h3
           className={
             contact
               ? "text-sm font-semibold leading-snug text-[#002868]"
-              : "text-center text-lg font-semibold leading-snug text-[#002868]"
+              : required
+                ? "text-center text-lg font-semibold leading-snug text-red-700"
+                : "text-center text-lg font-semibold leading-snug text-[#002868]"
           }
         >
           {title}

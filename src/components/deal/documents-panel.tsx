@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BackgroundFillRefresh } from "@/components/deal/background-fill-refresh";
 import { DealDocsErrorBoundary } from "@/components/deal/deal-docs-error-boundary";
 import { DealFormSends } from "@/components/deal/deal-form-sends";
@@ -21,6 +22,7 @@ import type { DocSlotProduct } from "@/lib/documents/doc-slot-advance";
 import { blobStoreReady } from "@/lib/files/object-store";
 import { quoteFileUploadMode } from "@/lib/files/upload-plan";
 import { asList } from "@/lib/safe-list";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export function DocumentsPanel({
   dealId,
@@ -108,8 +110,15 @@ export function DocumentsPanel({
       <div className="flex w-full flex-col space-y-4" data-ff-deal-docs data-ff-docs-zoom="100">
         <BackgroundFillRefresh dealId={dealId} jobs={(jobs as { engine?: string; status?: string; filledKeys?: string[]; skippedKeys?: string[]; message?: string | null }[]) ?? []} enabled={pendingFill} />
         <div className="w-full min-w-0" data-ff-deal-upload>
-          <section className="ff-card w-full p-3">
-            <h3 className="mb-1 text-sm font-semibold text-navy">Upload</h3>
+          <details open className="ff-card w-full max-w-3xl p-3" data-ff-document-upload="">
+            <summary className="ff-document-upload-summary">
+              <h3 className="text-sm font-semibold text-navy">Document Upload</h3>
+              <span className="inline-flex size-7 shrink-0 items-center justify-center text-navy" aria-hidden>
+                <ChevronUp className="size-4" data-ff-document-upload-chevron="up" />
+                <ChevronDown className="size-4" data-ff-document-upload-chevron="down" />
+              </span>
+            </summary>
+            <div className="mt-1">
             {lineGroups.length > 0 ? (
               <div className="mb-2 space-y-2" data-ff-deal-docs-by-line>
                 {lineGroups.map((group) => (
@@ -171,7 +180,18 @@ export function DocumentsPanel({
               packageProducts={packageProducts}
               uploadMode={quoteFileUploadMode({ vercel: process.env.VERCEL, blobReady: blobStoreReady() })}
             />
-          </section>
+            <div className="mt-2 flex justify-end">
+              <Link
+                href="/documents"
+                className="text-xs font-semibold text-primary hover:underline"
+                data-ff-deal-library-link=""
+                data-ff-deal-library-count={libraryCandidates.length}
+              >
+                Deal Document Library ({libraryCandidates.length})
+              </Link>
+            </div>
+            </div>
+          </details>
           <DealFormSends dealId={dealId} />
           <RecentlyDeletedFiles dealId={dealId} returnTo={dealDocumentsTabHref(dealId, formLine)} />
         </div>

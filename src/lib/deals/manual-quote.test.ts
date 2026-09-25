@@ -111,7 +111,8 @@ describe("manual quote entry", () => {
     const filled = panel.slice(filledReturn);
     expect(empty.indexOf("ff-card")).toBeLessThan(empty.indexOf("{manualQuoteForm}"));
     expect(filled.indexOf("data-ff-quotes-current")).toBeLessThan(filled.indexOf("{manualQuoteForm}"));
-    expect(empty.indexOf("{noticeAnchor}")).toBeLessThan(empty.indexOf("ff-card"));
+    expect(empty.indexOf("ff-card")).toBeLessThan(empty.indexOf("{quotesHead}"));
+    expect(filled.indexOf("ff-card")).toBeLessThan(filled.indexOf("{quotesHead}"));
   });
 
   it("fills the same-line quote and leaves other rows alone", () => {

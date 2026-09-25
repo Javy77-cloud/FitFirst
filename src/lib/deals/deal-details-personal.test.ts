@@ -161,6 +161,61 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).not.toMatch(/Policy type/);
   });
 
+  it("puts pipeline, selling agency, insurance type, and policy form on one card row", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: {},
+        lineSettings: { writeLife: true, writeHealth: false },
+      }),
+    );
+    const pipeline = html.indexOf('aria-label="Pipeline"');
+    const agency = html.indexOf('aria-label="Selling agency"');
+    const type = html.indexOf('aria-label="Insurance type"');
+    const form = html.indexOf('aria-label="Policy form"');
+    expect(pipeline).toBeGreaterThan(-1);
+    expect(pipeline).toBeLessThan(agency);
+    expect(agency).toBeLessThan(type);
+    expect(type).toBeLessThan(form);
+    expect(html).toMatch(/data-ff-pipeline-row="1"/);
+    expect(html).toMatch(/data-ff-pipeline-columns="4"/);
+    expect(html).toMatch(/grid-cols-4/);
+    expect(html).not.toMatch(/grid-cols-3/);
+    const card = html.slice(
+      html.indexOf('data-ff-deal-section="pipeline"') - 180,
+      html.indexOf('data-ff-deal-section="pipeline"'),
+    );
+    expect(card).toMatch(/ff-card/);
+    expect(card).not.toMatch(/bg-background/);
+    expect(html).toMatch(/data-ff-section-title-tone="required"/);
+    expect(html).toMatch(/text-red-700">Pipeline</);
+  });
+
+  it("drops selling agency from the pipeline row when Life and Health are both off", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: {},
+        lineSettings: { writeLife: false, writeHealth: false },
+      }),
+    );
+    expect(html).not.toMatch(/aria-label="Selling agency"/);
+    expect(html).not.toMatch(/data-ff-required-field="selling-agency"/);
+    expect(html).toMatch(/data-ff-pipeline-columns="3"/);
+    expect(html).toMatch(/grid-cols-3/);
+    const pipeline = html.indexOf('aria-label="Pipeline"');
+    const type = html.indexOf('aria-label="Insurance type"');
+    const form = html.indexOf('aria-label="Policy form"');
+    expect(pipeline).toBeLessThan(type);
+    expect(type).toBeLessThan(form);
+  });
+
   it("does not render a second marital-status field when applicant marital exists", () => {
     const html = renderToStaticMarkup(
       createElement(DealDetailsPanel, {

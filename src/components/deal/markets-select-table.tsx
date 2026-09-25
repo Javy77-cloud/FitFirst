@@ -39,6 +39,7 @@ export function MarketsSelectTable({
   selected: selectedProp,
   onSelectedChange,
   toolbar,
+  lead,
 }: {
   dealId: string;
   title: string;
@@ -47,6 +48,8 @@ export function MarketsSelectTable({
   selected?: string[];
   onSelectedChange?: (next: string[]) => void;
   toolbar?: ReactNode;
+  /** Product line, inside the card so the card top stays the section edge. */
+  lead?: string | null;
 }) {
   const list = asList(rows);
   const selected = Array.isArray(selectedProp) ? selectedProp : [];
@@ -88,6 +91,11 @@ export function MarketsSelectTable({
 
   return (
     <section className="ff-card overflow-hidden" data-ff-markets-select="">
+      {lead ? (
+        <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy" data-ff-markets-lead="">
+          {lead}
+        </div>
+      ) : null}
       {toolbar ? (
         <div
           className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2"
