@@ -88,8 +88,30 @@ describe("Contacts list header", () => {
       page.indexOf("data-ff-contacts-list-actions"),
     );
     expect(page).toMatch(/searchPlaceholder="Find a person, phone, or email…"/);
-    expect(readFileSync("src/app/accounts/page.tsx", "utf8")).not.toMatch(/hideSelectionCue|ff-book-kpi-flat/);
-    expect(readFileSync("src/app/policies/page.tsx", "utf8")).not.toMatch(/hideSelectionCue|ff-book-kpi-flat/);
-    expect(readFileSync("src/app/carriers/page.tsx", "utf8")).not.toMatch(/hideSelectionCue|ff-book-kpi-flat/);
+    for (const file of [
+      "src/app/accounts/page.tsx",
+      "src/app/policies/page.tsx",
+      "src/app/carriers/page.tsx",
+    ]) {
+      const other = readFileSync(file, "utf8");
+      expect(other).toMatch(/hideSelectionCue/);
+      expect(other).toMatch(/<BookKpiStrip[\s\S]*\bflat\b/);
+      expect(other.indexOf("<BookKpiStrip")).toBeLessThan(other.indexOf("<ModuleListActions"));
+      expect(other.indexOf("afterCheck={<PipelineFilterSearch />}")).toBeLessThan(
+        other.indexOf("afterActions={<PipelineFilterControls />}"),
+      );
+      expect(other).toMatch(/banner=\{null\}/);
+      expect(other).not.toMatch(/Urgency first/);
+    }
+    const policies = readFileSync("src/app/policies/page.tsx", "utf8");
+    expect(policies).not.toMatch(/AddContactDialog|AddBusinessDialog|AddCarrierDialog/);
+    expect(readFileSync("src/app/accounts/page.tsx", "utf8")).toMatch(/AddBusinessDialog/);
+    const carriers = readFileSync("src/app/carriers/page.tsx", "utf8");
+    expect(carriers).toMatch(/AddCarrierDialog/);
+    expect(carriers.indexOf("data-ff-carriers-list-actions")).toBeGreaterThan(
+      carriers.indexOf("afterActions={<PipelineFilterControls />}"),
+    );
+    expect(carriers).toMatch(/data-ff-carrier-tool="compare"/);
+    expect(carriers).toMatch(/data-ff-carrier-tool="calculator"/);
   });
 });

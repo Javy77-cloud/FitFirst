@@ -4658,7 +4658,7 @@ tr[data-ff-activity-selected="true"] {
   text-transform: none;
   font-weight: 650;
 }
-/* Contacts only: counters sit on the page (no row banner). Each counter is its own white chip.
+/* List modules: counters sit on the page (no row banner). Each counter is its own white chip.
    Width is the measured longest chip (set by BookKpiFlatRow). Packed left. No stretch. */
 .ff-book-kpi-flat {
   --ff-contacts-kpi-width: 9.75rem;

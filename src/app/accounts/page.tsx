@@ -5,7 +5,11 @@ import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { listAccounts } from "@/lib/db/queries";
 import { listFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
 import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
-import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
+import {
+  PipelineFilterControls,
+  PipelineFilterPopover,
+  PipelineFilterSearch,
+} from "@/components/filters/pipeline-filter-popover";
 import { firstParam, pickFilterParams } from "@/lib/saved-filters";
 import {
   enabledPageFilters,
@@ -22,7 +26,9 @@ import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { AddBusinessDialog } from "@/components/businesses/add-business-dialog";
+import { BookKpiStrip } from "@/components/book-lists/book-kpi-strip";
 import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
+import { partyBookKpis } from "@/lib/book-lists/kpi";
 import { loadBookHealthMap, loadOpenDealSignals } from "@/lib/book-lists/load";
 import { matchesBookLens, parseBookHeat, parseBookLens } from "@/lib/book-lists/lenses";
 import { presentPartyCard } from "@/lib/book-lists/present";
@@ -92,6 +98,7 @@ export default async function AccountsPage({
       }),
     )
     .filter((card) => matchesBookLens(card, { heat, lens, q }));
+  const kpi = partyBookKpis("account", cards);
   const businessBook = all.map((row) => ({
     id: row.id,
     name: row.name,
@@ -103,61 +110,61 @@ export default async function AccountsPage({
   return (
     <AppShell title="Accounts">
       <SavedToast show={saved} message="Account saved." listHref="/accounts" />
-
-      <div
-        className="mb-3 rounded-xl border border-border/80 bg-card/80 px-3 py-2 shadow-sm"
-        data-ff-businesses-list=""
+      <PipelineFilterPopover
+        moduleId="businesses"
+        fields={filterFieldsFromPageFilters(visibleFilters)}
+        searchPlaceholder="Find an account, EIN, or phone…"
+        preserveParams={["heat", "lens"]}
+        canConfigure={session.isAdmin}
+        searchClassName={PAGE_FILTER_SEARCH_CLASS}
+        searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <PipelineFilterPopover
-            moduleId="businesses"
-            fields={filterFieldsFromPageFilters(visibleFilters)}
-            searchPlaceholder="Find an account, EIN, or phone…"
-            preserveParams={["heat", "lens"]}
-            canConfigure={session.isAdmin}
-            searchClassName={PAGE_FILTER_SEARCH_CLASS}
-            searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
+        <BookKpiStrip label={kpi.label} items={kpi.items} flat />
+        <ModuleListActions
+          module="businesses"
+          recordIds={cards.map((card) => card.id)}
+          records={rows.map((account) => ({
+            id: account.id,
+            label: account.name,
+            email: account.email,
+            phone: account.phone,
+            accountId: account.id,
+          }))}
+          hideSelectionCue
+          afterCheck={<PipelineFilterSearch />}
+          afterActions={<PipelineFilterControls />}
+          end={
+            <div data-ff-businesses-list-actions="">
+              <AddBusinessDialog businesses={businessBook} defaultOpen={openNew} />
+            </div>
+          }
+        >
+          <BookCommandWorkspace
+            surface="accounts"
+            path="/accounts"
+            layout="stack"
+            cards={cards}
+            heat={heat}
+            lens={lens}
+            q={q}
+            banner={null}
+            empty="No accounts in this lens. Bind a commercial deal or clear a chip."
+            renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
+            renderExtra={(card) => (
+              <>
+                <AssignRecordTags
+                  module="accounts"
+                  recordId={card.id}
+                  tags={card.tags}
+                  catalog={tagCatalog}
+                  emptyPlaceholder="none"
+                />
+                <span className="sr-only">{tagSortText(card.tags)}</span>
+              </>
+            )}
           />
-          <div data-ff-businesses-list-actions="">
-            <AddBusinessDialog businesses={businessBook} defaultOpen={openNew} />
-          </div>
-        </div>
-      </div>
-      <ModuleListActions
-        module="businesses"
-        recordIds={cards.map((card) => card.id)}
-        records={rows.map((account) => ({
-          id: account.id,
-          label: account.name,
-          email: account.email,
-          phone: account.phone,
-          accountId: account.id,
-        }))}
-      >
-        <BookCommandWorkspace
-          surface="accounts"
-          path="/accounts"
-          layout="stack"
-          cards={cards}
-          heat={heat}
-          lens={lens}
-          q={q}
-          empty="No accounts in this lens. Bind a commercial deal or clear a chip."
-          renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
-          renderExtra={(card) => (
-            <>
-              <AssignRecordTags
-                module="accounts"
-                recordId={card.id}
-                tags={card.tags}
-                catalog={tagCatalog}
-                emptyPlaceholder="none"
-              />
-              <span className="sr-only">{tagSortText(card.tags)}</span>
-            </>
-          )}
-        />
-      </ModuleListActions>
+        </ModuleListActions>
+      </PipelineFilterPopover>
     </AppShell>
   );
 }
