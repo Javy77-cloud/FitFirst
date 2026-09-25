@@ -3,6 +3,12 @@
  * Limits, deductibles, and per-coverage premiums Fill writes into coverage_limits
  * and the current term's comprehensive / collision deductibles.
  */
+import {
+  formatAutoDollarDeductible,
+  isAbsentCoverageToken,
+  isAutoDollarDeductible,
+  PHYS_DAM_COVERED_MARK,
+} from "@/lib/extraction/gemini/auto-deductible";
 
 export type AutoCoverageSource = {
   coverageLimits?: Record<string, string> | null;
@@ -72,6 +78,20 @@ const BLANK = "—";
 function show(value: string | null | undefined): string {
   const trimmed = value?.trim() ?? "";
   return trimmed || BLANK;
+}
+
+function showDeductible(value: string | null | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return BLANK;
+  return formatAutoDollarDeductible(trimmed) || BLANK;
+}
+
+/** Dollar deductible with no printed limit is covered. The schedule shows ✓. */
+function showPhysDamLimit(stored: string, deductible: string): string {
+  if (isAutoDollarDeductible(formatAutoDollarDeductible(deductible)) && isAbsentCoverageToken(stored)) {
+    return PHYS_DAM_COVERED_MARK;
+  }
+  return show(stored);
 }
 
 function limit(limits: Record<string, string>, ...keys: string[]): string {
@@ -180,11 +200,14 @@ export function autoCoverageSchedule(source: AutoCoverageSource): AutoCoverageRo
         : line.termDeductible === "collision"
           ? source.collisionDeductible
           : "";
+    const deductible = term || (line.deductible ? limit(limits, ...line.deductible) : "");
+    const storedLimit = line.limit ? limit(limits, ...line.limit) : "";
+    const physDam = line.key === "comprehensive" || line.key === "collision";
     return {
       key: line.key,
       label: line.label,
-      limit: show(line.limit ? limit(limits, ...line.limit) : ""),
-      deductible: show(term || (line.deductible ? limit(limits, ...line.deductible) : "")),
+      limit: physDam ? showPhysDamLimit(storedLimit, deductible) : show(storedLimit),
+      deductible: line.deductible || line.termDeductible ? showDeductible(deductible) : show(""),
       premium: show(line.premium ? limit(limits, ...line.premium) : ""),
     };
   });
@@ -198,8 +221,8 @@ export function autoCoverageSchedule(source: AutoCoverageSource): AutoCoverageRo
       rows.push({
         key: `vehicle_${index}_comprehensive`,
         label: `Vehicle ${index} comprehensive`,
-        limit: BLANK,
-        deductible: show(compDed),
+        limit: showPhysDamLimit("", compDed),
+        deductible: showDeductible(compDed),
         premium: show(compPrem),
       });
     }
@@ -207,8 +230,8 @@ export function autoCoverageSchedule(source: AutoCoverageSource): AutoCoverageRo
       rows.push({
         key: `vehicle_${index}_collision`,
         label: `Vehicle ${index} collision`,
-        limit: BLANK,
-        deductible: show(collDed),
+        limit: showPhysDamLimit("", collDed),
+        deductible: showDeductible(collDed),
         premium: show(collPrem),
       });
     }

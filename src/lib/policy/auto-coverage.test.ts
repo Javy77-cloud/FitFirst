@@ -35,8 +35,8 @@ describe("personal auto coverage schedule", () => {
     });
     const pip = rows.find((row) => row.key === "pip");
     const comp = rows.find((row) => row.key === "comprehensive");
-    expect(pip).toMatchObject({ limit: "$10,000", deductible: "1000", premium: "$220" });
-    expect(comp).toMatchObject({ deductible: "500", premium: "—" });
+    expect(pip).toMatchObject({ limit: "$10,000", deductible: "$1,000", premium: "$220" });
+    expect(comp).toMatchObject({ limit: "✓", deductible: "$500", premium: "—" });
     expect(rows.map((row) => row.label)).toEqual(
       expect.arrayContaining(["Bodily injury", "Property damage", "PIP", "Comprehensive", "Collision"]),
     );
@@ -149,5 +149,11 @@ describe("PAP coverage Gemini keys", () => {
     );
     expect(sheetKeysForGeminiKey("comprehensive_deductible")).toContain("comp_deductible");
     expect(sheetKeysForGeminiKey("um_property_damage")).toContain("um_pd");
+    expect(system).toMatch(/\$1,000/);
+    expect(system).toContain("✓");
+    expect(user).toMatch(/\$500/);
+    expect(user).toContain("✓");
+    expect(system).toMatch(/no dollar deductible/i);
+    expect(user).toMatch(/no dollar deductible/i);
   });
 });
