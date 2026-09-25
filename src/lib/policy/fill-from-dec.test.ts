@@ -236,6 +236,67 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.collisionPremium).toBe("$310");
     expect(proposed.discounts).toBe("Multi-car; Paperless");
     expect(proposed["driver:veronica boyle.licenseState"]).toBe("FL");
+    // Absent coverages are explicit None, and every coverage column is filled.
+    expect(proposed.liabilityBiDeductible).toBe("None");
+    expect(proposed.umPd).toBe("None");
+    expect(proposed.umPdPremium).toBe("None");
+    expect(proposed.medPayPremium).toBe("None");
+    expect(proposed.towing).toBe("None");
+    expect(proposed.towingDeductible).toBe("None");
+    expect(proposed.towingPremium).toBe("None");
+    expect(proposed.glass).toBe("None");
+    expect(proposed.glassLimit).toBe("None");
+    expect(proposed.glassPremium).toBe("None");
+    expect(proposed.compLimit).toBe("None");
+    expect(proposed.collisionLimit).toBe("None");
+    expect(proposed.rentalDeductible).toBe("None");
+    expect(proposed.rentalPremium).toBe("None");
+    // Per-vehicle overview fields are filled, with None when the dec omits them.
+    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.garagingZip"]).toBe("None");
+    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.garagingAddress"]).toBe("None");
+    expect(proposed["vehicle:vin:2HKRM4H75GH123456.annualMiles"]).toBe("None");
+    expect(proposed["vehicle:vin:2HKRM4H75GH123456.lienholder"]).toBe("None");
+    expect(proposed["vehicle:vin:2HKRM4H75GH123456.collisionDeductible"]).toBe("None");
+    expect(proposed["vehicle:vin:2HKRM4H75GH123456.garagingAddress"]).toBe("None");
+    const coverageColumns = [
+      "liabilityBi",
+      "liabilityBiDeductible",
+      "liabilityBiPremium",
+      "liabilityPd",
+      "liabilityPdDeductible",
+      "liabilityPdPremium",
+      "pip",
+      "pipDeductible",
+      "pipPremium",
+      "medPay",
+      "medPayDeductible",
+      "medPayPremium",
+      "umUim",
+      "umUimDeductible",
+      "umUimPremium",
+      "umPd",
+      "umPdDeductible",
+      "umPdPremium",
+      "compLimit",
+      "comprehensiveDeductible",
+      "compPremium",
+      "collisionLimit",
+      "collisionDeductible",
+      "collisionPremium",
+      "rental",
+      "rentalDeductible",
+      "rentalPremium",
+      "towing",
+      "towingDeductible",
+      "towingPremium",
+      "glassLimit",
+      "glass",
+      "glassPremium",
+      "umStacked",
+      "discounts",
+    ];
+    const blanks = coverageColumns.filter((key) => !proposed[key]?.trim());
+    expect(blanks).toEqual([]);
 
     const patch = groupAppliedFill(proposed, Object.keys(proposed));
     expect(patch.coverageLimits.liability_bi_premium).toBe("$412");
@@ -323,12 +384,12 @@ describe("fillPolicyFromDec field map", () => {
       family: "auto",
       rows: rows({ liability_bi: "100/300", um_uim: "100/300" }),
     });
-    expect(limitOnly.liabilityBiPremium).toBeUndefined();
-    expect(limitOnly.umPd).toBeUndefined();
-    expect(limitOnly.umStacked).toBeUndefined();
-    expect(limitOnly.glass).toBeUndefined();
-    expect(limitOnly.discounts).toBeUndefined();
-    expect(limitOnly.pipDeductible).toBeUndefined();
+    expect(limitOnly.liabilityBiPremium).toBe("None");
+    expect(limitOnly.umPd).toBe("None");
+    expect(limitOnly.umStacked).toBe("None");
+    expect(limitOnly.glass).toBe("None");
+    expect(limitOnly.discounts).toBe("None");
+    expect(limitOnly.pipDeductible).toBe("None");
   });
 });
 

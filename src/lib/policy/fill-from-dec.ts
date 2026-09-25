@@ -634,6 +634,13 @@ function formatUmStacked(raw: string, source: "field" | "embedded"): string {
   return source === "field" ? trimmed : "";
 }
 
+/** Declaration page is source of truth. A missing coverage or overview fact is None. */
+function platformOrNone(raw: string, format: (value: string) => string = (value) => value): string {
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "None";
+  return format(trimmed) || trimmed;
+}
+
 function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
   const out: Record<string, string> = {};
   proposeTermDates(out, rows);
@@ -641,45 +648,68 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
   const premium = parseMoney(rawCell(rows, "premium", "current_premium"));
   if (premium != null) put(out, "premium", premium.toFixed(2));
 
-  put(out, "liabilityBi", formatDecLimit(rawCell(rows, "liability_bi")));
-  put(out, "liabilityBiPremium", formatDecLimit(rawCell(rows, "liability_bi_premium")));
-  put(out, "liabilityPd", formatDecLimit(rawCell(rows, "liability_pd")));
-  put(out, "liabilityPdPremium", formatDecLimit(rawCell(rows, "liability_pd_premium")));
-  put(out, "umUim", formatDecLimit(rawCell(rows, "um_uim")));
-  put(out, "umUimPremium", formatDecLimit(rawCell(rows, "um_uim_premium")));
-  put(out, "umPd", formatDecLimit(rawCell(rows, "um_pd")));
-  put(out, "umPdPremium", formatDecLimit(rawCell(rows, "um_pd_premium")));
+  put(out, "liabilityBi", platformOrNone(rawCell(rows, "liability_bi"), formatDecLimit));
+  put(out, "liabilityBiDeductible", platformOrNone(rawCell(rows, "liability_bi_deductible"), formatDecDeductible));
+  put(out, "liabilityBiPremium", platformOrNone(rawCell(rows, "liability_bi_premium"), formatDecLimit));
+  put(out, "liabilityPd", platformOrNone(rawCell(rows, "liability_pd"), formatDecLimit));
+  put(out, "liabilityPdDeductible", platformOrNone(rawCell(rows, "liability_pd_deductible"), formatDecDeductible));
+  put(out, "liabilityPdPremium", platformOrNone(rawCell(rows, "liability_pd_premium"), formatDecLimit));
+  put(out, "umUim", platformOrNone(rawCell(rows, "um_uim"), formatDecLimit));
+  put(out, "umUimDeductible", platformOrNone(rawCell(rows, "um_uim_deductible"), formatDecDeductible));
+  put(out, "umUimPremium", platformOrNone(rawCell(rows, "um_uim_premium"), formatDecLimit));
+  put(out, "umPd", platformOrNone(rawCell(rows, "um_pd"), formatDecLimit));
+  put(out, "umPdDeductible", platformOrNone(rawCell(rows, "um_pd_deductible"), formatDecDeductible));
+  put(out, "umPdPremium", platformOrNone(rawCell(rows, "um_pd_premium"), formatDecLimit));
   put(
     out,
     "umStacked",
-    formatUmStacked(rawCell(rows, "um_stacked", "um_stacking", "stacking"), "field") ||
-      formatUmStacked(rawCell(rows, "um_uim"), "embedded"),
+    platformOrNone(
+      formatUmStacked(rawCell(rows, "um_stacked", "um_stacking", "stacking"), "field") ||
+        formatUmStacked(rawCell(rows, "um_uim"), "embedded"),
+    ),
   );
   const pipRaw = rawCell(rows, "pip");
-  put(out, "pip", formatDecLimit(pipRaw));
+  put(out, "pip", platformOrNone(pipRaw, formatDecLimit));
   put(
     out,
     "pipDeductible",
-    formatDecDeductible(rawCell(rows, "pip_deductible", "fill_gap_pip_deductible")) || pipDeductibleFromLimit(pipRaw),
+    platformOrNone(
+      rawCell(rows, "pip_deductible", "fill_gap_pip_deductible") || pipDeductibleFromLimit(pipRaw),
+      formatDecDeductible,
+    ),
   );
-  put(out, "pipPremium", formatDecLimit(rawCell(rows, "pip_premium")));
-  put(out, "medPay", formatDecLimit(rawCell(rows, "med_pay", "fill_gap_med_pay")));
-  put(out, "medPayPremium", formatDecLimit(rawCell(rows, "med_pay_premium")));
-  put(out, "rental", formatDecLimit(rawCell(rows, "rental", "fill_gap_rental")));
-  put(out, "rentalPremium", formatDecLimit(rawCell(rows, "rental_premium")));
-  put(out, "towing", formatDecLimit(rawCell(rows, "towing", "ers", "emergency_road_service", "fill_gap_towing")));
-  put(out, "towingPremium", formatDecLimit(rawCell(rows, "towing_premium")));
-  put(out, "glass", formatDecDeductible(rawCell(rows, "glass", "glass_deductible", "full_glass")));
-  put(out, "glassPremium", formatDecLimit(rawCell(rows, "glass_premium")));
-  put(out, "discounts", rawCell(rows, "discounts", "fill_gap_discounts"));
+  put(out, "pipPremium", platformOrNone(rawCell(rows, "pip_premium"), formatDecLimit));
+  put(out, "medPay", platformOrNone(rawCell(rows, "med_pay", "fill_gap_med_pay"), formatDecLimit));
+  put(out, "medPayDeductible", platformOrNone(rawCell(rows, "med_pay_deductible"), formatDecDeductible));
+  put(out, "medPayPremium", platformOrNone(rawCell(rows, "med_pay_premium"), formatDecLimit));
+  put(out, "rental", platformOrNone(rawCell(rows, "rental", "fill_gap_rental"), formatDecLimit));
+  put(out, "rentalDeductible", platformOrNone(rawCell(rows, "rental_deductible"), formatDecDeductible));
+  put(out, "rentalPremium", platformOrNone(rawCell(rows, "rental_premium"), formatDecLimit));
+  put(
+    out,
+    "towing",
+    platformOrNone(rawCell(rows, "towing", "ers", "emergency_road_service", "fill_gap_towing"), formatDecLimit),
+  );
+  put(out, "towingDeductible", platformOrNone(rawCell(rows, "towing_deductible"), formatDecDeductible));
+  put(out, "towingPremium", platformOrNone(rawCell(rows, "towing_premium"), formatDecLimit));
+  put(out, "glassLimit", platformOrNone(rawCell(rows, "glass_limit"), formatDecLimit));
+  put(out, "glass", platformOrNone(rawCell(rows, "glass", "glass_deductible", "full_glass"), formatDecDeductible));
+  put(out, "glassPremium", platformOrNone(rawCell(rows, "glass_premium"), formatDecLimit));
+  put(out, "discounts", platformOrNone(rawCell(rows, "discounts", "fill_gap_discounts")));
+  put(out, "compLimit", platformOrNone(rawCell(rows, "comp_limit", "comprehensive_limit"), formatDecLimit));
   put(
     out,
     "comprehensiveDeductible",
-    formatDecDeductible(rawCell(rows, "comp_deductible", "comprehensive_deductible", "comprehensive")),
+    platformOrNone(rawCell(rows, "comp_deductible", "comprehensive_deductible", "comprehensive"), formatDecDeductible),
   );
-  put(out, "compPremium", formatDecLimit(rawCell(rows, "comp_premium", "vehicle_1_comp_premium")));
-  put(out, "collisionDeductible", formatDecDeductible(rawCell(rows, "collision_deductible")));
-  put(out, "collisionPremium", formatDecLimit(rawCell(rows, "collision_premium", "vehicle_1_collision_premium")));
+  put(out, "compPremium", platformOrNone(rawCell(rows, "comp_premium", "vehicle_1_comp_premium"), formatDecLimit));
+  put(out, "collisionLimit", platformOrNone(rawCell(rows, "collision_limit"), formatDecLimit));
+  put(out, "collisionDeductible", platformOrNone(rawCell(rows, "collision_deductible"), formatDecDeductible));
+  put(
+    out,
+    "collisionPremium",
+    platformOrNone(rawCell(rows, "collision_premium", "vehicle_1_collision_premium"), formatDecLimit),
+  );
 
   for (let index = 1; index <= 4; index += 1) {
     const vin = rawCell(rows, ...vehicleSuffix(index, "vin"));
@@ -694,19 +724,19 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
     if (Number.isFinite(yearN) && yearN >= 1900 && yearN <= 2100) put(out, `${prefix}.year`, String(yearN));
     put(out, `${prefix}.make`, make);
     put(out, `${prefix}.model`, model);
-    put(out, `${prefix}.usage`, rawCell(rows, ...vehicleSuffix(index, "usage")));
-    put(out, `${prefix}.annualMiles`, rawCell(rows, ...vehicleSuffix(index, "annual_miles")));
-    put(out, `${prefix}.lienholder`, vehicleLienholder(rows, index));
-    put(out, `${prefix}.premium`, formatDecLimit(rawCell(rows, ...vehicleSuffix(index, "premium"))));
+    put(out, `${prefix}.usage`, platformOrNone(rawCell(rows, ...vehicleSuffix(index, "usage"))));
+    put(out, `${prefix}.annualMiles`, platformOrNone(rawCell(rows, ...vehicleSuffix(index, "annual_miles"))));
+    put(out, `${prefix}.lienholder`, platformOrNone(vehicleLienholder(rows, index)));
+    put(out, `${prefix}.premium`, platformOrNone(rawCell(rows, ...vehicleSuffix(index, "premium")), formatDecLimit));
     put(
       out,
       `${prefix}.comprehensiveDeductible`,
-      formatDecDeductible(rawCell(rows, ...vehicleSuffix(index, "comp_deductible"))),
+      platformOrNone(rawCell(rows, ...vehicleSuffix(index, "comp_deductible")), formatDecDeductible),
     );
     put(
       out,
       `${prefix}.collisionDeductible`,
-      formatDecDeductible(rawCell(rows, ...vehicleSuffix(index, "collision_deductible"))),
+      platformOrNone(rawCell(rows, ...vehicleSuffix(index, "collision_deductible")), formatDecDeductible),
     );
     const garagingZipKeys =
       index === 1
@@ -716,30 +746,44 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
       index === 1
         ? [...vehicleSuffix(index, "garaging_address"), "garaging_address"]
         : vehicleSuffix(index, "garaging_address");
-    put(out, `${prefix}.garagingZip`, rawCell(rows, ...garagingZipKeys));
-    put(out, `${prefix}.garagingAddress`, rawCell(rows, ...garagingAddressKeys));
+    put(out, `${prefix}.garagingZip`, platformOrNone(rawCell(rows, ...garagingZipKeys)));
+    put(out, `${prefix}.garagingAddress`, platformOrNone(rawCell(rows, ...garagingAddressKeys)));
     if (index > 1) {
       put(
         out,
         `vehicle_${index}_comprehensive`,
-        formatDecDeductible(
+        platformOrNone(
           rawCell(rows, `vehicle_${index}_comp_deductible`, `fill_gap_vehicle_${index}_comp_deductible`),
+          formatDecDeductible,
         ),
       );
       put(
         out,
         `vehicle_${index}_collision`,
-        formatDecDeductible(
+        platformOrNone(
           rawCell(rows, `vehicle_${index}_collision_deductible`, `fill_gap_vehicle_${index}_collision_deductible`),
+          formatDecDeductible,
         ),
       );
-      put(out, `vehicle_${index}_rental`, formatDecLimit(rawCell(rows, `vehicle_${index}_rental`, `fill_gap_vehicle_${index}_rental`)));
-      put(out, `vehicle_${index}_towing`, formatDecLimit(rawCell(rows, `vehicle_${index}_towing`, `fill_gap_vehicle_${index}_towing`)));
-      put(out, `vehicle_${index}_comp_premium`, formatDecLimit(rawCell(rows, `vehicle_${index}_comp_premium`)));
+      put(
+        out,
+        `vehicle_${index}_rental`,
+        platformOrNone(rawCell(rows, `vehicle_${index}_rental`, `fill_gap_vehicle_${index}_rental`), formatDecLimit),
+      );
+      put(
+        out,
+        `vehicle_${index}_towing`,
+        platformOrNone(rawCell(rows, `vehicle_${index}_towing`, `fill_gap_vehicle_${index}_towing`), formatDecLimit),
+      );
+      put(
+        out,
+        `vehicle_${index}_comp_premium`,
+        platformOrNone(rawCell(rows, `vehicle_${index}_comp_premium`), formatDecLimit),
+      );
       put(
         out,
         `vehicle_${index}_collision_premium`,
-        formatDecLimit(rawCell(rows, `vehicle_${index}_collision_premium`)),
+        platformOrNone(rawCell(rows, `vehicle_${index}_collision_premium`), formatDecLimit),
       );
     }
   }
@@ -755,7 +799,7 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
     put(
       out,
       `driver:${identity}.licenseState`,
-      rawCell(rows, `driver_${index}_license_state`, `fill_gap_driver_${index}_license_state`),
+      platformOrNone(rawCell(rows, `driver_${index}_license_state`, `fill_gap_driver_${index}_license_state`)),
     );
   }
   return out;
@@ -831,26 +875,36 @@ const LIMIT_KEYS: Record<string, string> = {
   scheduled_screen_room: "scheduledScreenRoom",
   scheduled_shed: "scheduledShed",
   liability_bi: "liabilityBi",
+  liability_bi_deductible: "liabilityBiDeductible",
   liability_bi_premium: "liabilityBiPremium",
   liability_pd: "liabilityPd",
+  liability_pd_deductible: "liabilityPdDeductible",
   liability_pd_premium: "liabilityPdPremium",
   um_uim: "umUim",
+  um_uim_deductible: "umUimDeductible",
   um_uim_premium: "umUimPremium",
   um_pd: "umPd",
+  um_pd_deductible: "umPdDeductible",
   um_pd_premium: "umPdPremium",
   um_stacked: "umStacked",
   pip: "pip",
   pip_deductible: "pipDeductible",
   pip_premium: "pipPremium",
   med_pay: "medPay",
+  med_pay_deductible: "medPayDeductible",
   med_pay_premium: "medPayPremium",
   rental: "rental",
+  rental_deductible: "rentalDeductible",
   rental_premium: "rentalPremium",
   towing: "towing",
+  towing_deductible: "towingDeductible",
   towing_premium: "towingPremium",
+  glass_limit: "glassLimit",
   glass: "glass",
   glass_premium: "glassPremium",
+  comp_limit: "compLimit",
   comp_premium: "compPremium",
+  collision_limit: "collisionLimit",
   collision_premium: "collisionPremium",
   discounts: "discounts",
 };
@@ -1130,26 +1184,36 @@ export function groupAppliedFill(
     ["scheduledScreenRoom", "scheduled_screen_room"],
     ["scheduledShed", "scheduled_shed"],
     ["liabilityBi", "liability_bi"],
+    ["liabilityBiDeductible", "liability_bi_deductible"],
     ["liabilityBiPremium", "liability_bi_premium"],
     ["liabilityPd", "liability_pd"],
+    ["liabilityPdDeductible", "liability_pd_deductible"],
     ["liabilityPdPremium", "liability_pd_premium"],
     ["umUim", "um_uim"],
+    ["umUimDeductible", "um_uim_deductible"],
     ["umUimPremium", "um_uim_premium"],
     ["umPd", "um_pd"],
+    ["umPdDeductible", "um_pd_deductible"],
     ["umPdPremium", "um_pd_premium"],
     ["umStacked", "um_stacked"],
     ["pip", "pip"],
     ["pipDeductible", "pip_deductible"],
     ["pipPremium", "pip_premium"],
     ["medPay", "med_pay"],
+    ["medPayDeductible", "med_pay_deductible"],
     ["medPayPremium", "med_pay_premium"],
     ["rental", "rental"],
+    ["rentalDeductible", "rental_deductible"],
     ["rentalPremium", "rental_premium"],
     ["towing", "towing"],
+    ["towingDeductible", "towing_deductible"],
     ["towingPremium", "towing_premium"],
+    ["glassLimit", "glass_limit"],
     ["glass", "glass"],
     ["glassPremium", "glass_premium"],
+    ["compLimit", "comp_limit"],
     ["compPremium", "comp_premium"],
+    ["collisionLimit", "collision_limit"],
     ["collisionPremium", "collision_premium"],
     ["discounts", "discounts"],
   ];
