@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { DealPackageLinesForm } from "@/components/deal/deal-package-lines-form";
+import { PolicyFormDropup } from "@/components/deal/policy-form-dropup";
 import {
   dealProductDef,
   dealProductSwitcherHref,
   type DealProductId,
 } from "@/lib/deals/deal-products";
 import { parseProductInstanceToken } from "@/lib/deals/product-instances";
-import type { VehicleLabelFact } from "@/lib/deals/product-instance-label";
+import {
+  policyFormMenuLabel,
+  productCodeLabel,
+  type VehicleLabelFact,
+} from "@/lib/deals/product-instance-label";
 import {
   productChipBound,
   productChipLabel,
@@ -71,6 +76,8 @@ export function DealLineSwitcher({
         sheetForm?: string | null;
         address?: string | null;
         city?: string | null;
+        state?: string | null;
+        zip?: string | null;
         vehicles?: readonly VehicleLabelFact[] | null;
       }
     >
@@ -90,155 +97,224 @@ export function DealLineSwitcher({
       activeLine={active}
       labelFacts={labelFacts}
       expand={rail ? "up" : "down"}
+      tone={rail ? "link" : "button"}
     />
   );
+  const options = ordered.map((product) => {
+    const selected = product === active;
+    const stat = progress[product];
+    const gap = quoteGaps[product];
+    const quotesMissing = productTabShowsError(gap);
+    const quotesIn = productReadyFromQuotes({
+      complete: gap?.complete ?? complete[product],
+    });
+    const stage = stages[product]?.stage;
+    const bound = productChipBound(stage);
+    const issuedDone = Boolean(stages[product]?.issuedDone);
+    const done = bound || issuedDone;
+    const pct = quotesMissing ? 0 : bound ? 100 : quotesIn ? 70 : (stat?.pct ?? 0);
+    const productId = (parseProductInstanceToken(product)?.productId ?? "homeowners") as DealProductId;
+    const theme = themeForProduct(productId);
+    const def = dealProductDef(productId);
+    const facts = labelFacts?.[product];
+    const label =
+      labels[product] ??
+      productChipLabel({ product: productId, quotingForm: formLabels[product] ?? formLabels[productId] });
+    const menuLabel = policyFormMenuLabel({
+      code: productCodeLabel({
+        productId,
+        quotingForm: facts?.quotingForm ?? formLabels[product] ?? formLabels[productId],
+        sheetForm: facts?.sheetForm,
+      }),
+      fallback: label,
+      address: facts?.address,
+      city: facts?.city,
+      state: facts?.state,
+      zip: facts?.zip,
+    });
+    const stageLabel = productChipStageLabelForState({
+      stage,
+      selectedQuoteIds: stages[product]?.selectedQuoteIds,
+      issuedDone,
+    });
+    return {
+      product,
+      selected,
+      gap,
+      quotesMissing,
+      done,
+      pct,
+      theme,
+      def,
+      label,
+      menuLabel,
+      stage,
+      stageLabel,
+      issuedDone,
+      mintStatus: stages[product]?.mintStatus,
+      policyId: stages[product]?.policyId ?? null,
+    };
+  });
+  if (rail) {
+    const activeOption = options.find((row) => row.selected) ?? options[0];
+    return (
+      <div
+        className="flex w-full min-w-0 items-center gap-2"
+        data-ff-deal-product-chip-row=""
+        data-ff-deal-products-rail=""
+        data-ff-policy-form-line=""
+        data-ff-deal-line-switcher=""
+      >
+        <p className="shrink-0 text-[13px] font-semibold text-[var(--ff-red)]">Products</p>
+        <PolicyFormDropup label={activeOption?.menuLabel ?? ""}>
+          <div className="flex flex-col" data-ff-deal-product-chips="">
+            {options.map((row) => (
+              <Link
+                key={row.product}
+                href={dealProductSwitcherHref({ dealId, product: row.product, tab })}
+                scroll={false}
+                role="option"
+                aria-selected={row.selected}
+                className={cn(
+                  "block whitespace-normal break-words py-1.5 text-left text-[13px] text-[var(--ff-ink)]",
+                  row.selected ? "font-semibold" : "font-medium",
+                )}
+                data-ff-deal-line-chip={row.def.shopLine}
+                data-ff-deal-product-chip={row.product}
+                data-ff-product-complete={row.done ? "1" : "0"}
+                data-ff-product-quotes-complete={row.gap ? (row.gap.complete ? "1" : "0") : undefined}
+                data-ff-product-missing-quotes={row.quotesMissing ? "1" : "0"}
+                data-ff-product-stage={row.stage ?? ""}
+                data-ff-product-issued-done={row.issuedDone ? "1" : "0"}
+                data-ff-shopping-active={row.issuedDone ? "0" : "1"}
+                title={row.quotesMissing ? row.gap?.summary : row.menuLabel}
+                data-active={row.selected ? "true" : "false"}
+                aria-current={row.selected ? "page" : undefined}
+              >
+                <span className="flex items-start gap-2">
+                  {row.quotesMissing ? (
+                    <span
+                      className="mt-1 inline-flex size-2.5 shrink-0 items-center justify-center rounded-full bg-fit-flag text-[8px] text-white"
+                      aria-label="Incomplete quotes"
+                      data-ff-product-missing-quotes-chip=""
+                      title={row.gap?.summary ?? "Missing quotes"}
+                    >
+                      !
+                    </span>
+                  ) : null}
+                  <span className="min-w-0 flex-1">{row.menuLabel}</span>
+                  {row.issuedDone ? (
+                    <span
+                      className="shrink-0 rounded-sm border border-current px-1 text-[9px] font-extrabold uppercase tracking-wider text-emerald-800"
+                      data-ff-product-done-stamp=""
+                    >
+                      Done
+                    </span>
+                  ) : null}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </PolicyFormDropup>
+        {picker}
+      </div>
+    );
+  }
   const chips = (
       <nav
-        aria-label={rail ? "Policy form" : "Deal products"}
-        className={rail ? "flex w-full flex-col gap-2" : "flex flex-wrap items-stretch gap-1"}
+        aria-label="Deal products"
+        className="flex flex-wrap items-stretch gap-1"
         data-ff-deal-line-switcher=""
         data-ff-deal-product-chips=""
       >
-        {ordered.map((product) => {
-          const selected = product === active;
-          const stat = progress[product];
-          const gap = quoteGaps[product];
-          const quotesMissing = productTabShowsError(gap);
-          const quotesIn = productReadyFromQuotes({
-            complete: gap?.complete ?? complete[product],
-          });
-          const stage = stages[product]?.stage;
-          const bound = productChipBound(stage);
-          const issuedDone = Boolean(stages[product]?.issuedDone);
-          const done = bound || issuedDone;
-          const pct = quotesMissing ? 0 : bound ? 100 : quotesIn ? 70 : (stat?.pct ?? 0);
-          const productId = (parseProductInstanceToken(product)?.productId ?? "homeowners") as DealProductId;
-          const theme = themeForProduct(productId);
-          const def = dealProductDef(productId);
-          const label =
-            labels[product] ??
-            productChipLabel({ product: productId, quotingForm: formLabels[product] ?? formLabels[productId] });
-          const stageLabel = productChipStageLabelForState({
-            stage,
-            selectedQuoteIds: stages[product]?.selectedQuoteIds,
-            issuedDone,
-          });
-          return (
+        {options.map((row) => (
             <Link
-              key={product}
-              href={dealProductSwitcherHref({ dealId, product, tab })}
+              key={row.product}
+              href={dealProductSwitcherHref({ dealId, product: row.product, tab })}
               scroll={false}
               className={cn(
-                "relative overflow-hidden text-[11px] font-semibold transition-colors",
-                rail
-                  ? "block w-full min-w-0 rounded-md border px-2.5 py-1.5 text-left shadow-sm active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d4c5c]"
-                  : "min-w-[4.5rem] rounded border px-2 py-1",
-                rail
-                  ? selected
-                    ? "border-[#3d4c5c] bg-[#3d4c5c] text-white hover:bg-[#33404e]"
-                    : "border-[var(--ff-row-line)] bg-white text-[var(--ff-ink)] hover:border-[#b7aa96] hover:bg-[var(--ff-wash)] active:bg-[#ebe4d8]"
-                  : selected
-                    ? cn(theme.chipOn, "shadow-sm ring-2 ring-navy/25")
-                    : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/40",
-                quotesMissing && !selected && "border-fit-flag/50",
+                "relative min-w-[4.5rem] overflow-hidden rounded border px-2 py-1 text-[11px] font-semibold transition-colors",
+                row.selected
+                  ? cn(row.theme.chipOn, "shadow-sm ring-2 ring-navy/25")
+                  : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/40",
+                row.quotesMissing && !row.selected && "border-fit-flag/50",
               )}
-              data-ff-deal-line-chip={def.shopLine}
-              data-ff-deal-product-chip={product}
-              data-ff-product-complete={done ? "1" : "0"}
-              data-ff-product-quotes-complete={gap ? (gap.complete ? "1" : "0") : undefined}
-              data-ff-product-missing-quotes={quotesMissing ? "1" : "0"}
-              data-ff-product-stage={stage ?? ""}
-              data-ff-product-issued-done={issuedDone ? "1" : "0"}
-              data-ff-shopping-active={issuedDone ? "0" : "1"}
-              title={quotesMissing ? gap?.summary : undefined}
-              data-active={selected ? "true" : "false"}
-              aria-current={selected ? "page" : undefined}
+              data-ff-deal-line-chip={row.def.shopLine}
+              data-ff-deal-product-chip={row.product}
+              data-ff-product-complete={row.done ? "1" : "0"}
+              data-ff-product-quotes-complete={row.gap ? (row.gap.complete ? "1" : "0") : undefined}
+              data-ff-product-missing-quotes={row.quotesMissing ? "1" : "0"}
+              data-ff-product-stage={row.stage ?? ""}
+              data-ff-product-issued-done={row.issuedDone ? "1" : "0"}
+              data-ff-shopping-active={row.issuedDone ? "0" : "1"}
+              title={row.quotesMissing ? row.gap?.summary : undefined}
+              data-active={row.selected ? "true" : "false"}
+              aria-current={row.selected ? "page" : undefined}
             >
-              <span className={cn("flex items-start gap-2", rail ? "w-full flex-nowrap" : "items-center gap-1")}>
-                {quotesMissing ? (
+              <span className="flex items-center gap-1">
+                {row.quotesMissing ? (
                   <span
                     className="inline-flex size-2.5 items-center justify-center rounded-full bg-fit-flag text-[8px] text-white"
                     aria-label="Incomplete quotes"
                     data-ff-product-missing-quotes-chip=""
-                    title={gap?.summary ?? "Missing quotes"}
+                    title={row.gap?.summary ?? "Missing quotes"}
                   >
                     !
                   </span>
-                ) : done ? (
+                ) : row.done ? (
                   <span
                     className="inline-flex size-2.5 items-center justify-center rounded-full bg-[var(--ff-green)] text-[8px] text-white"
                     aria-label="Bound"
                   >
                     ✓
                   </span>
-                ) : rail ? (
-                  <span
-                    className={cn(
-                      "mt-1 inline-block size-1.5 shrink-0 rounded-full",
-                      selected ? "bg-white/80" : "bg-[#8b8175]",
-                    )}
-                    aria-hidden
-                  />
                 ) : (
-                  <span className={cn("inline-block size-1 rounded-full", theme.bar)} aria-hidden />
+                  <span className={cn("inline-block size-1 rounded-full", row.theme.bar)} aria-hidden />
                 )}
-                <span className={cn(rail && "min-w-0 flex-1 whitespace-normal break-words")}>{label}</span>
-                {stageLabel ? (
+                <span>{row.label}</span>
+                {row.stageLabel ? (
                   <span
                     className={cn(
-                      "shrink-0 font-medium",
-                      rail ? "text-[11px]" : "text-[9px]",
-                      selected ? "text-white/90" : rail ? "text-[#5c5348]" : "text-muted-foreground",
+                      "shrink-0 text-[9px] font-medium",
+                      row.selected ? "text-white/90" : "text-muted-foreground",
                     )}
                     data-ff-product-stage-label=""
                   >
-                    {stages[product]?.mintStatus === "creating" ? "Creating…" : stageLabel}
+                    {row.mintStatus === "creating" ? "Creating…" : row.stageLabel}
                   </span>
                 ) : null}
-                {issuedDone ? (
+                {row.issuedDone ? (
                   <span
                     className={cn(
                       "rounded-sm border border-current px-1 text-[9px] font-extrabold uppercase tracking-wider",
-                      selected ? "text-white" : "text-emerald-800",
+                      row.selected ? "text-white" : "text-emerald-800",
                     )}
                     data-ff-product-done-stamp=""
                   >
                     Done
                   </span>
-                ) : stages[product]?.policyId ? (
+                ) : row.policyId ? (
                   <span
                     className={cn(
                       "text-[9px] font-medium underline-offset-2",
-                      selected ? "text-white/85" : "text-navy",
+                      row.selected ? "text-white/85" : "text-navy",
                     )}
-                    data-ff-product-policy-chip={stages[product]?.policyId}
+                    data-ff-product-policy-chip={row.policyId}
                   >
                     Policy
                   </span>
                 ) : null}
               </span>
-              {rail ? null : (
               <span
-                className={cn("absolute inset-x-0 bottom-0 h-0.5", selected ? "bg-navy/30" : "bg-black/5")}
+                className={cn("absolute inset-x-0 bottom-0 h-0.5", row.selected ? "bg-navy/30" : "bg-black/5")}
                 aria-hidden
               >
-                <span className={cn("block h-full", theme.bar)} style={{ width: `${pct}%` }} />
+                <span className={cn("block h-full", row.theme.bar)} style={{ width: `${row.pct}%` }} />
               </span>
-              )}
             </Link>
-          );
-        })}
+        ))}
       </nav>
   );
-  if (rail) {
-    return (
-      <div className="flex w-full flex-col gap-2" data-ff-deal-product-chip-row="" data-ff-deal-products-rail="">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Policy form</p>
-        {chips}
-        {picker}
-      </div>
-    );
-  }
   return (
     <div className="mt-1.5 space-y-1" data-ff-deal-product-chip-row="">
       <div className="flex flex-wrap items-center justify-between gap-2">

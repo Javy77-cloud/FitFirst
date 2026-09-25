@@ -97,15 +97,53 @@ describe("deal shop flow + product chrome", () => {
       }),
     );
     expect(rail).toMatch(/data-ff-deal-products-rail/);
-    expect(rail).toContain("Policy form");
-    expect(rail).not.toContain(">Products<");
-    expect(rail).toMatch(/border-\[#3d4c5c\]/);
-    expect(rail).toMatch(/text-\[11px\]/);
-    expect(rail).not.toMatch(/border-transparent/);
-    expect(rail.indexOf("HO3 16021 Northwest 79th")).toBeLessThan(rail.indexOf("DP3 10358 Northwest 30th"));
-    expect(rail.indexOf("DP3 10358 Northwest 30th")).toBeLessThan(rail.indexOf("HO3 8944 Adriatico"));
-    expect(rail.indexOf("HO3 8944 Adriatico")).toBeLessThan(rail.indexOf("Add / change products"));
-    expect(rail).not.toMatch(/truncate|line-clamp|ellipsis/);
+    expect(rail).toMatch(/data-ff-policy-form-line/);
+    expect(rail).toMatch(/data-ff-policy-form-dropup/);
+    expect(rail).toMatch(/bottom-full/);
+    expect(rail).toContain(">Products<");
+    expect(rail).not.toMatch(/>Policy form</);
+    expect(rail).toMatch(/flex w-full min-w-0 items-center/);
+    expect(rail).not.toMatch(/flex w-full flex-col/);
+    expect(rail.indexOf(">Products<")).toBeLessThan(rail.indexOf("data-ff-policy-form-trigger"));
+    expect(rail.indexOf("data-ff-policy-form-trigger")).toBeLessThan(rail.indexOf("Add or change product"));
+    const menu = rail.slice(rail.indexOf("data-ff-policy-form-menu"));
+    expect(menu.indexOf("HO3 16021 Northwest 79th")).toBeLessThan(menu.indexOf("DP3 10358 Northwest 30th"));
+    expect(menu.indexOf("DP3 10358 Northwest 30th")).toBeLessThan(menu.indexOf("HO3 8944 Adriatico"));
+    expect(menu).not.toMatch(/line-clamp/);
+    const addressed = renderToString(
+      createElement(DealLineSwitcher, {
+        dealId: "deal-gloria",
+        products: ["homeowners", "landlord", "homeowners~new"],
+        active: "homeowners",
+        tab: "quotes",
+        layout: "rail",
+        labelFacts: {
+          homeowners: {
+            address: "8944 Adriatico Ln",
+            city: "Kissimmee",
+            state: "FL",
+            zip: "34747",
+            quotingForm: "HO3",
+          },
+          landlord: {
+            address: "10358 Corporate Blvd",
+            city: "Orlando",
+            state: "FL",
+            quotingForm: "DP3",
+          },
+          "homeowners~new": {
+            address: "Edmerson Miami Lakes HO",
+            city: "Miami Lakes",
+            state: "FL",
+            quotingForm: "HO3",
+          },
+        },
+      }),
+    );
+    expect(addressed).toContain("HO3 · 8944 Adriatico Ln, Kissimmee, FL 34747");
+    expect(addressed).toContain("DP3 · 10358 Corporate Blvd, Orlando, FL");
+    expect(addressed).toContain("HO3 · Edmerson Miami Lakes HO, Miami Lakes, FL");
+    expect(addressed).not.toMatch(/>HO3</);
   });
 
   it("picker is grouped tiles, not a wall of unlabeled checkboxes", () => {
