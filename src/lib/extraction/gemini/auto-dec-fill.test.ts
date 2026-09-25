@@ -138,6 +138,56 @@ describe("Auto DEC fill mapping", () => {
     expect(term?.rawValue).toBe("6 month");
   });
 
+  it("keeps per-coverage premiums and a PIP deductible for policy Fill", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        named_insured: { value: "Veronica Boyle", confidence: 0.95 },
+        vehicles: [
+          {
+            year: "2018",
+            make: "HONDA",
+            model: "CIVIC",
+            vin: "2HGFC2F59JH123456",
+            use: "Pleasure",
+            premium: "640.00",
+          },
+        ],
+        coverages: [
+          { name: "Bodily Injury", limit: "100/300", premium: "412.00" },
+          { name: "Property Damage", limit: "100000", premium: "188" },
+          { name: "Personal Injury Protection", limit: "10000", deductible: "1000", premium: "220" },
+          { name: "Comprehensive", deductible: "500", premium: "90" },
+          { name: "Collision", deductible: "500", premium: "310" },
+        ],
+      },
+      "dec",
+      "auto",
+    );
+    const fields = byKey(mapped);
+    expect(fields.liability_bi?.normalizedValue).toBe("100/300");
+    expect(fields.liability_bi_premium?.normalizedValue).toBe("412.00");
+    expect(fields.liability_pd_premium?.normalizedValue).toBe("188");
+    expect(fields.pip?.normalizedValue).toBe("10000");
+    expect(fields.pip_deductible?.normalizedValue).toBe("1000");
+    expect(fields.pip_premium?.normalizedValue).toBe("220");
+    expect(fields.comp_deductible?.normalizedValue).toBe("500");
+    expect(fields.comp_premium?.normalizedValue).toBe("90");
+    expect(fields.collision_premium?.normalizedValue).toBe("310");
+    expect(fields.vehicle_usage?.normalizedValue).toBe("Personal");
+    expect(fields.vehicle_1_premium?.normalizedValue).toBe("640.00");
+    const applied = applyExtractedToSheet(
+      "auto",
+      {},
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+      })),
+    );
+    expect(applied.values.liability_bi_premium).toBeUndefined();
+    expect(applied.values.pip_deductible).toBeUndefined();
+    expect(applied.values.comp_deductible?.value).toBe("500");
+  });
+
   it("fills blanks and leaves an agent edit, with a diff", () => {
     const cell = (value: string, source: "agent" | "blank" = "blank") =>
       source === "agent"

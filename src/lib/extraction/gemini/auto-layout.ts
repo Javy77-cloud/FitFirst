@@ -423,16 +423,20 @@ type CoverageTarget =
   | "liability_bi"
   | "liability_pd"
   | "um_uim"
+  | "um_pd"
   | "pip"
   | "comp_deductible"
-  | "collision_deductible";
+  | "collision_deductible"
+  | "glass";
 
 /** Dec labels vary ("Liability Bodily Injury", "Uninsured Motorist Bodily Injury"). */
 function coverageTargetForLabel(label: string): CoverageTarget | null {
   const key = normKey(label);
   if (!key) return null;
-  const um = /(^|_)um($|_)|(^|_)uim($|_)|uninsured|underinsured|umbi|uimbi/.test(key);
-  if (um && !/property_damage/.test(key)) return "um_uim";
+  const um = /(^|_)um($|_)|(^|_)uim($|_)|uninsured|underinsured|umbi|uimbi|umpd/.test(key);
+  if (um && /property_damage|(^|_)pd($|_)|umpd/.test(key)) return "um_pd";
+  if (um) return "um_uim";
+  if (/full_glass|(^|_)glass($|_)|glass_coverage/.test(key) && !/fiberglass/.test(key)) return "glass";
   if (/other_than_collision|(^|_)otc($|_)|comprehensive|(^|_)comp($|_)/.test(key)) {
     return "comp_deductible";
   }
@@ -491,6 +495,110 @@ function fillGapCoverageKey(label: string): string | null {
   return null;
 }
 
+const COVERAGE_META_KEYS = new Set([
+  "name",
+  "coverage",
+  "type",
+  "label",
+  "description",
+  "deductible",
+  "ded",
+  "premium",
+  "premium_amount",
+  "coverage_premium",
+  "stacked",
+  "stacking",
+  "limit",
+  "limits",
+  "value",
+  "amount",
+  "confidence",
+]);
+
+const COVERAGE_PREMIUM_KEY: Record<string, string> = {
+  liability_bi: "liability_bi_premium",
+  liability_pd: "liability_pd_premium",
+  um_uim: "um_uim_premium",
+  um_pd: "um_pd_premium",
+  pip: "pip_premium",
+  comp_deductible: "comp_premium",
+  collision_deductible: "collision_premium",
+  med_pay: "med_pay_premium",
+  rental: "rental_premium",
+  towing: "towing_premium",
+  glass: "glass_premium",
+};
+
+function partValue(item: LooseJson, names: string[]): unknown {
+  const wanted = new Set(names);
+  for (const key of Object.keys(item)) {
+    if (!wanted.has(normKey(key))) continue;
+    if (hasPrinted(item[key])) return item[key];
+  }
+  return undefined;
+}
+
+function coverageKind(label: string): string | null {
+  const target = coverageTargetForLabel(label);
+  if (target) return target;
+  const gap = fillGapCoverageKey(label);
+  if (gap === "fill_gap_med_pay") return "med_pay";
+  if (gap === "fill_gap_rental") return "rental";
+  if (gap === "fill_gap_towing") return "towing";
+  return null;
+}
+
+/** Keep limit, deductible, and premium when a DEC coverage row prints more than one. */
+function rememberCoverageSiblings(
+  out: LooseJson,
+  label: string,
+  parts: { deductible?: unknown; premium?: unknown; stacked?: unknown },
+  vehicleIndex?: number,
+) {
+  const kind = coverageKind(label);
+  if (!kind) return;
+  const premiumKey = COVERAGE_PREMIUM_KEY[kind];
+  if (premiumKey && hasPrinted(parts.premium)) {
+    const key =
+      vehicleIndex != null && vehicleIndex > 0 ? `vehicle_${vehicleIndex + 1}_${premiumKey}` : premiumKey;
+    setIfEmpty(out, key, parts.premium);
+    if (vehicleIndex === 0 && (kind === "comp_deductible" || kind === "collision_deductible")) {
+      setIfEmpty(out, `vehicle_1_${premiumKey}`, parts.premium);
+    }
+  }
+  if (kind === "pip" && hasPrinted(parts.deductible)) {
+    const key = vehicleIndex != null && vehicleIndex > 0 ? `vehicle_${vehicleIndex + 1}_pip_deductible` : "pip_deductible";
+    setIfEmpty(out, key, parts.deductible);
+  }
+  if (kind === "um_uim" && hasPrinted(parts.stacked)) setIfEmpty(out, "um_stacked", parts.stacked);
+}
+
+function applyCoverageValue(
+  out: LooseJson,
+  label: string,
+  raw: unknown,
+  split: { person?: unknown; accident?: unknown },
+  vehicleIndex?: number,
+) {
+  if (isRecord(raw)) {
+    const deductible = partValue(raw, ["deductible", "ded"]);
+    const premium = partValue(raw, ["premium", "premium_amount", "coverage_premium"]);
+    const stacked = partValue(raw, ["stacked", "stacking"]);
+    const limit = partValue(raw, ["limit", "limits", "value", "amount", "text"]);
+    const kind = coverageKind(label);
+    const primary =
+      (kind === "comp_deductible" || kind === "collision_deductible" || kind === "glass") && hasPrinted(deductible)
+        ? deductible
+        : hasPrinted(limit)
+          ? limit
+          : deductible ?? raw;
+    applyCoverageEntry(out, label, primary, split, vehicleIndex);
+    rememberCoverageSiblings(out, label, { deductible, premium, stacked }, vehicleIndex);
+    return;
+  }
+  applyCoverageEntry(out, label, raw, split, vehicleIndex);
+}
+
 function applyCoverages(
   out: LooseJson,
   raw: unknown,
@@ -503,15 +611,34 @@ function applyCoverages(
     if (!isRecord(source)) continue;
     const item = { ...source };
     noteSchedulePremium(out, item, mode);
-    const label = textOf(pull(item, ["name", "coverage", "type", "label", "description"]));
-    const limit = pull(item, ["limit", "value", "amount", "deductible"]);
-    if (label && Object.keys(item).length === 0) {
-      applyCoverageEntry(out, label, limit ?? label, split, vehicleIndex);
-      continue;
+    const label = textOf(partValue(item, ["name", "coverage", "type", "label", "description"])).trim();
+    if (label) {
+      const deductiblePart = partValue(item, ["deductible", "ded"]);
+      const premiumPart = partValue(item, ["premium", "premium_amount", "coverage_premium"]);
+      const stackedPart = partValue(item, ["stacked", "stacking"]);
+      const limitPart = partValue(item, ["limit", "limits", "value", "amount"]);
+      const kind = coverageKind(label);
+      const primary =
+        (kind === "comp_deductible" || kind === "collision_deductible" || kind === "glass") &&
+        hasPrinted(deductiblePart)
+          ? deductiblePart
+          : hasPrinted(limitPart)
+            ? limitPart
+            : deductiblePart;
+      if (primary != null) applyCoverageEntry(out, label, primary, split, vehicleIndex);
+      else if (Object.keys(item).length === 0) applyCoverageEntry(out, label, label, split, vehicleIndex);
+      rememberCoverageSiblings(
+        out,
+        label,
+        { deductible: deductiblePart, premium: premiumPart, stacked: stackedPart },
+        vehicleIndex,
+      );
+      for (const key of Object.keys(item)) {
+        if (COVERAGE_META_KEYS.has(normKey(key))) delete item[key];
+      }
     }
-    if (label && limit != null) applyCoverageEntry(out, label, limit, split, vehicleIndex);
     for (const [key, value] of Object.entries(item)) {
-      applyCoverageEntry(out, key, value, split, vehicleIndex);
+      applyCoverageValue(out, key, value, split, vehicleIndex);
     }
   }
   if (!hasPrinted(out.liability_bi) && split.person != null && split.accident != null) {
@@ -548,14 +675,12 @@ function applyCoverageEntry(
   }
   const target = coverageTargetForLabel(label);
   if (!target) return;
-  if (
-    vehicleIndex != null &&
-    vehicleIndex > 0 &&
-    hasPrinted(out[target]) &&
-    textOf(out[target]).trim() !== textOf(raw).trim()
-  ) {
-    setIfEmpty(out, `fill_gap_vehicle_${vehicleIndex + 1}_${target}`, raw);
-    return;
+  if (vehicleIndex != null && vehicleIndex > 0) {
+    setIfEmpty(out, `vehicle_${vehicleIndex + 1}_${target}`, raw);
+    if (hasPrinted(out[target]) && textOf(out[target]).trim() !== textOf(raw).trim()) {
+      setIfEmpty(out, `fill_gap_vehicle_${vehicleIndex + 1}_${target}`, raw);
+      return;
+    }
   }
   setIfEmpty(out, target, raw);
 }
@@ -1330,10 +1455,38 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
   }
 
   captureAutoFillGaps(out);
+  promoteAutoPolicyFillKeys(out);
   canonicalizeAutoSheetValues(out);
   normalizeAutoPeople(out);
 
   return out;
+}
+
+/**
+ * Copy fill_gap facts onto policy-detail keys. fill_gap_* stays unmapped for the
+ * Risk Profile; the policy Fill reads the real keys.
+ */
+function promoteAutoPolicyFillKeys(out: LooseJson) {
+  const pairs: Array<[string, string]> = [
+    ["fill_gap_med_pay", "med_pay"],
+    ["fill_gap_rental", "rental"],
+    ["fill_gap_towing", "towing"],
+    ["fill_gap_discounts", "discounts"],
+  ];
+  for (let n = 1; n <= 4; n += 1) {
+    pairs.push(
+      [`fill_gap_vehicle_${n}_premium`, `vehicle_${n}_premium`],
+      [`fill_gap_vehicle_${n}_comp_deductible`, `vehicle_${n}_comp_deductible`],
+      [`fill_gap_vehicle_${n}_collision_deductible`, `vehicle_${n}_collision_deductible`],
+      [`fill_gap_vehicle_${n}_med_pay`, `vehicle_${n}_med_pay`],
+      [`fill_gap_vehicle_${n}_rental`, `vehicle_${n}_rental`],
+      [`fill_gap_vehicle_${n}_towing`, `vehicle_${n}_towing`],
+      [`fill_gap_driver_${n}_license_state`, `driver_${n}_license_state`],
+    );
+  }
+  for (const [from, to] of pairs) {
+    if (hasPrinted(out[from])) setIfEmpty(out, to, out[from]);
+  }
 }
 
 /** Facts the Auto Risk Profile has no column for. Kept as fill_gap_* so they stay unmapped. */

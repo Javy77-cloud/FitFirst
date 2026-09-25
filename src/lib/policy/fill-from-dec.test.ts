@@ -175,6 +175,81 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.effectiveDate).toBe("2026-09-21");
     expect(proposed.expirationDate).toBe("2027-03-21");
     expect(proposed.termMonths).toBe("6");
+    expect(proposed.pipDeductible).toBe("1000");
+  });
+
+  it("maps PAP deductibles, line premiums, vehicle use, and per-car facts", () => {
+    const proposed = proposeFillFromDec({
+      family: "auto",
+      rows: rows({
+        vin: "4T1BF1FK5FU485898",
+        vehicle_year: "2015",
+        vehicle_make: "Toyota",
+        vehicle_model: "Camry",
+        vehicle_usage: "Pleasure",
+        annual_miles: "12000",
+        vehicle_lienholder_other: "Toyota Financial",
+        vehicle_1_premium: "900.00",
+        vehicle_2_vin: "2HKRM4H75GH123456",
+        vehicle_2_year: "2016",
+        vehicle_2_make: "Honda",
+        vehicle_2_model: "CR-V",
+        vehicle_2_usage: "Commute",
+        fill_gap_vehicle_2_comp_deductible: "1000",
+        fill_gap_vehicle_2_premium: "700",
+        liability_bi: "100/300",
+        liability_bi_premium: "412",
+        liability_pd: "100000",
+        liability_pd_premium: "188",
+        pip: "10000",
+        pip_deductible: "1000",
+        pip_premium: "220",
+        um_uim: "100/300 Non-stacked",
+        med_pay: "5000",
+        fill_gap_rental: "30/day",
+        comp_deductible: "500",
+        comp_premium: "140",
+        collision_deductible: "500",
+        collision_premium: "310",
+        discounts: "Multi-car; Paperless",
+        driver_1_name: "Veronica Boyle",
+        driver_1_license_state: "FL",
+      }),
+    });
+    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.usage"]).toBe("Pleasure");
+    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.annualMiles"]).toBe("12000");
+    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.lienholder"]).toBe("Toyota Financial");
+    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.premium"]).toBe("$900");
+    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.comprehensiveDeductible"]).toBe("500");
+    expect(proposed["vehicle:vin:2HKRM4H75GH123456.usage"]).toBe("Commute");
+    expect(proposed["vehicle:vin:2HKRM4H75GH123456.comprehensiveDeductible"]).toBe("1000");
+    expect(proposed["vehicle:vin:2HKRM4H75GH123456.premium"]).toBe("$700");
+    expect(proposed.liabilityBiPremium).toBe("$412");
+    expect(proposed.liabilityPdPremium).toBe("$188");
+    expect(proposed.pipDeductible).toBe("1000");
+    expect(proposed.pipPremium).toBe("$220");
+    expect(proposed.umStacked).toBe("Non-stacked");
+    expect(proposed.medPay).toBe("$5,000");
+    expect(proposed.rental).toBe("30/day");
+    expect(proposed.compPremium).toBe("$140");
+    expect(proposed.collisionPremium).toBe("$310");
+    expect(proposed.discounts).toBe("Multi-car; Paperless");
+    expect(proposed["driver:veronica boyle.licenseState"]).toBe("FL");
+
+    const patch = groupAppliedFill(proposed, Object.keys(proposed));
+    expect(patch.coverageLimits.liability_bi_premium).toBe("$412");
+    expect(patch.coverageLimits.pip_deductible).toBe("1000");
+    expect(patch.coverageLimits.comp_premium).toBe("$140");
+    expect(patch.coverageLimits.discounts).toBe("Multi-car; Paperless");
+    expect(patch.coverageLimits.um_stacked).toBe("Non-stacked");
+    expect(patch.term.comprehensiveDeductible).toBe("500");
+    expect(patch.term.collisionDeductible).toBe("500");
+    const camry = patch.vehicles.find((row) => row.vin === "4T1BF1FK5FU485898");
+    expect(camry?.usage).toBe("Pleasure");
+    expect(camry?.annualMiles).toBe("12000");
+    expect(camry?.lienholder).toBe("Toyota Financial");
+    expect(camry?.write).toEqual(expect.arrayContaining(["usage", "annualMiles", "lienholder", "premium"]));
+    expect(patch.drivers[0]?.licenseState).toBe("FL");
   });
 });
 
@@ -353,6 +428,7 @@ describe("fillPolicyFromDec wiring", () => {
     expect(action).toMatch(/policySet\.expirationDate = patch\.policy\.expirationDate/);
     expect(action).toMatch(/policySet\.termMonths = patch\.policy\.termMonths/);
     expect(action).toMatch(/source: input\.source/);
+    expect(action).toMatch(/forceExtract: input\.source === "manual"/);
     expect(action).not.toMatch(/quoteSheets|quote_sheets|fillQuoteSheet/);
     const mint = source("src/app/actions/policy-mint.ts");
     expect(mint).toMatch(/fillPolicyFromDecOnIssue/);

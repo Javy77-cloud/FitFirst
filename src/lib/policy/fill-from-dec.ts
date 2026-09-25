@@ -55,7 +55,12 @@ type VehicleWriteField =
   | "model"
   | "usage"
   | "garagingZip"
-  | "garagingAddress";
+  | "garagingAddress"
+  | "annualMiles"
+  | "lienholder"
+  | "premium"
+  | "comprehensiveDeductible"
+  | "collisionDeductible";
 
 export type AppliedVehicle = {
   identity: string;
@@ -66,6 +71,11 @@ export type AppliedVehicle = {
   usage?: string;
   garagingZip?: string;
   garagingAddress?: string;
+  annualMiles?: string;
+  lienholder?: string;
+  premium?: string;
+  comprehensiveDeductible?: string;
+  collisionDeductible?: string;
   write: VehicleWriteField[];
 };
 
@@ -75,6 +85,7 @@ export type AppliedDriver = {
   lastName: string;
   dateOfBirth?: string;
   licenseNumber?: string;
+  licenseState?: string;
 };
 
 export type AppliedFillPatch = {
@@ -566,10 +577,51 @@ function splitPerson(full: string): { first: string; last: string } | null {
 function vehicleSuffix(index: number, suffix: string): string[] {
   if (index === 1) {
     if (suffix === "vin") return ["vin", "vehicle_1_vin"];
-    if (suffix === "usage") return ["vehicle_usage", "vehicle_1_usage", "usage"];
+    if (suffix === "usage") return ["vehicle_usage", "vehicle_1_usage", "usage", "use"];
+    if (suffix === "annual_miles") return ["annual_miles", "vehicle_1_annual_miles", "vehicle_annual_miles"];
+    if (suffix === "lienholder") return ["vehicle_lienholder", "vehicle_1_lienholder", "lienholder"];
+    if (suffix === "premium") return ["vehicle_1_premium", "vehicle_premium", "fill_gap_vehicle_1_premium"];
+    if (suffix === "comp_deductible") {
+      return ["vehicle_1_comp_deductible", "comp_deductible", "comprehensive_deductible", "fill_gap_vehicle_1_comp_deductible"];
+    }
+    if (suffix === "collision_deductible") {
+      return ["vehicle_1_collision_deductible", "collision_deductible", "fill_gap_vehicle_1_collision_deductible"];
+    }
     return [`vehicle_${suffix}`, `vehicle_1_${suffix}`];
   }
+  if (suffix === "premium") return [`vehicle_${index}_premium`, `fill_gap_vehicle_${index}_premium`];
+  if (suffix === "comp_deductible") {
+    return [`vehicle_${index}_comp_deductible`, `fill_gap_vehicle_${index}_comp_deductible`];
+  }
+  if (suffix === "collision_deductible") {
+    return [`vehicle_${index}_collision_deductible`, `fill_gap_vehicle_${index}_collision_deductible`];
+  }
+  if (suffix === "usage") return [`vehicle_${index}_usage`, `vehicle_${index}_use`];
   return [`vehicle_${index}_${suffix}`];
+}
+
+function vehicleLienholder(rows: readonly MintGeminiRow[], index: number): string {
+  const named = rawCell(rows, ...vehicleSuffix(index, "lienholder"));
+  const other =
+    index === 1
+      ? rawCell(rows, "vehicle_lienholder_other", "vehicle_1_lienholder_other")
+      : rawCell(rows, `vehicle_${index}_lienholder_other`);
+  if (other && (!named || /^other$/i.test(named))) return other;
+  return named;
+}
+
+/** PIP rows often print "$1,000 Ded" inside the limit. Keep a deductible when that is all we have. */
+function pipDeductibleFromLimit(raw: string): string {
+  const match = raw.match(/\$?\s*([\d,]+(?:\.\d+)?)\s*ded\b/i);
+  return match ? formatDecDeductible(match[1]!) : "";
+}
+
+function formatUmStacked(raw: string): string {
+  const low = raw.toLowerCase();
+  if (!low) return "";
+  if (/non[-\s]?stacked/.test(low)) return "Non-stacked";
+  if (/\bstacked\b/.test(low)) return "Stacked";
+  return "";
 }
 
 function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
@@ -580,18 +632,43 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
   if (premium != null) put(out, "premium", premium.toFixed(2));
 
   put(out, "liabilityBi", formatDecLimit(rawCell(rows, "liability_bi")));
+  put(out, "liabilityBiPremium", formatDecLimit(rawCell(rows, "liability_bi_premium")));
   put(out, "liabilityPd", formatDecLimit(rawCell(rows, "liability_pd")));
+  put(out, "liabilityPdPremium", formatDecLimit(rawCell(rows, "liability_pd_premium")));
   put(out, "umUim", formatDecLimit(rawCell(rows, "um_uim")));
-  put(out, "pip", formatDecLimit(rawCell(rows, "pip")));
-  put(out, "medPay", formatDecLimit(rawCell(rows, "med_pay")));
-  put(out, "rental", formatDecLimit(rawCell(rows, "rental")));
-  put(out, "towing", formatDecLimit(rawCell(rows, "towing", "ers", "emergency_road_service")));
+  put(out, "umUimPremium", formatDecLimit(rawCell(rows, "um_uim_premium")));
+  put(out, "umPd", formatDecLimit(rawCell(rows, "um_pd")));
+  put(out, "umPdPremium", formatDecLimit(rawCell(rows, "um_pd_premium")));
+  put(
+    out,
+    "umStacked",
+    formatUmStacked(rawCell(rows, "um_stacked")) || formatUmStacked(rawCell(rows, "um_uim")),
+  );
+  const pipRaw = rawCell(rows, "pip");
+  put(out, "pip", formatDecLimit(pipRaw));
+  put(
+    out,
+    "pipDeductible",
+    formatDecDeductible(rawCell(rows, "pip_deductible", "fill_gap_pip_deductible")) || pipDeductibleFromLimit(pipRaw),
+  );
+  put(out, "pipPremium", formatDecLimit(rawCell(rows, "pip_premium")));
+  put(out, "medPay", formatDecLimit(rawCell(rows, "med_pay", "fill_gap_med_pay")));
+  put(out, "medPayPremium", formatDecLimit(rawCell(rows, "med_pay_premium")));
+  put(out, "rental", formatDecLimit(rawCell(rows, "rental", "fill_gap_rental")));
+  put(out, "rentalPremium", formatDecLimit(rawCell(rows, "rental_premium")));
+  put(out, "towing", formatDecLimit(rawCell(rows, "towing", "ers", "emergency_road_service", "fill_gap_towing")));
+  put(out, "towingPremium", formatDecLimit(rawCell(rows, "towing_premium")));
+  put(out, "glass", formatDecDeductible(rawCell(rows, "glass", "glass_deductible", "full_glass")));
+  put(out, "glassPremium", formatDecLimit(rawCell(rows, "glass_premium")));
+  put(out, "discounts", rawCell(rows, "discounts", "fill_gap_discounts"));
   put(
     out,
     "comprehensiveDeductible",
     formatDecDeductible(rawCell(rows, "comp_deductible", "comprehensive_deductible", "comprehensive")),
   );
+  put(out, "compPremium", formatDecLimit(rawCell(rows, "comp_premium", "vehicle_1_comp_premium")));
   put(out, "collisionDeductible", formatDecDeductible(rawCell(rows, "collision_deductible")));
+  put(out, "collisionPremium", formatDecLimit(rawCell(rows, "collision_premium", "vehicle_1_collision_premium")));
 
   for (let index = 1; index <= 4; index += 1) {
     const vin = rawCell(rows, ...vehicleSuffix(index, "vin"));
@@ -607,6 +684,19 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
     put(out, `${prefix}.make`, make);
     put(out, `${prefix}.model`, model);
     put(out, `${prefix}.usage`, rawCell(rows, ...vehicleSuffix(index, "usage")));
+    put(out, `${prefix}.annualMiles`, rawCell(rows, ...vehicleSuffix(index, "annual_miles")));
+    put(out, `${prefix}.lienholder`, vehicleLienholder(rows, index));
+    put(out, `${prefix}.premium`, formatDecLimit(rawCell(rows, ...vehicleSuffix(index, "premium"))));
+    put(
+      out,
+      `${prefix}.comprehensiveDeductible`,
+      formatDecDeductible(rawCell(rows, ...vehicleSuffix(index, "comp_deductible"))),
+    );
+    put(
+      out,
+      `${prefix}.collisionDeductible`,
+      formatDecDeductible(rawCell(rows, ...vehicleSuffix(index, "collision_deductible"))),
+    );
     const garagingZipKeys =
       index === 1
         ? [...vehicleSuffix(index, "garaging_zip"), "garaging_zip"]
@@ -621,15 +711,25 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
       put(
         out,
         `vehicle_${index}_comprehensive`,
-        formatDecDeductible(rawCell(rows, `vehicle_${index}_comp_deductible`)),
+        formatDecDeductible(
+          rawCell(rows, `vehicle_${index}_comp_deductible`, `fill_gap_vehicle_${index}_comp_deductible`),
+        ),
       );
       put(
         out,
         `vehicle_${index}_collision`,
-        formatDecDeductible(rawCell(rows, `vehicle_${index}_collision_deductible`)),
+        formatDecDeductible(
+          rawCell(rows, `vehicle_${index}_collision_deductible`, `fill_gap_vehicle_${index}_collision_deductible`),
+        ),
       );
-      put(out, `vehicle_${index}_rental`, formatDecLimit(rawCell(rows, `vehicle_${index}_rental`)));
-      put(out, `vehicle_${index}_towing`, formatDecLimit(rawCell(rows, `vehicle_${index}_towing`)));
+      put(out, `vehicle_${index}_rental`, formatDecLimit(rawCell(rows, `vehicle_${index}_rental`, `fill_gap_vehicle_${index}_rental`)));
+      put(out, `vehicle_${index}_towing`, formatDecLimit(rawCell(rows, `vehicle_${index}_towing`, `fill_gap_vehicle_${index}_towing`)));
+      put(out, `vehicle_${index}_comp_premium`, formatDecLimit(rawCell(rows, `vehicle_${index}_comp_premium`)));
+      put(
+        out,
+        `vehicle_${index}_collision_premium`,
+        formatDecLimit(rawCell(rows, `vehicle_${index}_collision_premium`)),
+      );
     }
   }
 
@@ -641,6 +741,11 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
     put(out, `driver:${identity}.name`, name.trim());
     put(out, `driver:${identity}.dob`, rawCell(rows, `driver_${index}_dob`));
     put(out, `driver:${identity}.license`, rawCell(rows, `driver_${index}_license`));
+    put(
+      out,
+      `driver:${identity}.licenseState`,
+      rawCell(rows, `driver_${index}_license_state`, `fill_gap_driver_${index}_license_state`),
+    );
   }
   return out;
 }
@@ -715,12 +820,28 @@ const LIMIT_KEYS: Record<string, string> = {
   scheduled_screen_room: "scheduledScreenRoom",
   scheduled_shed: "scheduledShed",
   liability_bi: "liabilityBi",
+  liability_bi_premium: "liabilityBiPremium",
   liability_pd: "liabilityPd",
+  liability_pd_premium: "liabilityPdPremium",
   um_uim: "umUim",
+  um_uim_premium: "umUimPremium",
+  um_pd: "umPd",
+  um_pd_premium: "umPdPremium",
+  um_stacked: "umStacked",
   pip: "pip",
+  pip_deductible: "pipDeductible",
+  pip_premium: "pipPremium",
   med_pay: "medPay",
+  med_pay_premium: "medPayPremium",
   rental: "rental",
+  rental_premium: "rentalPremium",
   towing: "towing",
+  towing_premium: "towingPremium",
+  glass: "glass",
+  glass_premium: "glassPremium",
+  comp_premium: "compPremium",
+  collision_premium: "collisionPremium",
+  discounts: "discounts",
 };
 
 export type FillSnapshotInput = {
@@ -769,12 +890,18 @@ export type FillSnapshotInput = {
     usage?: string | null;
     garagingZip?: string | null;
     garagingAddress?: string | null;
+    annualMiles?: string | null;
+    lienholder?: string | null;
+    premium?: string | null;
+    comprehensiveDeductible?: string | null;
+    collisionDeductible?: string | null;
   }>;
   drivers?: Array<{
     firstName?: string | null;
     lastName?: string | null;
     dateOfBirth?: string | null;
     licenseLast4?: string | null;
+    licenseState?: string | null;
   }>;
 };
 
@@ -800,7 +927,7 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
     put(out, fieldKey, policy?.coverageLimits?.[limitKey]);
   }
   for (const [key, value] of Object.entries(policy?.coverageLimits ?? {})) {
-    if (/^vehicle_[2-4]_(comprehensive|collision|rental|towing)$/.test(key)) {
+    if (/^vehicle_[2-4]_(comprehensive|collision|rental|towing|comp_premium|collision_premium)$/.test(key)) {
       put(out, key, value);
     }
   }
@@ -840,6 +967,11 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
     put(out, `${prefix}.usage`, vehicle.usage);
     put(out, `${prefix}.garagingZip`, vehicle.garagingZip);
     put(out, `${prefix}.garagingAddress`, vehicle.garagingAddress);
+    put(out, `${prefix}.annualMiles`, vehicle.annualMiles);
+    put(out, `${prefix}.lienholder`, vehicle.lienholder);
+    put(out, `${prefix}.premium`, vehicle.premium);
+    put(out, `${prefix}.comprehensiveDeductible`, vehicle.comprehensiveDeductible);
+    put(out, `${prefix}.collisionDeductible`, vehicle.collisionDeductible);
   }
 
   for (const driver of input.drivers ?? []) {
@@ -849,6 +981,7 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
     put(out, `driver:${identity}.name`, name);
     put(out, `driver:${identity}.dob`, driver.dateOfBirth);
     put(out, `driver:${identity}.license`, driver.licenseLast4);
+    put(out, `driver:${identity}.licenseState`, driver.licenseState);
   }
   return out;
 }
@@ -986,19 +1119,35 @@ export function groupAppliedFill(
     ["scheduledScreenRoom", "scheduled_screen_room"],
     ["scheduledShed", "scheduled_shed"],
     ["liabilityBi", "liability_bi"],
+    ["liabilityBiPremium", "liability_bi_premium"],
     ["liabilityPd", "liability_pd"],
+    ["liabilityPdPremium", "liability_pd_premium"],
     ["umUim", "um_uim"],
+    ["umUimPremium", "um_uim_premium"],
+    ["umPd", "um_pd"],
+    ["umPdPremium", "um_pd_premium"],
+    ["umStacked", "um_stacked"],
     ["pip", "pip"],
+    ["pipDeductible", "pip_deductible"],
+    ["pipPremium", "pip_premium"],
     ["medPay", "med_pay"],
+    ["medPayPremium", "med_pay_premium"],
     ["rental", "rental"],
+    ["rentalPremium", "rental_premium"],
     ["towing", "towing"],
+    ["towingPremium", "towing_premium"],
+    ["glass", "glass"],
+    ["glassPremium", "glass_premium"],
+    ["compPremium", "comp_premium"],
+    ["collisionPremium", "collision_premium"],
+    ["discounts", "discounts"],
   ];
   for (const [fieldKey, limitKey] of limitPairs) {
     const value = take(fieldKey);
     if (value) patch.coverageLimits[limitKey] = value;
   }
   for (const key of allowed) {
-    if (/^vehicle_[2-4]_(comprehensive|collision|rental|towing)$/.test(key) && proposed[key]) {
+    if (/^vehicle_[2-4]_(comprehensive|collision|rental|towing|comp_premium|collision_premium)$/.test(key) && proposed[key]) {
       patch.coverageLimits[key] = proposed[key]!;
     }
   }
@@ -1020,7 +1169,7 @@ export function groupAppliedFill(
   const vehicles = new Map<string, AppliedVehicle>();
   for (const key of allowed) {
     const match = key.match(
-      /^vehicle:(.+)\.(vin|year|make|model|usage|garagingZip|garagingAddress)$/,
+      /^vehicle:(.+)\.(vin|year|make|model|usage|garagingZip|garagingAddress|annualMiles|lienholder|premium|comprehensiveDeductible|collisionDeductible)$/,
     );
     if (!match) continue;
     const identity = match[1]!;
@@ -1043,6 +1192,11 @@ export function groupAppliedFill(
     else if (field === "usage") row.usage = value;
     else if (field === "garagingZip") row.garagingZip = value;
     else if (field === "garagingAddress") row.garagingAddress = value;
+    else if (field === "annualMiles") row.annualMiles = value;
+    else if (field === "lienholder") row.lienholder = value;
+    else if (field === "premium") row.premium = value;
+    else if (field === "comprehensiveDeductible") row.comprehensiveDeductible = value;
+    else if (field === "collisionDeductible") row.collisionDeductible = value;
     vehicles.set(identity, row);
   }
   for (const row of vehicles.values()) {
@@ -1059,7 +1213,7 @@ export function groupAppliedFill(
 
   const drivers = new Map<string, AppliedDriver>();
   for (const key of allowed) {
-    const match = key.match(/^driver:(.+)\.(name|dob|license)$/);
+    const match = key.match(/^driver:(.+)\.(name|dob|license|licenseState)$/);
     if (!match) continue;
     const identity = match[1]!;
     const name = proposed[`driver:${identity}.name`] ?? "";
@@ -1074,6 +1228,7 @@ export function groupAppliedFill(
       } satisfies AppliedDriver);
     if (match[2] === "dob") row.dateOfBirth = proposed[key];
     if (match[2] === "license") row.licenseNumber = proposed[key];
+    if (match[2] === "licenseState") row.licenseState = proposed[key];
     drivers.set(identity, row);
   }
   patch.drivers = [...drivers.values()];

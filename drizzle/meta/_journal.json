@@ -1128,6 +1128,13 @@
       "when": 1793100000000,
       "tag": "0160_policy_fill_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 161,
+      "version": "7",
+      "when": 1793200000000,
+      "tag": "0161_auto_vehicle_dec_fields",
+      "breakpoints": true
     }
   ]
 }

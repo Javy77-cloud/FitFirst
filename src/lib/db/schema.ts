@@ -2731,6 +2731,11 @@ export const vehicles = pgTable("vehicles", {
   usage: text("usage"),
   garagingZip: text("garaging_zip"),
   garagingAddress: text("garaging_address"),
+  annualMiles: text("annual_miles"),
+  lienholder: text("lienholder"),
+  premium: text("premium"),
+  comprehensiveDeductible: text("comprehensive_deductible"),
+  collisionDeductible: text("collision_deductible"),
   sortOrder: integer("sort_order").notNull().default(0),
   ...timestamps,
 });
