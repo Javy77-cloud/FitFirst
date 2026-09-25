@@ -55,7 +55,7 @@ export function SectionTabs({
   corner?: ReactNode;
   /** Products row — grouped with module tabs, below pipeline chrome. */
   subnav?: ReactNode;
-  /** Active-product address field, on the same row as the module tabs. */
+  /** Active-product field, compact on the right of the module tab row. */
   tabRowField?: ReactNode;
   tabSize?: "default" | "deal";
 }) {
@@ -117,7 +117,7 @@ export function SectionTabs({
         />
       </Suspense>
       {tabRowField ? (
-        <div className="min-w-0 flex-1" data-ff-deal-tab-row-field="">
+        <div className="ml-auto min-w-0 w-max max-w-full" data-ff-deal-tab-row-field="">
           {tabRowField}
         </div>
       ) : null}

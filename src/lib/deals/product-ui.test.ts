@@ -102,7 +102,11 @@ describe("deal shop flow + product chrome", () => {
     expect(rail).toMatch(/bottom-full/);
     expect(rail).toContain(">Products<");
     expect(rail).not.toMatch(/>Policy form</);
-    expect(rail).toMatch(/flex w-full min-w-0 flex-col/);
+    expect(rail).toMatch(/flex w-max max-w-full min-w-0 flex-col items-end/);
+    expect(rail).toMatch(/width:23ch/);
+    expect(rail).toMatch(/data-ff-policy-form-selected/);
+    expect(rail).toMatch(/divide-y/);
+    expect(rail).toMatch(/hover:bg-\[#f3f4f6\]/);
     expect(rail).toMatch(/data-ff-policy-form-caption/);
     expect(rail.indexOf("data-ff-policy-form-trigger")).toBeLessThan(rail.indexOf("data-ff-policy-form-caption"));
     expect(rail.indexOf("data-ff-policy-form-caption")).toBeLessThan(rail.indexOf(">Products<"));
@@ -147,10 +151,14 @@ describe("deal shop flow + product chrome", () => {
         },
       }),
     );
-    expect(addressed).toContain("HO3 · 8944 Adriatico Ln, Kissimmee, FL 34747");
-    expect(addressed).toContain("DP3 · 10358 Corporate Blvd, Orlando, FL");
-    expect(addressed).toContain("HO3 · Edmerson Miami Lakes HO, Miami Lakes, FL");
-    expect(addressed).not.toMatch(/>HO3</);
+    expect(addressed).toContain("HO3 · 8944");
+    expect(addressed).toContain("DP3 · 10358");
+    expect(addressed).not.toContain("Adriatico");
+    expect(addressed).not.toContain("Corporate");
+    expect(addressed).not.toContain("Kissimmee");
+    expect(addressed).not.toContain("Orlando");
+    expect(addressed).not.toContain("34747");
+    expect(addressed).toMatch(/width:15ch/);
   });
 
   it("picker is grouped tiles, not a wall of unlabeled checkboxes", () => {
