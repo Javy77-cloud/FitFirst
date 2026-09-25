@@ -78,7 +78,11 @@ export const RENEWAL_SILENCE_MIN_DAYS = 38;
 export const RENEWAL_SILENCE_MAX_DAYS = 52;
 export const RENEWAL_SILENCE_GAP_DAYS = 7;
 export const STALE_DOCS_GATHERING_DAYS = 3;
-export const COMMITMENT_DUE_SOON_HOURS = 48;
+/**
+ * Earliest automatic desk ping for an open promise.
+ * About one hour before due — not a multi-day advance.
+ */
+export const COMMITMENT_DUE_SOON_HOURS = 1;
 
 export function isPanelSignalKind(value: string | null | undefined): value is PanelSignalKind {
   return Boolean(value && PANEL_SIGNAL_KINDS.includes(value as PanelSignalKind));
@@ -189,18 +193,22 @@ export function staleDocsWhy(input: {
 function commitmentNudgeUrgencyFromDue(dueAt: Date, asOf: Date): PanelUrgency | null {
   const ms = dueAt.getTime() - asOf.getTime();
   if (ms < 0) return "high";
-  if (ms <= 24 * 60 * 60 * 1000) return "high";
-  if (ms <= COMMITMENT_DUE_SOON_HOURS * 60 * 60 * 1000) return "medium";
+  if (ms <= COMMITMENT_DUE_SOON_HOURS * 60 * 60 * 1000) return "high";
   return null;
 }
 
-/** Time-based urgency, overridden by the task's chosen priority (high/low always win). */
+/**
+ * Time-based urgency inside the remind window, then task priority.
+ * Priority can raise or lower a ping that is already due. It must not
+ * open one hours or days early.
+ */
 export function commitmentNudgeUrgency(
   dueAt: Date,
   asOf: Date,
   priorityRaw?: string | null,
 ): PanelUrgency | null {
   const timeBased = commitmentNudgeUrgencyFromDue(dueAt, asOf);
+  if (timeBased == null) return null;
   const priority = normalizeTaskPriority(priorityRaw) as TaskPriority | null;
   return urgencyFromTaskPriority(priority, timeBased);
 }
