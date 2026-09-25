@@ -16,6 +16,7 @@ import { isUsingHealthSherpa } from "@/lib/healthsherpa/sheet";
 import { predictLifeAppetite } from "@/lib/life/appetite";
 import { resolveDealLifeProductType } from "@/lib/life/product-type";
 import { DealMotivation } from "@/components/deal/deal-motivation";
+import { DealQuoteCloseChart } from "@/components/deal/deal-quote-close-chart";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
@@ -982,6 +983,9 @@ export default async function DealPage({
           sidePanel={
             <div className="min-w-0 w-full space-y-3" data-ff-deal-rail-stack="">
               <div className="relative min-w-0 w-full max-w-full overflow-visible" data-ff-deal-quick-comms="">
+                <div data-ff-deal-quote-close-slot="">
+                  <DealQuoteCloseChart stats={motivation} />
+                </div>
                 <QuickCommsBoard
                   items={comms}
                   dealId={deal.id}
