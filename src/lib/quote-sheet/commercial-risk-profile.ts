@@ -3,6 +3,7 @@ import type { DealProductId } from "@/lib/deals/deal-products";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import type { ShopLine } from "@/lib/domain";
 import type { QuoteFieldDef } from "./applicant-core";
+import { currentPolicyDateFields, yearsWithCarrierField } from "./policy-term-fields";
 import { CLAIMS_5YR_OPTIONS, PROTECTION_CLASS_OPTIONS, YES_NO_OPTIONS } from "./sheet-defaults";
 
 /** Agent-facing name for commercial master sheets. */
@@ -366,12 +367,6 @@ const COMMERCIAL_RISK_PROFILE_FIELD_BASE: QuoteFieldDef[] = [
     visibleWhen: whenCoverage("General Liability"),
   },
   {
-    key: "current_carrier",
-    label: "Prior GL carrier",
-    group: "General Liability",
-    visibleWhen: whenCoverage("General Liability"),
-  },
-  {
     ...yn("gl_prior_claims", "Prior GL claims", "General Liability"),
     visibleWhen: whenCoverage("General Liability"),
   },
@@ -492,6 +487,9 @@ const COMMERCIAL_RISK_PROFILE_FIELD_BASE: QuoteFieldDef[] = [
     visibleWhen: { field: "claims_5yr", equals: ["1", "2", "3", "4+"] },
   },
   yn("open_claims_lawsuits", "Open claims / lawsuits", "Claims"),
+  { key: "current_carrier", label: "Current carrier", group: "Current policy" },
+  ...currentPolicyDateFields({ group: "Current policy", dec: false }),
+  yearsWithCarrierField("Current policy"),
 ];
 
 function eoCoverageCopy(field: QuoteFieldDef): QuoteFieldDef {
