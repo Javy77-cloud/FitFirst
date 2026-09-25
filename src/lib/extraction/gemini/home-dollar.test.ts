@@ -66,6 +66,50 @@ describe("home dollar display", () => {
     expect(byKey.wind_hail_deductible).toBe("$1,000");
   });
 
+  it("maps American Traditions optionals, sinkhole, and rating aliases with dollars", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        all_other_perils: "1000",
+        windstorm_or_hail_other_than_hurricane: "1000",
+        hurricane_deductible: "2% of Coverage A",
+        sinkhole: "Not Included",
+        personal_injury: "100000",
+        personal_injury_premium: "Included",
+        home_computer: "1000",
+        home_computer_premium: "4.94",
+        ordinance_law: "33700",
+        ordinance_law_premium: "-82.40",
+        water_back_up_and_sump_overflow: "5000",
+        water_backup_premium: "20.58",
+        personal_property_replacement_cost_premium: "172.99",
+        year_of_roof_updated: "2024",
+        year_of_construction: "2024",
+        type_of_residence: "Owner Occupied",
+      },
+      "dec",
+      "home",
+    );
+    const byKey = Object.fromEntries(mapped.fields.map((field) => [field.fieldKey, field.normalizedValue]));
+    expect(byKey.aop_deductible).toBe("$1,000");
+    expect(byKey.wind_hail_deductible).toBe("$1,000");
+    expect(byKey.hurricane_deductible).toBe("2% of Coverage A");
+    expect(byKey.sinkhole_deductible).toBe("Not Included");
+    expect(byKey.personal_injury).toBe("$100,000");
+    expect(byKey.personal_injury_premium).toBe("Included");
+    expect(byKey.home_computer).toBe("$1,000");
+    expect(byKey.home_computer_premium).toBe("$4.94");
+    expect(byKey.ordinance_or_law).toBe("$33,700");
+    expect(byKey.ordinance_or_law_premium).toBe("-$82.40");
+    expect(byKey.water_backup).toBe("$5,000");
+    expect(byKey.water_backup_premium).toBe("$20.58");
+    expect(byKey.personal_property_replacement_cost_premium).toBe("$172.99");
+    expect(byKey.roof_year).toBe("2024");
+    expect(byKey.year_built).toBe("2024");
+    expect(byKey.type_of_residence).toBe("Owner Occupied");
+    expect(byKey.roof_year).not.toContain("$");
+    expect(byKey.form).toBeUndefined();
+  });
+
   it("does not rewrite auto deductibles as home coverage", () => {
     const mapped = mapGeminiJsonToFields({ coverage_a: "250000", comp_deductible: "500" }, "dec", "auto");
     const coverage = mapped.fields.find((field) => field.fieldKey === "coverage_a");

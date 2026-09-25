@@ -183,6 +183,151 @@ describe("fillPolicyFromDec field map", () => {
     expect(sheetKeysForGeminiKey("dwelling_limit")).toContain("coverage_a");
   });
 
+  it("fills American Traditions section I, optionals, and rating without turning the home into MHO", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        form: "HO3",
+        current_carrier: "American Traditions",
+        aop_deductible: "1000",
+        windstorm_or_hail_other_than_hurricane: "1000",
+        hurricane_deductible: "2% of Coverage A",
+        sinkhole_deductible: "Not Included",
+        personal_injury: "100000",
+        personal_injury_premium: "Included",
+        personal_property_replacement_cost: "Included",
+        personal_property_replacement_cost_premium: "172.99",
+        home_computer: "1000",
+        home_computer_premium: "4.94",
+        ordinance_law: "33700",
+        ordinance_law_premium: "-82.40",
+        water_backup: "5000",
+        water_backup_premium: "20.58",
+        construction_type: "Masonry",
+        year_of_construction: "2024",
+        year_of_roof_updated: "2024",
+        type_of_residence: "Owner Occupied",
+        dwelling_type: "Single Family",
+        months_occupied: "9 to 12 Months",
+        occupancy: "Owner",
+      }),
+    });
+    expect(proposed.formType).toBe("HO3");
+    expect(proposed.policyType).toBeUndefined();
+    expect(proposed.aopDeductible).toBe("$1,000");
+    expect(proposed.windHailDeductible).toBe("$1,000");
+    expect(proposed.hurricaneDeductible).toBe("2% of Coverage A");
+    expect(proposed.hurricaneDeductible).not.toBe("$6,740");
+    expect(proposed.sinkholeDeductible).toBe("Not Included");
+    expect(proposed.sinkholeDeductible).not.toMatch(/\$/);
+    expect(proposed.personalInjury).toBe("$100,000");
+    expect(proposed.personalInjuryPremium).toBe("Included");
+    expect(proposed.personalPropertyReplacementCost).toBe("Included");
+    expect(proposed.personalPropertyReplacementCostPremium).toBe("$172.99");
+    expect(proposed.homeComputer).toBe("$1,000");
+    expect(proposed.homeComputerPremium).toBe("$4.94");
+    expect(proposed.ordinanceOrLaw).toBe("$33,700");
+    expect(proposed.ordinanceOrLawPremium).toBe("-$82.40");
+    expect(proposed.waterBackup).toBe("$5,000");
+    expect(proposed.waterBackupPremium).toBe("$20.58");
+    expect(proposed.construction).toBe("Masonry");
+    expect(proposed.yearBuilt).toBe("2024");
+    expect(proposed.roofYear).toBe("2024");
+    expect(proposed.typeOfResidence).toBe("Owner Occupied");
+    expect(proposed.dwellingType).toBe("Single Family");
+    expect(proposed.monthsOccupied).toBe("9 to 12 Months");
+    expect(proposed.occupancy).toBe("Owner");
+
+    const patch = groupAppliedFill(proposed, Object.keys(proposed));
+    expect(patch.term.aopDeductible).toBe("$1,000");
+    expect(patch.term.hurricaneDeductible).toBe("2% of Coverage A");
+    expect(patch.coverageLimits.wind_hail_deductible).toBe("$1,000");
+    expect(patch.coverageLimits.sinkhole_deductible).toBe("Not Included");
+    expect(patch.coverageLimits.personal_injury).toBe("$100,000");
+    expect(patch.coverageLimits.personal_injury_premium).toBe("Included");
+    expect(patch.coverageLimits.personal_property_replacement_cost).toBe("Included");
+    expect(patch.coverageLimits.personal_property_replacement_cost_premium).toBe("$172.99");
+    expect(patch.coverageLimits.home_computer).toBe("$1,000");
+    expect(patch.coverageLimits.home_computer_premium).toBe("$4.94");
+    expect(patch.coverageLimits.ordinance_or_law).toBe("$33,700");
+    expect(patch.coverageLimits.ordinance_or_law_premium).toBe("-$82.40");
+    expect(patch.coverageLimits.water_backup).toBe("$5,000");
+    expect(patch.coverageLimits.water_backup_premium).toBe("$20.58");
+    expect(patch.coverageLimits.type_of_residence).toBe("Owner Occupied");
+    expect(patch.coverageLimits.months_occupied).toBe("9 to 12 Months");
+    expect(patch.coverageLimits.dwelling_type).toBe("Single Family");
+    expect(patch.risk.construction).toBe("Masonry");
+    expect(patch.risk.yearBuilt).toBe(2024);
+    expect(patch.risk.roofYear).toBe(2024);
+    expect(patch.risk.occupancy).toBe("Owner");
+
+    const html = renderToString(
+      createElement(PolicyCoverageTab, {
+        policy: {
+          id: "p-at",
+          coverageA: 337000,
+          coverageLimits: patch.coverageLimits,
+          faceAmount: null,
+          lineOfBusiness: "HO",
+          formType: "HO3",
+          policyType: "HO3",
+        },
+        terms: [],
+        currentTerm: {
+          id: "t-at",
+          role: "current",
+          premium: null,
+          aopDeductible: patch.term.aopDeductible ?? null,
+          hurricaneDeductible: patch.term.hurricaneDeductible ?? null,
+          comprehensiveDeductible: null,
+          collisionDeductible: null,
+          coverages: null,
+          termEffective: new Date("2026-09-25T12:00:00.000Z"),
+          termExpiration: new Date("2027-09-25T12:00:00.000Z"),
+        },
+      }),
+    );
+    expect(html).toContain("$337,000");
+    expect(html).toContain("$1,000");
+    expect(html).toContain("Wind/hail deductible");
+    expect(html).toContain("2% of Coverage A");
+    expect(html).not.toContain("AOP deductible");
+    expect(html).toContain("Sinkhole");
+    expect(html).toContain("Not Included");
+    expect(html).toContain("Personal Injury");
+    expect(html).toContain("$100,000");
+    expect(html).toContain("Included");
+    expect(html).toContain("$172.99");
+    expect(html).toContain("Home Computer");
+    expect(html).toContain("$4.94");
+    expect(html).toContain("Ordinance or Law");
+    expect(html).toContain("$33,700");
+    expect(html).toContain("-$82.40");
+    expect(html).toContain("Water Back Up and Sump Overflow");
+    expect(html).toContain("$5,000");
+    expect(html).toContain("$20.58");
+  });
+
+  it("stores None for a blank rating value and does not invent optionals or a sinkhole dollar", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        occupancy: "None",
+        months_occupied: "None",
+        type_of_residence: "n/a",
+        sinkhole_deductible: "Not Included",
+      }),
+    });
+    expect(proposed.occupancy).toBe("None");
+    expect(proposed.monthsOccupied).toBe("None");
+    expect(proposed.typeOfResidence).toBe("None");
+    expect(proposed.sinkholeDeductible).toBe("Not Included");
+    expect(proposed.personalInjury).toBeUndefined();
+    expect(proposed.homeComputer).toBeUndefined();
+    expect(proposed.waterBackup).toBeUndefined();
+    expect(proposed.aopDeductible).toBeUndefined();
+  });
+
   it("keeps a stick-built HO5 when only a carrier name is present", () => {
     const proposed = proposeFillFromDec({
       family: "homeowners",
@@ -765,7 +910,11 @@ describe("fillPolicyFromDec wiring", () => {
     expect(button).toMatch(/WaitHold/);
     expect(button).toMatch(/ProcessingLabel/);
     expect(button).toMatch(/data-ff-fill-policy-from-dec-working/);
-    expect(button).toMatch(/title="Working"/);
+    expect(button).toMatch(/title="Processing your document…"/);
+    expect(button).toMatch(/<ProcessingLabel>Working<\/ProcessingLabel>/);
+    expect(button).not.toMatch(/title="Working"/);
+    expect(button).not.toMatch(/file change/i);
+    expect(button).not.toMatch(/overwriteCount\} fields|replaces \$\{/);
     expect(button).toMatch(/DialogFooter/);
     const closeFn = button.slice(button.indexOf("function close"), button.indexOf("function openModal"));
     expect(closeFn).toMatch(/pending \|\| collecting/);
@@ -778,7 +927,8 @@ describe("fillPolicyFromDec wiring", () => {
     const confirmAt = button.indexOf("data-ff-fill-policy-from-dec-confirm");
     expect(cancelAt).toBeGreaterThan(-1);
     expect(cancelAt).toBeLessThan(confirmAt);
-    const working = renderToString(createElement(WaitHold, { title: "Working" }));
+    const working = renderToString(createElement(WaitHold, { title: "Processing your document…" }));
+    expect(working).toContain("Processing your document…");
     expect(working).toContain('data-ff-wait-hold-spinner=""');
     expect(working).toContain("animate-spin");
     expect(working).toContain("ff-wait-hold-bar");

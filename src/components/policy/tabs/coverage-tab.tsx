@@ -1,6 +1,10 @@
 import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
 import { formatMoney } from "@/lib/domain";
-import { displayHomeCoverageLimit, displayHomeDeductible } from "@/lib/extraction/gemini/home-dollar";
+import {
+  displayHomeCoverageLimit,
+  displayHomeDeductible,
+  formatHomeDollarAmount,
+} from "@/lib/extraction/gemini/home-dollar";
 import {
   allowedInterestKinds,
   canHoldInterests,
@@ -42,6 +46,25 @@ const DEDUCTIBLE_LIMIT_KEYS = new Set([
   "wind_hail_deductible",
   "hurricane_deductible",
   "aop_deductible",
+  "sinkhole_deductible",
+]);
+
+const SCHEDULE_LABELS: Record<string, string> = {
+  personal_injury: "Personal Injury",
+  personal_property_replacement_cost: "Personal Property Replacement Cost",
+  home_computer: "Home Computer",
+  ordinance_or_law: "Ordinance or Law",
+  water_backup: "Water Back Up and Sump Overflow",
+  type_of_residence: "Type of residence",
+  months_occupied: "Months occupied",
+};
+
+const OPTIONAL_DOLLAR_LIMIT_KEYS = new Set([
+  "personal_injury",
+  "home_computer",
+  "ordinance_or_law",
+  "water_backup",
+  "personal_property_replacement_cost",
 ]);
 
 function shownCoverageLimit(key: string, label: string, value: string): string {
@@ -62,6 +85,17 @@ function shownDeductible(value: string | null | undefined): string {
 
 function titleCase(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+function scheduleLabel(key: string): string {
+  return SCHEDULE_LABELS[key] ?? titleCase(key);
+}
+
+function shownMoneyCell(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "—") return trimmed || "—";
+  if (/^included$/i.test(trimmed)) return "Included";
+  return formatHomeDollarAmount(trimmed) || trimmed;
 }
 
 function sourceFlag(source: ScheduleRow["source"]): string {
@@ -149,17 +183,40 @@ function buildSchedule(
     });
   }
   if (policy.coverageLimits) {
-    for (const [key, value] of Object.entries(policy.coverageLimits)) {
+    const limits = policy.coverageLimits;
+    for (const [key, value] of Object.entries(limits)) {
       if (!value?.trim()) continue;
+      if (key.endsWith("_premium")) continue;
       if (DEDUCTIBLE_LIMIT_KEYS.has(key)) continue;
       if (key === "coverage_a" && policy.coverageA != null) continue;
-      const label = titleCase(key);
+      const label = scheduleLabel(key);
+      const covered = shownCoverageLimit(key, label, value);
+      const limit =
+        covered !== value.trim()
+          ? covered
+          : OPTIONAL_DOLLAR_LIMIT_KEYS.has(key)
+            ? shownMoneyCell(value)
+            : covered;
+      const premiumRaw = limits[`${key}_premium`];
       rows.push({
         key: `limit_${key}`,
         label,
-        limit: shownCoverageLimit(key, label, value),
+        limit,
         deductible: "—",
-        premium: "—",
+        premium: premiumRaw?.trim() ? shownMoneyCell(premiumRaw) : "—",
+        source: "manual",
+      });
+    }
+    for (const [key, value] of Object.entries(limits)) {
+      if (!key.endsWith("_premium") || !value?.trim()) continue;
+      const base = key.slice(0, -"_premium".length);
+      if (rows.some((row) => row.key === `limit_${base}`)) continue;
+      rows.push({
+        key: `limit_${base}`,
+        label: scheduleLabel(base),
+        limit: "—",
+        deductible: "—",
+        premium: shownMoneyCell(value),
         source: "manual",
       });
     }
@@ -207,6 +264,7 @@ function buildSchedule(
     ["AOP deductible", current?.aopDeductible],
     ["Hurricane deductible", current?.hurricaneDeductible],
     ["Wind/hail deductible", policy.coverageLimits?.wind_hail_deductible],
+    ["Sinkhole", policy.coverageLimits?.sinkhole_deductible],
     ["Comprehensive deductible", current?.comprehensiveDeductible],
     ["Collision deductible", current?.collisionDeductible],
   ] as const) {

@@ -135,7 +135,10 @@ export type LobOverviewInput = {
   premisesState?: string | null;
   premisesZip?: string | null;
   yearBuilt?: number | null;
+  roofYear?: number | null;
   construction?: string | null;
+  typeOfResidence?: string | null;
+  monthsOccupied?: string | null;
   vehicleCount?: number;
   account?: {
     wcClassCode?: string | null;
@@ -199,7 +202,14 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
           ),
           field("construction", "Construction", input.construction),
           ...[
-            present("occupancy", "Occupied", input.occupancy),
+            present("occupancy", "Occupancy", input.occupancy),
+            present("typeOfResidence", "Type of residence", input.typeOfResidence),
+            present("monthsOccupied", "Months occupied", input.monthsOccupied),
+            present(
+              "roofYear",
+              "Year of roof",
+              input.roofYear != null ? String(input.roofYear) : null,
+            ),
             present("families", "Number of families", input.families),
             present("dwellingType", "Dwelling type", input.dwellingType),
             present("county", "County", input.county),

@@ -185,7 +185,7 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
             }}
           >
             {showWorking ? (
-              <WaitHold title="Working" data-ff-fill-policy-from-dec-working="" />
+              <WaitHold title="Processing your document…" data-ff-fill-policy-from-dec-working="" />
             ) : null}
             {showForm ? (
               <>
