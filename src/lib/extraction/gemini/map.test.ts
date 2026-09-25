@@ -300,7 +300,21 @@ describe("rosa desk training extract prompts", () => {
     expect(user).toMatch(/home_computer/);
     expect(user).toMatch(/type_of_residence/);
     expect(user).toMatch(/Not Included/);
+    expect(user).toMatch(/Loss Assessment/);
+    expect(user).toMatch(/Limited Fungi/);
+    expect(user).toMatch(/Unit-Owners Coverage A/);
+    expect(user).toMatch(/property_and_liability_coverages_premium/);
+    expect(user).toMatch(/leave occupancy null/);
+    expect(user).toMatch(/Rating Characteristics/);
     expect(system).toMatch(/personal_injury/);
+    expect(system).toMatch(/do not invent Owner from unit-owners/);
+    expect(sheetKeysForGeminiKey("sinkhole_loss_coverage")).toEqual(["sinkhole_deductible"]);
+    expect(sheetKeysForGeminiKey("limited_fungi_wet_or_dry_rot_or_bacteria_coverage")).toEqual([
+      "limited_fungi",
+    ]);
+    expect(sheetKeysForGeminiKey("property_and_liability_coverages_premium")).toEqual([
+      "property_liability_package_premium",
+    ]);
     expect(system).toMatch(/Year of Roof\/Updated/);
     expect(GEMINI_EXTRACT_JSON_KEYS).toEqual(
       expect.arrayContaining([
@@ -309,6 +323,10 @@ describe("rosa desk training extract prompts", () => {
         "water_backup_premium",
         "ordinance_law_premium",
         "type_of_residence",
+        "loss_assessment",
+        "limited_fungi",
+        "unit_owners_coverage_a_premium",
+        "property_and_liability_coverages_premium",
       ]),
     );
     expect(auto).toMatch(/Do not treat this as homeowners/);

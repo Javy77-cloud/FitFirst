@@ -440,6 +440,179 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.aopDeductible).toBeUndefined();
   });
 
+  it("maps a Notary unit-owners endorsement without inventing A–F premiums or occupancy", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        current_carrier: "Notary",
+        coverage_a: "80000",
+        coverage_c: "20000",
+        coverage_d: "16000",
+        coverage_e: "100000",
+        coverage_f: "1000",
+        coverage_a_premium: "1159.00",
+        property_liability_package_premium: "1159.00",
+        premium: "669.69",
+        age_of_dwelling_credit: "-449.00",
+        bceg_grade: "Incl",
+        limited_fungi: "10000/10000",
+        limited_fungi_premium: "Incl",
+        loss_assessment: "2000",
+        loss_assessment_premium: "4.00",
+        ordinance_or_law_coverage: "10%",
+        ordinance_or_law_coverage_premium: "20.00",
+        sinkhole_loss_coverage: "Incl",
+        unit_owners_coverage_a_special_coverage: "Incl",
+        aop_deductible: "1000",
+        hurricane_deductible: "1000",
+        year_built: "2023",
+        construction_type: "Masonry",
+      }),
+    });
+    expect(proposed.coverageA).toBe("80000");
+    expect(proposed.coverageAPremium).toBeUndefined();
+    expect(proposed.premium).toBe("669.69");
+    expect(proposed.occupancy).toBeUndefined();
+    expect(proposed.mortgageeName).toBeUndefined();
+    expect(proposed.bceg).toBeUndefined();
+    expect(proposed.formType).toBeUndefined();
+    expect(proposed.yearBuilt).toBe("2023");
+    expect(proposed.construction).toBe("Masonry");
+    expect(proposed.aopDeductible).toBe("$1,000");
+    expect(proposed.hurricaneDeductible).toBe("$1,000");
+    expect(proposed.limitedFungi).toBe("$10,000/$10,000");
+    expect(proposed.limitedFungiPremium).toBe("Included");
+    expect(proposed.lossAssessment).toBe("$2,000");
+    expect(proposed.lossAssessmentPremium).toBe("$4");
+    expect(proposed.ordinanceOrLaw).toBe("10%");
+    expect(proposed.ordinanceOrLawPremium).toBe("$20");
+    expect(proposed.sinkholeDeductible).toBe("Included");
+    expect(proposed.unitOwnersCoverageA).toBeUndefined();
+    expect(proposed.unitOwnersCoverageAPremium).toBe("Included");
+    expect(JSON.stringify(proposed)).not.toContain("449");
+
+    const endorsed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ occupancy: "Unit-Owners" }),
+    });
+    expect(endorsed.occupancy).toBeUndefined();
+
+    const perLine = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        coverage_a_premium: "88.50",
+        coverage_b_premium: "Incl",
+        coverage_c_premium: "-12.40",
+        property_liability_package_premium: "1159.00",
+        premium: "669.69",
+      }),
+    });
+    expect(perLine.coverageAPremium).toBe("$88.50");
+    expect(perLine.coverageBPremium).toBe("Included");
+    expect(perLine.coverageCPremium).toBe("-$12.40");
+    expect(perLine.premium).toBe("669.69");
+
+    const copiedTotal = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ coverage_a_premium: "669.69", premium: "669.69" }),
+    });
+    expect(copiedTotal.coverageAPremium).toBeUndefined();
+    expect(copiedTotal.premium).toBe("669.69");
+
+    const patch = groupAppliedFill(proposed, Object.keys(proposed));
+    expect(patch.coverageLimits.coverage_a_premium).toBeUndefined();
+    expect(patch.coverageLimits.limited_fungi).toBe("$10,000/$10,000");
+    expect(patch.coverageLimits.limited_fungi_premium).toBe("Included");
+    expect(patch.coverageLimits.loss_assessment).toBe("$2,000");
+    expect(patch.coverageLimits.loss_assessment_premium).toBe("$4");
+    expect(patch.coverageLimits.ordinance_or_law).toBe("10%");
+    expect(patch.coverageLimits.ordinance_or_law_premium).toBe("$20");
+    expect(patch.coverageLimits.sinkhole_deductible).toBe("Included");
+    expect(patch.coverageLimits.unit_owners_coverage_a_premium).toBe("Included");
+    expect(patch.policy.premium).toBe("669.69");
+    expect(patch.risk.yearBuilt).toBe(2023);
+    expect(patch.risk.construction).toBe("Masonry");
+    expect(patch.risk.occupancy).toBeUndefined();
+    expect(patch.term.aopDeductible).toBe("$1,000");
+    expect(patch.term.hurricaneDeductible).toBe("$1,000");
+
+    const html = renderToString(
+      createElement(PolicyCoverageTab, {
+        policy: {
+          id: "p-notary",
+          coverageA: 80000,
+          coverageLimits: patch.coverageLimits,
+          faceAmount: null,
+          lineOfBusiness: "HO",
+          formType: "HO6",
+          policyType: "HO6",
+        },
+        terms: [],
+        currentTerm: {
+          id: "t-notary",
+          role: "current",
+          premium: "669.69",
+          aopDeductible: patch.term.aopDeductible ?? null,
+          hurricaneDeductible: patch.term.hurricaneDeductible ?? null,
+          comprehensiveDeductible: null,
+          collisionDeductible: null,
+          coverages: null,
+          termEffective: new Date("2026-09-25T12:00:00.000Z"),
+          termExpiration: new Date("2027-09-25T12:00:00.000Z"),
+        },
+      }),
+    );
+    expect(html).toContain("$80,000");
+    expect(html).not.toContain("669.69");
+    expect(html).not.toContain("1,159");
+    expect(html).not.toContain("449");
+    expect(html).toContain("Loss Assessment");
+    expect(html).toContain("$2,000");
+    expect(html).toContain("Ordinance or Law");
+    expect(html).toContain("10%");
+    expect(html).toContain("$20");
+    expect(html).toContain("Limited Fungi, Wet or Dry Rot, or Bacteria");
+    expect(html).toContain("$10,000/$10,000");
+    expect(html).toContain("Included");
+    expect(html).toContain("Unit-Owners Coverage A - Special Coverage");
+    expect(html).toContain("All Other Perils (AOP)");
+    expect(html).toContain("Hurricane (% of Cov A)");
+    expect(html).toContain("Sinkhole");
+    const at = (label: string) => html.indexOf(label);
+    expect(at("Coverage A")).toBeLessThan(at("Ordinance or Law"));
+    expect(at("Ordinance or Law")).toBeLessThan(at("Limited Fungi"));
+    expect(at("Limited Fungi")).toBeLessThan(at("Loss Assessment"));
+    expect(at("Loss Assessment")).toBeLessThan(at("Unit-Owners Coverage A"));
+    expect(at("Unit-Owners Coverage A")).toBeLessThan(at("All Other Perils (AOP)"));
+    expect(at("All Other Perils (AOP)")).toBeLessThan(at("Hurricane (% of Cov A)"));
+    expect(at("Hurricane (% of Cov A)")).toBeLessThan(at("Sinkhole"));
+
+    const perLinePatch = groupAppliedFill(perLine, Object.keys(perLine));
+    const perLineHtml = renderToString(
+      createElement(PolicyCoverageTab, {
+        policy: {
+          id: "p-lines",
+          coverageA: 80000,
+          coverageLimits: {
+            ...perLinePatch.coverageLimits,
+            coverage_b: "$2,000",
+            coverage_c: "$20,000",
+          },
+          faceAmount: null,
+          lineOfBusiness: "HO",
+          formType: "HO6",
+          policyType: "HO6",
+        },
+        terms: [],
+        currentTerm: null,
+      }),
+    );
+    expect(perLineHtml).toContain("$88.50");
+    expect(perLineHtml).toContain("Included");
+    expect(perLineHtml).toContain("-$12.40");
+    expect(perLineHtml).not.toContain("1,159");
+  });
+
   it("maps the rating block through Gemini onto occupancy, year built, and construction", () => {
     const mapped = mapGeminiJsonToFields(
       {

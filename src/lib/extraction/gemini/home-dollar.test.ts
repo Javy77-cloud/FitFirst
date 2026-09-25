@@ -37,6 +37,12 @@ describe("home dollar display", () => {
     expect(formatHomeDollarAmount("130000")).toBe("$130,000");
     expect(formatHomeDollarAmount("500")).toBe("$500");
     expect(formatHomeDollarAmount("10%")).toBe("10%");
+    expect(formatHomeDollarAmount("Incl")).toBe("Included");
+    expect(formatHomeDollarAmount("Incl.")).toBe("Included");
+    expect(formatHomeDollarAmount("Not Included")).toBe("Not Included");
+    expect(formatHomeDollarAmount("10000/10000")).toBe("$10,000/$10,000");
+    expect(formatHomeDeductibleAmount("Incl")).toBe("Included");
+    expect(formatHomeDeductibleAmount("Not Included")).toBe("Not Included");
     expect(formatHomeDeductibleAmount("1000")).toBe("$1,000");
     expect(formatHomeDeductibleAmount("2%")).toBe("2%");
     expect(formatHomeDeductibleAmount("25%")).toBe("25%");

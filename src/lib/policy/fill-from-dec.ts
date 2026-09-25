@@ -322,15 +322,69 @@ function formatOptionalAmount(raw: string): string {
   return formatHomeDollarAmount(raw);
 }
 
-/** Sinkhole "Not Included" stays words. Never turn that phrase into a dollar. */
+/** Sinkhole "Not Included" stays words. "Incl" is Included. Never turn either into a dollar. */
 function formatSinkhole(raw: string): string {
   const trimmed = raw.replace(/\s+/g, " ").trim();
   if (!trimmed) return "";
   if (/not\s*included|not\s*covered|excluded|does not provide|not provided/i.test(trimmed)) {
     return "Not Included";
   }
+  if (/^incl\.?$/i.test(trimmed) || /^included$/i.test(trimmed)) return "Included";
   if (/^(none|n\/a|na|no|false)$/i.test(trimmed)) return "None";
   return formatHomeDeductibleAmount(trimmed);
+}
+
+/** A credit line that only says Incl is not a burglar / fire / sprinkler answer. */
+function protectionYesNo(raw: string): string {
+  if (/^incl\.?$/i.test(raw.trim()) || /^included$/i.test(raw.trim())) return "";
+  return yesNo(raw);
+}
+
+/**
+ * Unit-owners / condo endorsement titles are not an Occupancy line.
+ * A printed Owner or Tenant still wins.
+ */
+function occupancyUnlessEndorsement(raw: string): string {
+  const text = raw.replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  if (/\b(owner|tenant)\b/i.test(text)) return text;
+  if (/unit[-\s]?owners?|condominium|\bcondo\b|ho-?\s?6/i.test(text)) return "";
+  return text;
+}
+
+function sameMoney(a: string, b: string): boolean {
+  const left = parseMoney(a);
+  const right = parseMoney(b);
+  return left != null && right != null && Math.abs(left - right) < 0.001;
+}
+
+/** Drop a letter premium that is really the package subtotal or the policy total. Incl stays. */
+function rejectCopiedPremium(amount: string, packageRaw: string, totalRaw: string): string {
+  if (!amount || /^included$/i.test(amount)) return amount;
+  if (packageRaw && sameMoney(amount, packageRaw)) return "";
+  if (totalRaw && sameMoney(amount, totalRaw)) return "";
+  return amount;
+}
+
+/**
+ * An Incl-only endorsement has a blank limit and Included in the premium column.
+ * A dollar limit stays in the limit column.
+ */
+function putOptionalCoverage(
+  out: Record<string, string>,
+  limitKey: string,
+  premiumKey: string,
+  limitRaw: string,
+  premiumRaw: string,
+) {
+  let limit = formatOptionalAmount(limitRaw);
+  let premium = formatOptionalAmount(premiumRaw);
+  if (/^included$/i.test(limit) && (!premium || /^included$/i.test(premium))) {
+    premium = "Included";
+    limit = "";
+  }
+  put(out, limitKey, limit);
+  put(out, premiumKey, premium);
 }
 
 /** A printed rating value. An explicit blank token is None. An omitted key stays omitted. */
@@ -554,13 +608,14 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
     out,
     "occupancy",
     ratingOccupancyValue(
-      rawCell(rows, "occupancy", "occupied"),
+      occupancyUnlessEndorsement(rawCell(rows, "occupancy", "occupied")),
       rawCell(rows, "type_of_residence", "residence_type"),
     ),
   );
 
   put(out, "protectionClass", rawCell(rows, "protection_class"));
-  put(out, "bceg", rawCell(rows, "bceg_grade", "bceg"));
+  const bceg = rawCell(rows, "bceg_grade", "bceg");
+  if (bceg && !/^incl\.?$/i.test(bceg) && !/^included$/i.test(bceg)) put(out, "bceg", bceg);
   put(out, "county", rawCell(rows, "county"));
   put(
     out,
@@ -572,9 +627,9 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
     "personalPropertyReplacementCost",
     yesNo(rawCell(rows, "personal_property_replacement_cost", "replacement_cost_contents")),
   );
-  put(out, "burglarAlarm", yesNo(rawCell(rows, "burglar_alarm", "burglar")));
-  put(out, "fireAlarm", yesNo(rawCell(rows, "fire_alarm")));
-  put(out, "sprinkler", yesNo(rawCell(rows, "sprinkler")));
+  put(out, "burglarAlarm", protectionYesNo(rawCell(rows, "burglar_alarm", "burglar")));
+  put(out, "fireAlarm", protectionYesNo(rawCell(rows, "fire_alarm")));
+  put(out, "sprinkler", protectionYesNo(rawCell(rows, "sprinkler")));
 
   const mortgagee = rawCell(rows, "mortgagee", "mortgagee_name");
   if (mortgagee && !isNoMortgageValue(mortgagee)) put(out, "mortgageeName", mortgagee);
@@ -609,45 +664,38 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(out, "coverageD", coverageMoney(rows, "coverage_d", "loss_of_use", "additional_living_expense"));
   put(out, "coverageE", coverageMoney(rows, "coverage_e", "personal_liability"));
   put(out, "coverageF", coverageMoney(rows, "coverage_f", "medical_payments_to_others"));
-  put(
-    out,
-    "coverageAPremium",
-    formatCoverageLinePremium(rawCell(rows, "coverage_a_premium", "dwelling_premium")),
+  const packagePremium = rawCell(
+    rows,
+    "property_liability_package_premium",
+    "property_and_liability_coverages_premium",
+    "property_liability_coverages_premium",
+    "property_and_liability_premium",
   );
-  put(
-    out,
-    "coverageBPremium",
-    formatCoverageLinePremium(rawCell(rows, "coverage_b_premium", "other_structures_premium")),
-  );
-  put(
-    out,
-    "coverageCPremium",
-    formatCoverageLinePremium(
-      rawCell(rows, "coverage_c_premium", "personal_property_premium", "contents_premium"),
-    ),
-  );
-  put(
-    out,
-    "coverageDPremium",
-    formatCoverageLinePremium(rawCell(rows, "coverage_d_premium", "loss_of_use_premium")),
-  );
-  put(
-    out,
-    "coverageEPremium",
-    formatCoverageLinePremium(rawCell(rows, "coverage_e_premium", "personal_liability_premium")),
-  );
+  const totalPremium = rawCell(rows, "premium", "current_premium", "total_premium");
+  const linePremium = (...keys: string[]) =>
+    rejectCopiedPremium(formatCoverageLinePremium(rawCell(rows, ...keys)), packagePremium, totalPremium);
+  put(out, "coverageAPremium", linePremium("coverage_a_premium", "dwelling_premium"));
+  put(out, "coverageBPremium", linePremium("coverage_b_premium", "other_structures_premium"));
+  put(out, "coverageCPremium", linePremium("coverage_c_premium", "personal_property_premium", "contents_premium"));
+  put(out, "coverageDPremium", linePremium("coverage_d_premium", "loss_of_use_premium"));
+  put(out, "coverageEPremium", linePremium("coverage_e_premium", "personal_liability_premium"));
   put(
     out,
     "coverageFPremium",
-    formatCoverageLinePremium(
-      rawCell(rows, "coverage_f_premium", "medical_payments_premium", "medical_payments_to_others_premium"),
-    ),
+    linePremium("coverage_f_premium", "medical_payments_premium", "medical_payments_to_others_premium"),
   );
   put(
     out,
     "ordinanceOrLaw",
     formatDecDeductible(
-      rawCell(rows, "ordinance_or_law", "ordinance_law", "building_ordinance_or_law", "building_ordinance_law"),
+      rawCell(
+        rows,
+        "ordinance_or_law",
+        "ordinance_law",
+        "ordinance_or_law_coverage",
+        "building_ordinance_or_law",
+        "building_ordinance_law",
+      ),
     ),
   );
   put(out, "theft", formatOptionalAmount(rawCell(rows, "theft", "theft_limit", "theft_coverage")));
@@ -688,7 +736,9 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(
     out,
     "sinkholeDeductible",
-    formatSinkhole(rawCell(rows, "sinkhole_deductible", "sinkhole", "sinkhole_coverage")),
+    formatSinkhole(
+      rawCell(rows, "sinkhole_deductible", "sinkhole", "sinkhole_coverage", "sinkhole_loss", "sinkhole_loss_coverage"),
+    ),
   );
   put(out, "personalInjury", formatOptionalAmount(rawCell(rows, "personal_injury", "personal_injury_limit")));
   put(out, "personalInjuryPremium", formatOptionalAmount(rawCell(rows, "personal_injury_premium")));
@@ -706,7 +756,47 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(
     out,
     "ordinanceOrLawPremium",
-    formatCoverageLinePremium(rawCell(rows, "ordinance_or_law_premium", "ordinance_law_premium")),
+    formatCoverageLinePremium(
+      rawCell(rows, "ordinance_or_law_premium", "ordinance_law_premium", "ordinance_or_law_coverage_premium"),
+    ),
+  );
+  putOptionalCoverage(
+    out,
+    "lossAssessment",
+    "lossAssessmentPremium",
+    rawCell(rows, "loss_assessment", "loss_assessment_coverage"),
+    rawCell(rows, "loss_assessment_premium", "loss_assessment_coverage_premium"),
+  );
+  putOptionalCoverage(
+    out,
+    "limitedFungi",
+    "limitedFungiPremium",
+    rawCell(
+      rows,
+      "limited_fungi",
+      "limited_fungi_wet_or_dry_rot_or_bacteria",
+      "limited_fungi_wet_or_dry_rot_or_bacteria_coverage",
+      "fungi",
+      "mold",
+    ),
+    rawCell(
+      rows,
+      "limited_fungi_premium",
+      "limited_fungi_wet_or_dry_rot_or_bacteria_premium",
+      "limited_fungi_wet_or_dry_rot_or_bacteria_coverage_premium",
+    ),
+  );
+  putOptionalCoverage(
+    out,
+    "unitOwnersCoverageA",
+    "unitOwnersCoverageAPremium",
+    rawCell(rows, "unit_owners_coverage_a", "unit_owners_coverage_a_special", "unit_owners_coverage_a_special_coverage"),
+    rawCell(
+      rows,
+      "unit_owners_coverage_a_premium",
+      "unit_owners_coverage_a_special_premium",
+      "unit_owners_coverage_a_special_coverage_premium",
+    ),
   );
   put(
     out,
@@ -1139,6 +1229,12 @@ const LIMIT_KEYS: Record<string, string> = {
   personal_property_replacement_cost: "personalPropertyReplacementCost",
   theft: "theft",
   extended_replacement_cost_dwelling: "extendedReplacementCostDwelling",
+  loss_assessment: "lossAssessment",
+  loss_assessment_premium: "lossAssessmentPremium",
+  limited_fungi: "limitedFungi",
+  limited_fungi_premium: "limitedFungiPremium",
+  unit_owners_coverage_a: "unitOwnersCoverageA",
+  unit_owners_coverage_a_premium: "unitOwnersCoverageAPremium",
   unit_year: "unitYear",
   unit_make: "unitMake",
   unit_serial: "unitSerial",
@@ -1481,6 +1577,12 @@ export function groupAppliedFill(
     ["personalPropertyReplacementCost", "personal_property_replacement_cost"],
     ["theft", "theft"],
     ["extendedReplacementCostDwelling", "extended_replacement_cost_dwelling"],
+    ["lossAssessment", "loss_assessment"],
+    ["lossAssessmentPremium", "loss_assessment_premium"],
+    ["limitedFungi", "limited_fungi"],
+    ["limitedFungiPremium", "limited_fungi_premium"],
+    ["unitOwnersCoverageA", "unit_owners_coverage_a"],
+    ["unitOwnersCoverageAPremium", "unit_owners_coverage_a_premium"],
     ["unitYear", "unit_year"],
     ["unitMake", "unit_make"],
     ["unitSerial", "unit_serial"],
