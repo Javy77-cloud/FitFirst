@@ -268,25 +268,31 @@ export function insuredAddressForProductTab(input: {
   instanceKey: string;
   ownsSheet: boolean;
   sheetValues?: SheetValues;
-  ownRisk?: { address1?: string | null; city?: string | null } | null;
-}): { street: string; city: string } {
-  const riskStreet = String(input.ownRisk?.address1 ?? "").replace(/\s+/g, " ").trim();
+  ownRisk?: {
+    address1?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+  } | null;
+}): { street: string; city: string; state: string; zip: string } {
+  const piece = (value: string | null | undefined) => String(value ?? "").replace(/\s+/g, " ").trim();
+  const riskStreet = piece(input.ownRisk?.address1);
   if (riskStreet) {
     return {
       street: riskStreet,
-      city: String(input.ownRisk?.city ?? "").replace(/\s+/g, " ").trim(),
+      city: piece(input.ownRisk?.city),
+      state: piece(input.ownRisk?.state),
+      zip: piece(input.ownRisk?.zip),
     };
   }
-  if (!input.sheetValues) return { street: "", city: "" };
-  if (input.ownsSheet) {
-    return {
-      street: cellValue(input.sheetValues, "address1"),
-      city: cellValue(input.sheetValues, "city"),
-    };
-  }
+  if (!input.sheetValues) return { street: "", city: "", state: "", zip: "" };
+  const field = (name: string) =>
+    cellValue(input.sheetValues, input.ownsSheet ? name : sidecarField(input.instanceKey, name));
   return {
-    street: cellValue(input.sheetValues, sidecarField(input.instanceKey, "address1")),
-    city: cellValue(input.sheetValues, sidecarField(input.instanceKey, "city")),
+    street: input.ownsSheet ? cellValue(input.sheetValues, "address1") : field("address1"),
+    city: field("city"),
+    state: field("state"),
+    zip: field("zip"),
   };
 }
 

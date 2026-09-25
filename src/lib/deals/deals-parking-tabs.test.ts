@@ -29,16 +29,11 @@ describe("Won-Lost + Archived parking tabs", () => {
     expect(page).toMatch(/DealLineSwitcher/);
     expect(page).toMatch(/layout="rail"/);
     expect(page).toMatch(/data-ff-deal-products-column/);
-    expect(page).not.toMatch(/bottom-full/);
+    expect(page).toMatch(/leading=/);
     const css = source("src/app/globals.css");
-    expect(css).toMatch(/--ff-deal-products-headroom:\s*9\.5rem;/);
-    expect(css).toMatch(/--ff-deal-products-qc-gap:\s*0\.75rem;/);
-    expect(css).toMatch(
-      /\[data-ff-deal-workspace\] \[data-ff-deal-quick-comms\]:has\(\[data-ff-deal-products-column\]\) \{\s*margin-top:\s*calc\(var\(--ff-deal-products-headroom\) \+ var\(--ff-deal-products-qc-gap\)\);/,
-    );
-    expect(css).toMatch(
-      /\[data-ff-deal-workspace\] \[data-ff-deal-products-column\] \{\s*bottom:\s*calc\(100% \+ var\(--ff-deal-products-qc-gap\)\);/,
-    );
+    expect(css).not.toMatch(/--ff-deal-products-headroom:\s*9\.5rem;/);
+    expect(css).not.toMatch(/--ff-deal-products-qc-gap/);
+    expect(css).not.toMatch(/\[data-ff-deal-products-column\] \{\s*bottom:/);
     expect(css).toMatch(/--ff-deal-tab-group-gap:\s*3rem;/);
     expect(css).toMatch(/--ff-deal-tab-group-pad:\s*0\.75rem;/);
     expect(css).toMatch(

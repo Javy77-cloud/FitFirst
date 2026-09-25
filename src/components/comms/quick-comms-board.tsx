@@ -112,6 +112,7 @@ export function QuickCommsBoard({
   officeAddress = null,
   clientAddress = null,
   initialKind = null,
+  leading = null,
 }: {
   items: SerializedActivity[];
   dealId?: string | null;
@@ -131,6 +132,8 @@ export function QuickCommsBoard({
   clientAddress?: string | null;
   /** Open this action when mounted (from ?qc= or a row quick action). */
   initialKind?: ActivityKind | null;
+  /** Deal policy-form line, sitting on the top edge above this board. */
+  leading?: ReactNode;
 }) {
   const [kind, setKind] = useState<ActivityKind>(initialKind ?? "task");
   const [meetingType, setMeetingType] = useState<MeetingType>("in_office");
@@ -400,7 +403,7 @@ export function QuickCommsBoard({
 
   return (
     <section
-      className="ff-card min-w-0 w-full max-w-full p-4"
+      className="ff-card min-w-0 w-full max-w-full overflow-visible p-4"
       data-ff-quick-comms-board=""
       data-ff-quick-comms-deal={dealId ?? undefined}
       data-ff-quick-comms-lead={leadId ?? undefined}
@@ -408,6 +411,7 @@ export function QuickCommsBoard({
       data-ff-quick-comms-account={accountId ?? undefined}
       data-ff-quick-comms-policy={policyId ?? undefined}
     >
+      {leading ? <div className="mb-3">{leading}</div> : null}
       <h2 className="text-base font-semibold text-navy">Quick Communications</h2>
       <p className="mt-1 text-base text-muted-foreground">
         {carrierId

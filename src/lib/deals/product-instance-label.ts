@@ -1,3 +1,4 @@
+import { formatPropertyAddress } from "@/lib/address-links";
 import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
 import { productChipLabel } from "@/lib/deals/product-chip-label";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
@@ -14,8 +15,30 @@ export type ProductInstanceLabelInput = {
   sheetForm?: string | null;
   address?: string | null;
   city?: string | null;
+  state?: string | null;
+  zip?: string | null;
   vehicles?: readonly VehicleLabelFact[] | null;
 };
+
+/** Dropdown line: form code plus the full address when one exists. */
+export function policyFormMenuLabel(input: {
+  code: string;
+  fallback: string;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+}): string {
+  const line = formatPropertyAddress({
+    address1: input.address,
+    city: input.city,
+    state: input.state,
+    zip: input.zip,
+  });
+  if (!line) return input.fallback;
+  const code = input.code.trim();
+  return code ? `${code} · ${line}` : line;
+}
 
 const DIRECTIONALS: Record<string, string> = {
   n: "North",
