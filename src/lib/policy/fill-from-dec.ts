@@ -166,6 +166,21 @@ export function manualFillReasonError(
   return null;
 }
 
+/** Platform kill (Vercel 504 / Next server-action HTML) has no useful message. */
+export function fillDecCaughtError(error: unknown): string {
+  const raw = error instanceof Error ? error.message.replace(/\s+/g, " ").trim() : "";
+  if (
+    !raw ||
+    /unexpected response was received from the server/i.test(raw) ||
+    /failed to fetch/i.test(raw) ||
+    /network error/i.test(raw) ||
+    /timed out|timeout/i.test(raw)
+  ) {
+    return "Fill timed out before it could finish. Try again.";
+  }
+  return raw.slice(0, 300);
+}
+
 export function formatFillServerTime(now: Date): string {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
