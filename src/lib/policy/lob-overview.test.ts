@@ -1,8 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { createElement, type ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+import { LobOverviewSections } from "@/components/policy/lob-overview-sections";
 import {
   buildLobOverviewSections,
   resolveLobOverviewFamily,
 } from "./lob-overview";
+
+vi.mock("next/link", () => ({
+  default: ({ href, children }: { href: string; children: ReactNode }) =>
+    createElement("a", { href }, children),
+}));
 
 describe("LOB overview templates", () => {
   it("maps lines to families", () => {
@@ -35,8 +43,12 @@ describe("LOB overview templates", () => {
     expect(sections.map((s) => s.id)).toEqual(["dwelling", "mortgagee"]);
     expect(sections.find((s) => s.id === "mortgagee")?.pointer?.href).toContain("tab=coverage");
     const dwelling = sections.find((s) => s.id === "dwelling")?.fields ?? [];
-    expect(dwelling.map((f) => f.key)).toEqual(["coverageA", "yearBuilt", "construction"]);
+    expect(dwelling.map((f) => f.key)).toEqual(["coverageA", "yearBuilt", "occupancy"]);
+    expect(dwelling.find((f) => f.key === "yearBuilt")?.label).toBe("Year built");
     expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("1992");
+    expect(dwelling.find((f) => f.key === "occupancy")?.label).toBe("Occupancy");
+    expect(dwelling.find((f) => f.key === "occupancy")?.value).toBe("—");
+    expect(dwelling.some((f) => f.key === "construction" || f.label === "Construction")).toBe(false);
     expect(dwelling.some((f) => f.key === "premises" || f.key === "roofYear")).toBe(false);
   });
 
@@ -54,15 +66,79 @@ describe("LOB overview templates", () => {
       monthsOccupied: "9 to 12 Months",
     });
     const dwelling = sections.find((s) => s.id === "dwelling")?.fields ?? [];
-    expect(dwelling.find((f) => f.key === "construction")?.value).toBe("Masonry");
+    expect(dwelling.find((f) => f.key === "yearBuilt")?.label).toBe("Year built");
     expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("2024");
+    expect(dwelling.some((f) => f.label === "Year of Construction")).toBe(false);
+    expect(dwelling.some((f) => f.key === "construction" || f.label === "Construction")).toBe(false);
+    expect(dwelling.some((f) => f.value === "Masonry")).toBe(false);
     expect(dwelling.find((f) => f.key === "roofYear")?.value).toBe("2024");
     expect(dwelling.find((f) => f.key === "occupancy")?.label).toBe("Occupancy");
     expect(dwelling.find((f) => f.key === "occupancy")?.value).toBe("Owner");
+    expect(dwelling.find((f) => f.key === "dwellingType")?.label).toBe("Dwelling type");
     expect(dwelling.find((f) => f.key === "dwellingType")?.value).toBe("Single Family");
     expect(dwelling.find((f) => f.key === "typeOfResidence")?.value).toBe("Owner Occupied");
     expect(dwelling.find((f) => f.key === "monthsOccupied")?.value).toBe("9 to 12 Months");
     expect(dwelling.find((f) => f.key === "occupancy")?.hint).toBeUndefined();
+    expect(dwelling.every((f) => !f.hint)).toBe(true);
+
+    const html = renderToStaticMarkup(
+      createElement(LobOverviewSections, {
+        input: {
+          policyId: "p1",
+          lineOfBusiness: "HO3",
+          coverageA: 337000,
+          yearBuilt: 2024,
+          roofYear: 2024,
+          construction: "Masonry",
+          occupancy: "Owner",
+          dwellingType: "Single Family",
+          typeOfResidence: "Owner Occupied",
+          monthsOccupied: "9 to 12 Months",
+        },
+      }),
+    );
+    expect(html).toContain("Year built");
+    expect(html).toContain("2024");
+    expect(html).toContain("Occupancy");
+    expect(html).toContain("Owner");
+    expect(html).toContain("Dwelling type");
+    expect(html).toContain("Single Family");
+    expect(html).not.toContain("Year of Construction");
+    expect(html).not.toContain(">Construction<");
+    expect(html).not.toContain("Masonry");
+    expect(html).not.toContain("Not on file");
+    expect(html).toContain("sm:grid-cols-2 lg:grid-cols-3");
+    expect(html).not.toContain("1fr");
+  });
+
+  it("normalizes Owner Occupied and Tenant into the occupancy slot", () => {
+    const fromResidence = buildLobOverviewSections({
+      policyId: "p1",
+      lineOfBusiness: "HO3",
+      typeOfResidence: "Owner Occupied",
+    });
+    const residenceFields = fromResidence.find((s) => s.id === "dwelling")?.fields ?? [];
+    expect(residenceFields.find((f) => f.key === "occupancy")?.value).toBe("Owner");
+    expect(residenceFields.find((f) => f.key === "typeOfResidence")?.value).toBe("Owner Occupied");
+
+    const tenant = buildLobOverviewSections({
+      policyId: "p1",
+      lineOfBusiness: "HO3",
+      occupancy: "Tenant",
+      typeOfResidence: "Owner Occupied",
+    });
+    expect(
+      tenant.find((s) => s.id === "dwelling")?.fields.find((f) => f.key === "occupancy")?.value,
+    ).toBe("Tenant");
+
+    const printed = buildLobOverviewSections({
+      policyId: "p1",
+      lineOfBusiness: "HO3",
+      occupancy: "Owner Occupied",
+    });
+    expect(
+      printed.find((s) => s.id === "dwelling")?.fields.find((f) => f.key === "occupancy")?.value,
+    ).toBe("Owner");
   });
 
   it("treats DP, manufactured home, and rentals as home lines", () => {

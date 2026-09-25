@@ -6,7 +6,7 @@ import { ProcessingLabel, WaitHold } from "@/components/desk/wait-hold";
 import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
 import { policyInformationFields } from "@/lib/desk/policy-information";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
-import { sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
+import { mapGeminiJsonToFields, sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
 import { autoCoverageExtras, autoCoverageSchedule, autoVehicleCoverageBlocks } from "@/lib/policy/auto-coverage";
 import {
   buildPolicyFillAuditInsert,
@@ -326,6 +326,100 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.homeComputer).toBeUndefined();
     expect(proposed.waterBackup).toBeUndefined();
     expect(proposed.aopDeductible).toBeUndefined();
+  });
+
+  it("maps the rating block through Gemini onto occupancy, year built, and construction", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        construction_type: { value: "Masonry", confidence: 0.96 },
+        year_of_construction: { value: "2024", confidence: 0.96 },
+        year_of_roof_updated: { value: "2024", confidence: 0.96 },
+        type_of_residence: { value: "Owner Occupied", confidence: 0.96 },
+        dwelling_type: { value: "Single Family", confidence: 0.96 },
+        number_of_months_occupied: { value: "9 to 12 Months", confidence: 0.96 },
+        occupancy: { value: "Owner", confidence: 0.96 },
+      },
+      "dec",
+    );
+    expect(sheetKeysForGeminiKey("year_of_construction")).toEqual(["year_built"]);
+    expect(sheetKeysForGeminiKey("construction_type")).toEqual(["construction"]);
+    expect(sheetKeysForGeminiKey("year_of_roof_updated")).toEqual(["roof_year"]);
+    expect(sheetKeysForGeminiKey("number_of_months_occupied")).toEqual(["months_occupied"]);
+    expect(sheetKeysForGeminiKey("occupancy")).toEqual(["occupancy"]);
+    expect(sheetKeysForGeminiKey("type_of_residence")).toEqual(["type_of_residence"]);
+    expect(sheetKeysForGeminiKey("dwelling_type")).toEqual(["dwelling_type"]);
+
+    const byKey = Object.fromEntries(mapped.fields.map((field) => [field.fieldKey, field.normalizedValue]));
+    expect(byKey.construction).toBe("Masonry");
+    expect(byKey.year_built).toBe("2024");
+    expect(byKey.roof_year).toBe("2024");
+    expect(byKey.occupancy).toBe("Owner");
+    expect(byKey.type_of_residence).toBe("Owner Occupied");
+    expect(byKey.dwelling_type).toBe("Single Family");
+    expect(byKey.months_occupied).toBe("9 to 12 Months");
+
+    const proposed = proposeFillFromDec({ family: "homeowners", rows: mapped.fields });
+    expect(proposed.occupancy).toBe("Owner");
+    expect(proposed.yearBuilt).toBe("2024");
+    expect(proposed.construction).toBe("Masonry");
+    expect(proposed.dwellingType).toBe("Single Family");
+    expect(proposed.roofYear).toBe("2024");
+    expect(proposed.monthsOccupied).toBe("9 to 12 Months");
+    expect(proposed.typeOfResidence).toBe("Owner Occupied");
+    expect(proposed.formType).toBeUndefined();
+
+    const patch = groupAppliedFill(proposed, Object.keys(proposed));
+    expect(patch.risk.occupancy).toBe("Owner");
+    expect(patch.risk.yearBuilt).toBe(2024);
+    expect(patch.risk.construction).toBe("Masonry");
+    expect(patch.risk.roofYear).toBe(2024);
+    expect(patch.coverageLimits.dwelling_type).toBe("Single Family");
+    expect(patch.coverageLimits.months_occupied).toBe("9 to 12 Months");
+    expect(patch.coverageLimits.type_of_residence).toBe("Owner Occupied");
+  });
+
+  it("fills occupancy from type of residence when the occupancy line is omitted", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        form: "HO3",
+        construction_type: "Masonry",
+        year_of_construction: "2024",
+        type_of_residence: "Owner Occupied",
+        dwelling_type: "Single Family",
+      }),
+    });
+    expect(proposed.occupancy).toBe("Owner");
+    expect(proposed.typeOfResidence).toBe("Owner Occupied");
+    expect(proposed.construction).toBe("Masonry");
+    expect(proposed.yearBuilt).toBe("2024");
+    expect(proposed.formType).toBe("HO3");
+  });
+
+  it("keeps an explicit occupancy ahead of type of residence", () => {
+    const tenant = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        occupancy: "Tenant",
+        type_of_residence: "Owner Occupied",
+        construction_type: "Masonry",
+      }),
+    });
+    expect(tenant.occupancy).toBe("Tenant");
+    expect(tenant.construction).toBe("Masonry");
+
+    const occupied = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ occupancy: "Owner Occupied" }),
+    });
+    expect(occupied.occupancy).toBe("Owner");
+
+    const blank = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ occupancy: "None", type_of_residence: "Owner Occupied" }),
+    });
+    expect(blank.occupancy).toBe("None");
+    expect(blank.typeOfResidence).toBe("Owner Occupied");
   });
 
   it("keeps a stick-built HO5 when only a carrier name is present", () => {
