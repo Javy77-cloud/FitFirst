@@ -57,7 +57,7 @@ export function PolicyFormDropup({
         data-ff-policy-form-menu=""
         data-ff-policy-form-dropup=""
         hidden={!open}
-        className="absolute bottom-full left-0 z-30 mb-2 w-max min-w-[12rem] max-w-[22rem] rounded-md border border-[var(--ff-border)] bg-white shadow-md"
+        className="absolute bottom-full left-0 z-30 mb-2 w-max min-w-[12rem] max-w-[min(42rem,90vw)] rounded-md border border-[var(--ff-border)] bg-white shadow-md"
       >
         <span
           className="pointer-events-none absolute -bottom-1 left-4 size-2 rotate-45 border-b border-r border-[var(--ff-border)] bg-white"

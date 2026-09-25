@@ -9,6 +9,7 @@ import {
 import { parseProductInstanceToken } from "@/lib/deals/product-instances";
 import {
   activeProductFieldCh,
+  policyFormFullMenuLabel,
   policyFormMenuLabel,
   productCodeLabel,
   type VehicleLabelFact,
@@ -121,7 +122,7 @@ export function DealLineSwitcher({
     const label =
       labels[product] ??
       productChipLabel({ product: productId, quotingForm: formLabels[product] ?? formLabels[productId] });
-    const menuLabel = policyFormMenuLabel({
+    const labelInput = {
       code: productCodeLabel({
         productId,
         quotingForm: facts?.quotingForm ?? formLabels[product] ?? formLabels[productId],
@@ -132,7 +133,9 @@ export function DealLineSwitcher({
       city: facts?.city,
       state: facts?.state,
       zip: facts?.zip,
-    });
+    };
+    const menuLabel = policyFormMenuLabel(labelInput);
+    const fullMenuLabel = policyFormFullMenuLabel(labelInput);
     const stageLabel = productChipStageLabelForState({
       stage,
       selectedQuoteIds: stages[product]?.selectedQuoteIds,
@@ -149,6 +152,7 @@ export function DealLineSwitcher({
       def,
       label,
       menuLabel,
+      fullMenuLabel,
       stage,
       stageLabel,
       issuedDone,
@@ -189,7 +193,7 @@ export function DealLineSwitcher({
                 data-ff-product-stage={row.stage ?? ""}
                 data-ff-product-issued-done={row.issuedDone ? "1" : "0"}
                 data-ff-shopping-active={row.issuedDone ? "0" : "1"}
-                title={row.quotesMissing ? row.gap?.summary : row.menuLabel}
+                title={row.quotesMissing ? row.gap?.summary : row.fullMenuLabel}
                 data-active={row.selected ? "true" : "false"}
                 aria-current={row.selected ? "page" : undefined}
               >
@@ -204,7 +208,7 @@ export function DealLineSwitcher({
                       !
                     </span>
                   ) : null}
-                  <span className="min-w-0 flex-1">{row.menuLabel}</span>
+                  <span className="min-w-0 flex-1">{row.fullMenuLabel}</span>
                   {row.issuedDone ? (
                     <span
                       className="shrink-0 rounded-sm border border-current px-1 text-[9px] font-extrabold uppercase tracking-wider text-emerald-800"
@@ -228,7 +232,7 @@ export function DealLineSwitcher({
           </div>
         </PolicyFormDropup>
         <div className="flex w-full items-center justify-between gap-3" data-ff-policy-form-caption="">
-          <p className="shrink-0 text-[13px] font-semibold text-[var(--ff-red)]">Products</p>
+          <p className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Products</p>
           {picker}
         </div>
       </div>
