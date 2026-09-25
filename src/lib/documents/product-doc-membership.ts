@@ -185,6 +185,33 @@ export function libraryDocsNotInProductWindow<T extends { tags?: readonly string
   return (docs ?? []).filter((doc) => !docBelongsToProductWindow(doc, window));
 }
 
+export function hasProductMembership(tags: readonly string[] | null | undefined): boolean {
+  return (
+    shopLinesFromDocTags(tags).length > 0 ||
+    formIdsFromDocTags(tags).length > 0 ||
+    instanceKeysFromDocTags(tags).length > 0
+  );
+}
+
+/**
+ * Live files for a deal's document library.
+ * Hidden deletes and untagged leftovers stay out — they are not listed again.
+ */
+export function liveDealLibraryDocs<
+  T extends {
+    tags?: readonly string[] | null;
+    status?: string | null;
+    slot?: string | null;
+    docType?: string | null;
+  },
+>(docs: readonly T[] | null | undefined): T[] {
+  return (docs ?? []).filter((doc) => {
+    if (doc.status === "hidden") return false;
+    if (!isSourceDocForMembership(doc)) return false;
+    return hasProductMembership(doc.tags);
+  });
+}
+
 export function multiProductMembershipWarning(tags: readonly string[] | null | undefined): string | null {
   const lines = shopLinesFromDocTags(tags);
   if (lines.length < 2) return null;

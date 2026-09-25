@@ -14,7 +14,6 @@ import { dealDocumentsTabHref, type DealDocumentsSaveResult } from "@/lib/docume
 import { isRedirectError } from "@/lib/lifecycle/shop";
 import { formTag, leadDocFormById, lineTag } from "@/lib/leads/line-documents";
 import {
-  linkDocToProductTags,
   membershipTagsForUpload,
   unlinkDocFromProductTags,
 } from "@/lib/documents/product-doc-membership";
@@ -1338,23 +1337,4 @@ export async function unlinkDealDocumentFromProduct(formData: FormData) {
   revalidateDocumentPaths(doc);
   const href = dealDocumentsReturnHref(formData, doc.dealId);
   if (href) flashAction(href, "document-unlinked-from-product");
-}
-
-/** Link an existing deal-library file into the active product window. */
-export async function linkDealDocumentToProduct(formData: FormData) {
-  const documentId = String(formData.get("documentId") ?? "").trim();
-  if (!documentId) return;
-  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
-  if (!doc || !doc.dealId) return;
-  const lineRaw = String(formData.get("line") ?? "").trim();
-  const quotingForm = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
-  const nextTags = linkDocToProductTags(doc.tags, {
-    shopLine: lineRaw || null,
-    quotingForm: quotingForm || null,
-    instanceKey: optionalId(formData, "productInstance"),
-  });
-  await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
-  revalidateDocumentPaths(doc);
-  const href = dealDocumentsReturnHref(formData, doc.dealId);
-  if (href) flashAction(href, "document-linked-to-product");
 }

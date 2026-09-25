@@ -10,6 +10,7 @@ import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
 import { TypeCarrierBrowse } from "@/components/documents/type-carrier-browse";
 import { buttonVariants } from "@/components/ui/button";
 import {
+  documentsForEntity,
   folderFileCounts,
   getFolder,
   listDocumentsInFolder,
@@ -20,6 +21,8 @@ import { listDealLookup, listFormTemplates } from "@/lib/db/queries";
 import { listRecentDocumentPipelineJobs } from "@/lib/document-pipeline/store";
 import { isDocumentPipelineJobType, isDocumentPipelineStatus } from "@/lib/document-pipeline/types";
 import { buildFolderTree, libraryHref, libraryLabel, parseLibrary } from "@/lib/documents/library";
+import { liveDealLibraryDocs } from "@/lib/documents/product-doc-membership";
+import { isUuid } from "@/lib/ids";
 import { groupFoldersByTypeAndCarrier } from "@/lib/documents/type-folders";
 import { docusignSandboxIdentity } from "@/lib/integrations/docusign-envelopes";
 import { folderBreadcrumbs } from "@/lib/ops/documents";
@@ -42,6 +45,8 @@ export default async function DocumentsPage({
   );
   const folderId = typeof params.folder === "string" ? params.folder : "";
   const notice = typeof params.notice === "string" ? params.notice : "";
+  const dealParam = typeof params.deal === "string" ? params.deal : "";
+  const dealLibraryId = isUuid(dealParam) ? dealParam : "";
   const folder = folderId ? await getFolder(folderId) : null;
 
   const [libraryFolders, { counts }, templates, deals, recentJobs, docusign] = await Promise.all([
@@ -53,9 +58,11 @@ export default async function DocumentsPage({
     docusignSandboxIdentity(),
   ]);
 
-  const files = folder
-    ? await listDocumentsInFolder(folder.id)
-    : await listLibraryDocuments(library, null);
+  const files = dealLibraryId
+    ? liveDealLibraryDocs(await documentsForEntity({ dealId: dealLibraryId }))
+    : folder
+      ? await listDocumentsInFolder(folder.id)
+      : await listLibraryDocuments(library, null);
 
   const tree = buildFolderTree(
     libraryFolders.map((row) => ({

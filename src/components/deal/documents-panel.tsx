@@ -10,12 +10,11 @@ import type { CompletenessReport } from "@/lib/completeness/report";
 import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
-import { dealDocumentsTabHref, listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
+import { listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
 import { libraryHref } from "@/lib/documents/library";
-import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
 import {
   filterDocsForProductWindow,
-  libraryDocsNotInProductWindow,
+  liveDealLibraryDocs,
 } from "@/lib/documents/product-doc-membership";
 import { inspectionUploadIds } from "@/lib/quote-sheet/home-inspections";
 import type { DocSlotProduct } from "@/lib/documents/doc-slot-advance";
@@ -95,7 +94,7 @@ export function DocumentsPanel({
   const { sourceDocs, lineDocs, otherSourceDocs } = listWorksheetSourceDocs(docs);
   const windowLineDocs = filterDocsForProductWindow(lineDocs, productWindow);
   const windowOtherDocs = filterDocsForProductWindow(otherSourceDocs, productWindow);
-  const libraryCandidates = libraryDocsNotInProductWindow(sourceDocs, productWindow);
+  const libraryDocs = liveDealLibraryDocs(sourceDocs);
   const inspectionUploads = inspectionUploadIds(
     asList(docs).map((row) => ({
       id: row.id,
@@ -170,18 +169,17 @@ export function DocumentsPanel({
             />
             <div className="mt-2 flex justify-end">
               <Link
-                href={libraryHref({ library: "shared" })}
+                href={libraryHref({ library: "shared", dealId })}
                 className="text-xs font-semibold text-primary hover:underline"
                 data-ff-deal-library-link=""
-                data-ff-deal-library-count={libraryCandidates.length}
+                data-ff-deal-library-count={libraryDocs.length}
               >
-                Deal Document Library ({libraryCandidates.length})
+                Deal Document Library ({libraryDocs.length})
               </Link>
             </div>
             </div>
           </details>
           <DealFormSends dealId={dealId} />
-          <RecentlyDeletedFiles dealId={dealId} returnTo={dealDocumentsTabHref(dealId, formLine)} />
         </div>
 
         <div className="w-full min-w-0 space-y-3" data-ff-deal-docs-sheet>
