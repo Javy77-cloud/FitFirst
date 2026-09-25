@@ -883,7 +883,7 @@ export default async function DealPage({
           }
           banner={null}
           sidePanel={
-            <div className="min-w-0 w-full space-y-3" data-ff-deal-rail-stack="">
+            <div className="min-w-0 w-full space-y-2" data-ff-deal-rail-stack="">
               <div className="relative min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
                 {dealProducts.length ? (
                   <div
@@ -1097,7 +1097,7 @@ export default async function DealPage({
                         }}
                       />
                     ) : id === "markets" ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {sheetLine === "life" ? (
                           <LifeAppetiteHelper
                             selectedLabels={lifeAppetite.selectedLabels}

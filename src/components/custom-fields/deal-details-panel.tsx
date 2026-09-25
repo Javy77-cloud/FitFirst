@@ -474,7 +474,7 @@ export function DealDetailsPanel({
         {productInstance ? <input type="hidden" name="productInstance" value={productInstance} /> : null}
         {activePackageLine ? <input type="hidden" name="activePackageLine" value={activePackageLine} /> : null}
       <section
-        className="ff-card mb-3 space-y-2 overflow-hidden p-3"
+        className="ff-card mb-2 space-y-2 overflow-hidden p-3"
         data-ff-deal-section="pipeline"
         data-ff-pipeline-strip=""
         data-ff-pipeline-row="1"
@@ -523,7 +523,7 @@ export function DealDetailsPanel({
           let mhoPlacedInColumn = false;
           const isRightColumn = column.id === "right";
           return (
-          <div key={column.id} className="min-w-0 space-y-3" data-ff-deal-details-col={column.id}>
+          <div key={column.id} className="min-w-0 space-y-2" data-ff-deal-details-col={column.id}>
             {asList(column.sections).map((section) => {
               if (isPipelineStripSection(section)) return null;
               if (isDealPreferencesSection(section)) return null;

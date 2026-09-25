@@ -129,7 +129,7 @@ export function LifeHealthQuotesPanel({
   const familyLabel = shopLine === "health" ? "Health" : "Life";
 
   return (
-    <div className="relative flex flex-col gap-4" data-ff-life-health-quotes="" data-ff-quotes-line={shopLine}>
+    <div className="relative flex flex-col gap-2" data-ff-life-health-quotes="" data-ff-quotes-line={shopLine}>
       {shopLine === "health" && healthSherpaEnrollment ? (
         <section className="ff-card space-y-1 p-4" data-ff-healthsherpa-quote-status="">
           {createNotice ? <div className="mb-2" data-ff-quotes-head="">{createNotice}</div> : null}

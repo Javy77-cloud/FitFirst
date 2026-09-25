@@ -39,7 +39,11 @@ describe("Won-Lost + Archived parking tabs", () => {
     expect(css).toMatch(
       /\[data-ff-deal-workspace\] \[data-ff-deal-products-column\] \{\s*bottom:\s*calc\(100% \+ var\(--ff-deal-products-qc-gap\)\);/,
     );
-    expect(css).toMatch(/--ff-deal-tab-group-gap:\s*3rem;/);
+    expect(css).toMatch(/--ff-deal-tab-group-gap:\s*1rem;/);
+    expect(css).toMatch(
+      /\[data-ff-deal-workspace\] \[data-ff-deal-tab-panel\] \{[^}]*padding-top:\s*0\.75rem !important;/,
+    );
+    expect(css).not.toMatch(/50px \+ var\(--ff-deal-products-headroom\)/);
     expect(css).toMatch(/--ff-deal-tab-group-pad:\s*0\.75rem;/);
     expect(css).toMatch(
       /\[data-ff-deal-workspace\] \[data-ff-deal-tab-row-wrap\] \{[^}]*margin-top:\s*calc\(1\.25rem \+ var\(--ff-deal-tab-group-gap\)\) !important;/,
