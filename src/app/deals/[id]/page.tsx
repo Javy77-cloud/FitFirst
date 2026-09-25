@@ -522,9 +522,15 @@ export default async function DealPage({
           ownRisk: riskForInstance(propertyRiskRows, instance.key, legacyPropertyKey),
         })
       : null;
+    const sheetFacts = addressFactsFromSheetValues(sheet?.values);
     const facts = insured
-      ? { address: insured.street, city: insured.city }
-      : addressFactsFromSheetValues(sheet?.values);
+      ? {
+          address: insured.street,
+          city: insured.city,
+          state: insured.state,
+          zip: insured.zip,
+        }
+      : { address: sheetFacts.address, city: sheetFacts.city, state: "", zip: "" };
     return {
       key: instance.key,
       productId: instance.productId,
@@ -532,6 +538,8 @@ export default async function DealPage({
       sheetForm: sheet?.values?.quoting_form?.value ?? null,
       address: facts.address,
       city: facts.city,
+      state: facts.state,
+      zip: facts.zip,
       vehicles: vehiclesFromSheetValues(sheet?.values),
     };
   });
@@ -884,100 +892,99 @@ export default async function DealPage({
           banner={null}
           sidePanel={
             <div className="min-w-0 w-full space-y-3" data-ff-deal-rail-stack="">
-              <div className="relative min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
-                {dealProducts.length ? (
-                  <div
-                    className="absolute inset-x-0 z-20 w-full"
-                    data-ff-deal-products-column=""
-                  >
-                    <DealLineSwitcher
-                      layout="rail"
-                    dealId={deal.id}
-                    products={productInstances.map((row) => row.key)}
-                    active={activeInstance.key}
-                    tab={activeTab}
-                    labels={Object.fromEntries(instanceLabels)}
-                    labelFacts={Object.fromEntries(
-                      instanceLabelRows.map((row) => [row.key, row]),
-                    )}
-                    quoteGaps={Object.fromEntries(
-                      productInstances.map((instance) => {
-                        const id = instance.key;
-                        const gap = quoteCompletenessByProduct[id];
-                        return [
-                          id,
-                          gap
-                            ? {
-                                complete: gap.complete,
-                                shopped: gap.shopped,
-                                summary: gap.summary,
-                              }
-                            : { complete: false, shopped: false, summary: "Missing quotes" },
-                        ];
-                      }),
-                    )}
-                    stages={Object.fromEntries(
-                      productInstances.map((instance) => {
-                        const state = productStageFor(
-                          productStages,
-                          instance.key,
-                          stageView.slug ?? deal.pipelineStage,
-                        );
-                        return [
-                          instance.key,
-                          {
-                            stage: state.stage,
-                            lostReason: state.lostReason,
-                            selectedQuoteIds: state.selectedQuoteIds,
-                            policyId: state.policyId,
-                            mintStatus: state.mintStatus,
-                            issuedDone: state.issuedDone,
-                          },
-                        ];
-                      }),
-                    )}
-                    formLabels={Object.fromEntries(
-                      productInstances.map((instance) => {
-                        const line = storageLineForInstance(instance, productInstances);
-                        const sheet = sheets.find((row) => row.line === line);
-                        const fromSheet =
-                          quotingFormFromSheet(sheet?.values) ??
-                          resolveLineQuotingForm({
-                            sheetValues: sheet?.values,
-                            sheetLine: sheetLine,
-                            dealQuotingForm: deal.quotingForm,
-                            dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
-                            dealLineOfBusiness: deal.lineOfBusiness,
-                          });
-                        return [
-                          instance.key,
-                          sheetFormForProduct(instance.productId, fromSheet) ??
-                            dealProductDef(instance.productId).quotingForm,
-                        ];
-                      }),
-                    )}
-                    complete={Object.fromEntries(
-                      productInstances.map((instance) => [
-                        instance.key,
-                        Boolean(quoteCompletenessByProduct[instance.key]?.complete),
-                      ]),
-                    )}
-                    progress={Object.fromEntries(
-                      productInstances.map((instance) => {
-                        const gap = quoteCompletenessByProduct[instance.key];
-                        const fromFields = productSectionProgress(instance.productId, dealValues);
-                        return [
-                          instance.key,
-                          gap?.complete
-                            ? { ...fromFields, complete: true, pct: 100 }
-                            : { ...fromFields, complete: false, pct: 0 },
-                        ];
-                      }),
-                    )}
-                  />
-                  </div>
-                ) : null}
+              <div className="relative min-w-0 w-full max-w-full overflow-visible" data-ff-deal-quick-comms="">
                 <QuickCommsBoard
+                  leading={
+                    dealProducts.length ? (
+                      <div data-ff-deal-products-column="">
+                        <DealLineSwitcher
+                          layout="rail"
+                          dealId={deal.id}
+                          products={productInstances.map((row) => row.key)}
+                          active={activeInstance.key}
+                          tab={activeTab}
+                          labels={Object.fromEntries(instanceLabels)}
+                          labelFacts={Object.fromEntries(
+                            instanceLabelRows.map((row) => [row.key, row]),
+                          )}
+                          quoteGaps={Object.fromEntries(
+                            productInstances.map((instance) => {
+                              const id = instance.key;
+                              const gap = quoteCompletenessByProduct[id];
+                              return [
+                                id,
+                                gap
+                                  ? {
+                                      complete: gap.complete,
+                                      shopped: gap.shopped,
+                                      summary: gap.summary,
+                                    }
+                                  : { complete: false, shopped: false, summary: "Missing quotes" },
+                              ];
+                            }),
+                          )}
+                          stages={Object.fromEntries(
+                            productInstances.map((instance) => {
+                              const state = productStageFor(
+                                productStages,
+                                instance.key,
+                                stageView.slug ?? deal.pipelineStage,
+                              );
+                              return [
+                                instance.key,
+                                {
+                                  stage: state.stage,
+                                  lostReason: state.lostReason,
+                                  selectedQuoteIds: state.selectedQuoteIds,
+                                  policyId: state.policyId,
+                                  mintStatus: state.mintStatus,
+                                  issuedDone: state.issuedDone,
+                                },
+                              ];
+                            }),
+                          )}
+                          formLabels={Object.fromEntries(
+                            productInstances.map((instance) => {
+                              const line = storageLineForInstance(instance, productInstances);
+                              const sheet = sheets.find((row) => row.line === line);
+                              const fromSheet =
+                                quotingFormFromSheet(sheet?.values) ??
+                                resolveLineQuotingForm({
+                                  sheetValues: sheet?.values,
+                                  sheetLine: sheetLine,
+                                  dealQuotingForm: deal.quotingForm,
+                                  dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
+                                  dealLineOfBusiness: deal.lineOfBusiness,
+                                });
+                              return [
+                                instance.key,
+                                sheetFormForProduct(instance.productId, fromSheet) ??
+                                  dealProductDef(instance.productId).quotingForm,
+                              ];
+                            }),
+                          )}
+                          complete={Object.fromEntries(
+                            productInstances.map((instance) => [
+                              instance.key,
+                              Boolean(quoteCompletenessByProduct[instance.key]?.complete),
+                            ]),
+                          )}
+                          progress={Object.fromEntries(
+                            productInstances.map((instance) => {
+                              const gap = quoteCompletenessByProduct[instance.key];
+                              const fromFields = productSectionProgress(instance.productId, dealValues);
+                              return [
+                                instance.key,
+                                gap?.complete
+                                  ? { ...fromFields, complete: true, pct: 100 }
+                                  : { ...fromFields, complete: false, pct: 0 },
+                              ];
+                            }),
+                          )}
+                        />
+                      </div>
+                    ) : null
+                  }
                   items={comms}
                   dealId={deal.id}
                   leadId={deal.leadId}

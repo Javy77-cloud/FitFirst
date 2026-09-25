@@ -270,7 +270,7 @@ describe("per-product address edits", () => {
       sheetValues: { property_address: { value: "10358 NW 30th TER" } },
       ownRisk: null,
     });
-    expect(bare).toEqual({ street: "", city: "" });
+    expect(bare).toEqual({ street: "", city: "", state: "", zip: "" });
     expect(
       labelProductInstances([{ key: "homeowners", productId: "homeowners", quotingForm: "HO3", address: bare.street }]).get(
         "homeowners",
