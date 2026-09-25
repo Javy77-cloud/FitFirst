@@ -202,9 +202,9 @@ describe("DealPackageShell address display", () => {
     expect(html).not.toContain("1980-01-02");
     expect(html).toContain("Javy");
     expect(html).toContain("Name");
-    expect(html).toContain("Phones");
+    expect(html).toContain("Phone");
     expect(html).toContain("DOB");
-    expect(html).toContain("Owner");
+    expect(html).toContain("Producer");
     expect(html).toMatch(/data-ff-header-address="insured"/);
     expect(html).toMatch(/data-ff-header-address="mailing"/);
     expect(html).toMatch(/data-ff-header-mailing-same="1"/);
@@ -276,11 +276,11 @@ describe("DealPackageShell address display", () => {
     const shell = source("src/components/deal/deal-package-shell.tsx");
     const page = source("src/app/deals/[id]/page.tsx");
     expect(shell).toMatch(/label: "Name"/);
-    expect(shell).toMatch(/label: "Phones"/);
+    expect(shell).toMatch(/label: "Phone"/);
     expect(shell).toMatch(/label: "DOB"/);
     expect(shell).toMatch(/formatHeaderDob\(dob\)/);
     expect(shell).toMatch(/uniqueDisplayPhones/);
-    expect(shell).toMatch(/label: "Owner"/);
+    expect(shell).toMatch(/label: "Producer"/);
     expect(shell).toContain("INSURED_ADDRESS_LABEL");
     expect(shell).toContain("MAILING_ADDRESS_LABEL");
     expect(shell).toMatch(/mailingHeaderValue/);
@@ -313,9 +313,9 @@ describe("DealPackageShell address display", () => {
     );
     expect(html).toMatch(/data-ff-header-cols="name-stage,phones-owner,dob-activity,insured-mailing"/);
     expect(html.indexOf("Name")).toBeLessThan(html.indexOf("Pipeline"));
-    expect(html.indexOf("Pipeline")).toBeLessThan(html.indexOf("Phones"));
-    expect(html.indexOf("Phones")).toBeLessThan(html.indexOf("Owner"));
-    expect(html.indexOf("Owner")).toBeLessThan(html.indexOf("DOB"));
+    expect(html.indexOf("Pipeline")).toBeLessThan(html.indexOf("Phone"));
+    expect(html.indexOf("Phone")).toBeLessThan(html.indexOf("Producer"));
+    expect(html.indexOf("Producer")).toBeLessThan(html.indexOf("DOB"));
     expect(html.indexOf("DOB")).toBeLessThan(html.indexOf("Activity"));
     expect(html.indexOf("Activity")).toBeLessThan(html.indexOf(INSURED_ADDRESS_LABEL));
     expect(html.indexOf(INSURED_ADDRESS_LABEL)).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));

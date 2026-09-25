@@ -53,8 +53,8 @@ export function DealPackageShell({
       { label: "Pipeline", value: humanizeDealStage(stage), key: "stage", control: stageControl },
     ],
     [
-      { label: "Phones", value: phoneText, key: "phones" },
-      { label: "Owner", value: owner?.trim() || "—", key: "owner" },
+      { label: "Phone", value: phoneText, key: "phones" },
+      { label: "Producer", value: owner?.trim() || "—", key: "owner" },
     ],
     [
       { label: "DOB", value: formatHeaderDob(dob), key: "dob" },
