@@ -66,7 +66,7 @@ export function DealPackageLinesForm({
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        {link ? "Add or change product" : open ? "Hide product picker" : "Add / change products"}
+        {link ? "Add or change" : open ? "Hide product picker" : "Add / change products"}
       </button>
       {open ? (
         <div

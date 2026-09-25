@@ -19,6 +19,19 @@ export type ProductInstanceLabelInput = {
   vehicles?: readonly VehicleLabelFact[] | null;
 };
 
+/**
+ * Floor for the active-product field.
+ * Reference is a form plus a short street (`803.16021 northwest`), plus 10 characters.
+ * The field may grow when the displayed value is longer. It never goes under this floor.
+ */
+export const ACTIVE_PRODUCT_FIELD_REFERENCE = "803.16021 northwest";
+export const ACTIVE_PRODUCT_FIELD_EXTRA_CH = 10;
+
+export function activeProductFieldCh(label: string): number {
+  const floor = ACTIVE_PRODUCT_FIELD_REFERENCE.length + ACTIVE_PRODUCT_FIELD_EXTRA_CH;
+  return Math.max(floor, String(label ?? "").length + ACTIVE_PRODUCT_FIELD_EXTRA_CH);
+}
+
 /** Form code, house number, and street direction only. No street name, city, state, or zip. */
 export function policyFormMenuLabel(input: {
   code: string;
@@ -28,7 +41,11 @@ export function policyFormMenuLabel(input: {
   state?: string | null;
   zip?: string | null;
 }): string {
-  const short = shortStreetStart(input.address);
+  const short = shortStreetStart(input.address, {
+    city: input.city,
+    state: input.state,
+    zip: input.zip,
+  });
   if (!short) return input.fallback;
   const code = input.code.trim();
   return code ? `${code} · ${short}` : short;
@@ -131,9 +148,75 @@ export function compactStreetLabel(street: string | null | undefined): string {
   return label.length > 42 ? label.slice(0, 42).trim() : label;
 }
 
-/** House number plus the spelled-out direction word. Street name is left off. */
-function shortStreetStart(street: string | null | undefined): string {
-  const text = String(street ?? "")
+const DIRECTION_KEYS = [
+  "northwest",
+  "northeast",
+  "southwest",
+  "southeast",
+  "north",
+  "south",
+  "east",
+  "west",
+  "nw",
+  "ne",
+  "sw",
+  "se",
+  "n",
+  "s",
+  "e",
+  "w",
+] as const;
+
+const US_STATE_ABBR = new Set([
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN",
+  "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NC", "ND", "NE", "NH", "NJ",
+  "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA",
+  "WI", "WV", "WY",
+]);
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Full directional, or an abbreviation glued to the next number (`NW30th`). */
+function directionFromToken(token: string): string | null {
+  const clean = cleanToken(token);
+  if (!clean) return null;
+  if (DIRECTIONALS[clean]) return DIRECTIONALS[clean];
+  for (const key of DIRECTION_KEYS) {
+    if (!clean.startsWith(key) || clean.length === key.length) continue;
+    if (/^\d/.test(clean.slice(key.length))) return DIRECTIONALS[key] ?? null;
+  }
+  return null;
+}
+
+function directionAt(tokens: readonly string[], index: number): { label: string; skip: number } | null {
+  const clean = cleanToken(tokens[index] ?? "");
+  const next = cleanToken(tokens[index + 1] ?? "");
+  if ((clean === "n" || clean === "s") && (next === "e" || next === "w")) {
+    return { label: DIRECTIONALS[clean + next] ?? "", skip: 2 };
+  }
+  const label = directionFromToken(tokens[index] ?? "");
+  if (!label) return null;
+  return { label, skip: 1 };
+}
+
+function splitHouseNumber(token: string): { number: string; direction: string | null } | null {
+  const match = token.match(/^(\d+)(.*)$/);
+  if (!match) return null;
+  const rest = match[2] ?? "";
+  if (!rest) return { number: match[1]!, direction: null };
+  const direction = DIRECTIONALS[cleanToken(rest)];
+  if (direction) return { number: match[1]!, direction };
+  if (/^[a-z]$/i.test(rest)) return { number: token, direction: null };
+  return null;
+}
+
+function streetTokens(
+  street: string,
+  place?: { city?: string | null; state?: string | null; zip?: string | null },
+): string[] {
+  let text = street
     .replace(/[,]+/g, " ")
     .replace(
       /\b(?:apt|apartment|unit|suite|ste|bldg|building|floor|fl)\b\.?\s*#?\s*[a-z0-9-]*/gi,
@@ -142,15 +225,57 @@ function shortStreetStart(street: string | null | undefined): string {
     .replace(/#\s*[a-z0-9-]+/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
-  if (!text) return "";
-  const tokens = text.split(" ").filter(Boolean);
+  const city = String(place?.city ?? "").replace(/[,]+/g, " ").replace(/\s+/g, " ").trim();
+  if (city) text = text.replace(new RegExp(`\\b${escapeRegExp(city)}\\b`, "ig"), " ");
+  const zip = String(place?.zip ?? "").trim();
+  if (zip) text = text.replace(new RegExp(`\\s+${escapeRegExp(zip)}\\b`, "ig"), " ");
+  text = text.replace(/\s+\d{5}(?:-\d{4})?\s*$/g, " ");
+  const state = String(place?.state ?? "").trim();
+  if (state) text = text.replace(new RegExp(`\\b${escapeRegExp(state)}\\b`, "ig"), " ");
+  text = text.replace(/\s+([A-Za-z]{2})\s*$/g, (full, abbr: string) => {
+    const upper = abbr.toUpperCase();
+    if (US_STATE_ABBR.has(upper) && !DIRECTIONALS[abbr.toLowerCase()]) return " ";
+    return full;
+  });
+  return text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+}
+
+/**
+ * House number plus the direction word when the street has one.
+ * Pre-directional (`8944 S Adriatico`, `10358 NW 30th`) and post-directional
+ * (`8944 Adriatico Ln S`) both count. Street name, city, state, and zip do not.
+ */
+function shortStreetStart(
+  street: string | null | undefined,
+  place?: { city?: string | null; state?: string | null; zip?: string | null },
+): string {
+  const tokens = streetTokens(String(street ?? ""), place);
+  if (!tokens.length) return "";
   let index = 0;
   let number = "";
-  if (/^\d+[a-z]?$/i.test(tokens[0] ?? "")) {
-    number = tokens[0]!;
+  let direction = "";
+  const house = splitHouseNumber(tokens[0]!);
+  if (house) {
+    number = house.number;
+    direction = house.direction ?? "";
     index = 1;
   }
-  const direction = DIRECTIONALS[cleanToken(tokens[index] ?? "")] ?? "";
+  if (!direction && index < tokens.length) {
+    const pre = directionAt(tokens, index);
+    if (pre?.label) direction = pre.label;
+  }
+  if (!direction && tokens.length > index) {
+    const tail = tokens.slice(index);
+    while (tail.length && STREET_SUFFIXES.has(cleanToken(tail[tail.length - 1]!))) tail.pop();
+    if (tail.length >= 2) {
+      const compound = directionAt(tail, tail.length - 2);
+      if (compound?.skip === 2 && compound.label) direction = compound.label;
+    }
+    if (!direction && tail.length) {
+      const last = tail[tail.length - 1]!;
+      if (DIRECTIONALS[cleanToken(last)]) direction = DIRECTIONALS[cleanToken(last)]!;
+    }
+  }
   return [number, direction].filter(Boolean).join(" ");
 }
 

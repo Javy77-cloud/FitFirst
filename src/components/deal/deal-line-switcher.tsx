@@ -8,6 +8,7 @@ import {
 } from "@/lib/deals/deal-products";
 import { parseProductInstanceToken } from "@/lib/deals/product-instances";
 import {
+  activeProductFieldCh,
   policyFormMenuLabel,
   productCodeLabel,
   type VehicleLabelFact,
@@ -157,9 +158,11 @@ export function DealLineSwitcher({
   });
   if (rail) {
     const activeOption = options.find((row) => row.selected) ?? options[0];
+    const fieldCh = activeProductFieldCh(activeOption?.menuLabel ?? "");
     return (
       <div
-        className="flex w-max max-w-full min-w-0 flex-col items-end gap-1"
+        className="inline-grid w-max max-w-full min-w-0 gap-1"
+        style={{ gridTemplateColumns: `minmax(${fieldCh}ch, max-content)` }}
         data-ff-deal-product-chip-row=""
         data-ff-deal-products-rail=""
         data-ff-policy-form-line=""
@@ -224,7 +227,7 @@ export function DealLineSwitcher({
             ))}
           </div>
         </PolicyFormDropup>
-        <div className="flex items-center justify-between gap-2" data-ff-policy-form-caption="">
+        <div className="flex w-full items-center justify-between gap-3" data-ff-policy-form-caption="">
           <p className="shrink-0 text-[13px] font-semibold text-[var(--ff-red)]">Products</p>
           {picker}
         </div>
