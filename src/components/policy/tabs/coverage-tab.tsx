@@ -106,13 +106,22 @@ function sourceFlag(source: ScheduleRow["source"]): string {
 
 /** Shared starts for Limit, Deductible, and Premium across every coverage table. */
 const COVERAGE_SCHEDULE_COLS = ["26%", "24%", "16%", "14%"] as const;
+const HOME_COVERAGE_SCHEDULE_COLS = ["34%", "28%", "18%"] as const;
 
-function CoverageScheduleTable({ rows }: { rows: ScheduleRow[] }) {
+function CoverageScheduleTable({
+  rows,
+  deductibleColumn = true,
+}: {
+  rows: ScheduleRow[];
+  /** Home coverage rows have no deductible column. Deductibles are their own rows. */
+  deductibleColumn?: boolean;
+}) {
+  const widths = deductibleColumn ? COVERAGE_SCHEDULE_COLS : HOME_COVERAGE_SCHEDULE_COLS;
   return (
     <div className="mt-3 overflow-x-auto">
       <table className="ff-table table-fixed" data-ff-coverage-schedule="">
         <colgroup data-ff-coverage-cols="">
-          {COVERAGE_SCHEDULE_COLS.map((width) => (
+          {widths.map((width) => (
             <col key={width} style={{ width }} />
           ))}
           <col />
@@ -121,7 +130,7 @@ function CoverageScheduleTable({ rows }: { rows: ScheduleRow[] }) {
           <tr>
             <th>Coverage</th>
             <th>Limit</th>
-            <th>Deductible</th>
+            {deductibleColumn ? <th>Deductible</th> : null}
             <th>Premium</th>
             <th>Source</th>
           </tr>
@@ -131,7 +140,7 @@ function CoverageScheduleTable({ rows }: { rows: ScheduleRow[] }) {
             <tr key={row.key}>
               <td className="font-medium text-navy">{row.label}</td>
               <td>{row.limit}</td>
-              <td>{row.deductible}</td>
+              {deductibleColumn ? <td>{row.deductible}</td> : null}
               <td>{row.premium}</td>
               <td>
                 <span className="rounded-sm border border-border bg-white px-1.5 py-0.5 text-[11px] font-medium uppercase text-navy">
@@ -144,6 +153,152 @@ function CoverageScheduleTable({ rows }: { rows: ScheduleRow[] }) {
       </table>
     </div>
   );
+}
+
+const HOME_SCHEDULED_LIMIT_KEYS = new Set([
+  "coverage_a",
+  "coverage_b",
+  "coverage_c",
+  "coverage_d",
+  "coverage_e",
+  "coverage_f",
+  "ordinance_or_law",
+]);
+
+function termScheduleSource(current: TermRow | null): ScheduleRow["source"] {
+  return current?.source === "carrier_download" || current?.source === "ivans" || current?.source === "al3"
+    ? "carrier_download"
+    : current
+      ? "manual"
+      : "unknown";
+}
+
+function limitCell(limits: Record<string, string>, key: string): string {
+  const value = limits[key]?.trim() ?? "";
+  if (!value) return "";
+  const label = scheduleLabel(key);
+  const covered = shownCoverageLimit(key, label, value);
+  if (covered !== value) return covered;
+  if (OPTIONAL_DOLLAR_LIMIT_KEYS.has(key)) return shownMoneyCell(value);
+  return covered;
+}
+
+function premiumCell(limits: Record<string, string>, key: string): string {
+  const raw = limits[`${key}_premium`]?.trim() ?? "";
+  if (!raw) return "";
+  return shownMoneyCell(raw);
+}
+
+/**
+ * HO3 / DP / MHO schedule. Coverage rows are limit + premium.
+ * Deductibles are separate rows and never sit on Coverage A–F.
+ */
+function buildHomeSchedule(
+  policy: {
+    coverageA: number | null;
+    coverageLimits: Record<string, string> | null;
+    faceAmount: string | null;
+  },
+  current: TermRow | null,
+): ScheduleRow[] {
+  const rows: ScheduleRow[] = [];
+  const limits = policy.coverageLimits ?? {};
+  const source = termScheduleSource(current);
+  const seen = new Set<string>();
+
+  const push = (key: string, label: string, limit: string, premium: string) => {
+    const shownLimit = limit.trim();
+    const shownPremium = premium.trim();
+    if ((!shownLimit || shownLimit === "—") && (!shownPremium || shownPremium === "—")) return;
+    if (seen.has(key)) return;
+    seen.add(key);
+    rows.push({
+      key,
+      label,
+      limit: shownLimit || "—",
+      deductible: "—",
+      premium: shownPremium || "—",
+      source,
+    });
+  };
+
+  if (policy.coverageA != null || limits.coverage_a?.trim() || limits.coverage_a_premium?.trim()) {
+    const limit =
+      policy.coverageA != null ? formatMoney(policy.coverageA) : limitCell(limits, "coverage_a") || "—";
+    push("coverage_a", "Coverage A", limit, premiumCell(limits, "coverage_a") || "—");
+  }
+  if (policy.faceAmount) {
+    push("face", "Face amount", formatMoney(policy.faceAmount), "—");
+  }
+
+  for (const key of ["coverage_b", "coverage_c", "coverage_d"] as const) {
+    push(key, scheduleLabel(key), limitCell(limits, key) || "—", premiumCell(limits, key) || "—");
+  }
+
+  push(
+    "ordinance_or_law",
+    "Ordinance or Law",
+    limitCell(limits, "ordinance_or_law") || "—",
+    premiumCell(limits, "ordinance_or_law") || "—",
+  );
+
+  const aop = current?.aopDeductible?.trim() || limits.aop_deductible?.trim() || "";
+  if (aop) push("aop_deductible", "All Other Perils (AOP)", shownDeductible(aop), "—");
+
+  const wind = limits.wind_hail_deductible?.trim() || "";
+  if (wind) {
+    push("wind_hail_deductible", "Windstorm or Hail (Other Than Hurricane)", shownDeductible(wind), "—");
+  }
+
+  const hurricane = current?.hurricaneDeductible?.trim() || limits.hurricane_deductible?.trim() || "";
+  if (hurricane) push("hurricane_deductible", "Hurricane (% of Cov A)", shownDeductible(hurricane), "—");
+
+  const sinkhole = limits.sinkhole_deductible?.trim() || "";
+  if (sinkhole) push("sinkhole_deductible", "Sinkhole", shownDeductible(sinkhole), "—");
+
+  for (const key of ["coverage_e", "coverage_f"] as const) {
+    push(key, scheduleLabel(key), limitCell(limits, key) || "—", premiumCell(limits, key) || "—");
+  }
+
+  for (const [key, value] of Object.entries(limits)) {
+    if (!value?.trim()) continue;
+    if (key.endsWith("_premium")) continue;
+    if (DEDUCTIBLE_LIMIT_KEYS.has(key) || HOME_SCHEDULED_LIMIT_KEYS.has(key)) continue;
+    const label = scheduleLabel(key);
+    push(`limit_${key}`, label, limitCell(limits, key) || shownMoneyCell(value), premiumCell(limits, key) || "—");
+  }
+  for (const [key, value] of Object.entries(limits)) {
+    if (!key.endsWith("_premium") || !value?.trim()) continue;
+    const base = key.slice(0, -"_premium".length);
+    if (seen.has(base) || seen.has(`limit_${base}`)) continue;
+    push(`limit_${base}`, scheduleLabel(base), "—", shownMoneyCell(value));
+  }
+
+  if (current?.coverages) {
+    if (Array.isArray(current.coverages)) {
+      for (const row of current.coverages) {
+        const label = row.label || row.key || "Coverage";
+        if (!label || rows.some((existing) => existing.label === label)) continue;
+        const extended = row as PolicyCoverageLine & { premium?: string };
+        const rowKey = `term_${row.key || label}`;
+        push(
+          rowKey,
+          label,
+          shownCoverageLimit(row.key || "", label, row.value?.trim() || "—"),
+          extended.premium?.trim() ? shownMoneyCell(extended.premium) : "—",
+        );
+      }
+    } else {
+      for (const [key, value] of Object.entries(current.coverages)) {
+        if (!value?.trim()) continue;
+        const label = titleCase(key);
+        if (rows.some((existing) => existing.label === label)) continue;
+        push(`term_map_${key}`, label, shownCoverageLimit(key, label, value), "—");
+      }
+    }
+  }
+
+  return rows;
 }
 
 function buildSchedule(
@@ -322,13 +477,10 @@ export function PolicyCoverageTab({
     currentTerm !== undefined
       ? currentTerm
       : (terms.find((term) => term.role === "current") ?? null);
-  const auto = resolveLobOverviewFamily(policy) === "auto";
-  const termSource: ScheduleRow["source"] =
-    current?.source === "carrier_download" || current?.source === "ivans" || current?.source === "al3"
-      ? "carrier_download"
-      : current
-        ? "manual"
-        : "unknown";
+  const family = resolveLobOverviewFamily(policy);
+  const auto = family === "auto";
+  const home = family === "homeowners";
+  const termSource: ScheduleRow["source"] = termScheduleSource(current);
   const autoSource = {
     coverageLimits: policy.coverageLimits,
     comprehensiveDeductible: current?.comprehensiveDeductible,
@@ -337,7 +489,9 @@ export function PolicyCoverageTab({
   };
   const schedule: ScheduleRow[] = auto
     ? autoCoverageSchedule(autoSource).map((row) => ({ ...row, source: termSource }))
-    : buildSchedule(policy, current);
+    : home
+      ? buildHomeSchedule(policy, current)
+      : buildSchedule(policy, current);
   const vehicleBlocks = auto
     ? autoVehicleCoverageBlocks(autoSource).map((block) => ({
         ...block,
@@ -364,7 +518,9 @@ export function PolicyCoverageTab({
           <p className="mt-3 text-sm text-muted-foreground">No coverage schedule on file yet.</p>
         ) : (
           <>
-            {schedule.length > 0 ? <CoverageScheduleTable rows={schedule} /> : null}
+            {schedule.length > 0 ? (
+              <CoverageScheduleTable rows={schedule} deductibleColumn={!home} />
+            ) : null}
             {vehicleBlocks.map((block) => (
               <div key={block.key} className="mt-5" data-ff-coverage-vehicle={block.key}>
                 <h3

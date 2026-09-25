@@ -28,6 +28,7 @@ import { issuedPolicyDocType } from "@/lib/policy/issued-upload";
 import {
   loadGeminiRows,
   shouldForceAutoDecReread,
+  shouldForceHomeDecReread,
   type GeminiMintRow,
 } from "@/lib/policy/load-gemini-rows";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
@@ -265,13 +266,23 @@ async function prepareFill(input: {
       .where(and(eq(drivers.tenantId, DEFAULT_TENANT_ID), eq(drivers.policyId, policy.id))),
   ]);
   const cached = await readCachedExtract(doc.id);
-  const force = shouldForceAutoDecReread({
-    manualAuto: Boolean(input.forceExtract) && familyForExtract === "auto",
-    rows: cached.rows,
-    newestAt: cached.newestAt,
-    now: new Date(),
-    reuseFresh: Boolean(input.reuseFreshAutoExtract),
-  });
+  const now = new Date();
+  const reuseFresh = Boolean(input.reuseFreshAutoExtract);
+  const force =
+    shouldForceAutoDecReread({
+      manualAuto: Boolean(input.forceExtract) && familyForExtract === "auto",
+      rows: cached.rows,
+      newestAt: cached.newestAt,
+      now,
+      reuseFresh,
+    }) ||
+    shouldForceHomeDecReread({
+      manualHome: Boolean(input.forceExtract) && familyForExtract === "homeowners",
+      rows: cached.rows,
+      newestAt: cached.newestAt,
+      now,
+      reuseFresh,
+    });
   const gemini = await loadGeminiRows(
     {
       docId: doc.id,

@@ -29,6 +29,19 @@ describe("dwelling facts from sheet / risk", () => {
     expect(facts.roofYear).toBe(2014);
   });
 
+  it("reads Year of Construction when year built is blank on the sheet", () => {
+    expect(
+      dwellingFactsFromSheet({
+        year_of_construction: { value: "2024" },
+        construction_type: { value: "Masonry" },
+      }),
+    ).toEqual({
+      yearBuilt: 2024,
+      roofYear: null,
+      construction: "Masonry",
+    });
+  });
+
   it("prefers risk values when present", () => {
     const facts = resolveDwellingFacts({
       risk: { yearBuilt: 2001, roofYear: 2010, construction: "CBS" },

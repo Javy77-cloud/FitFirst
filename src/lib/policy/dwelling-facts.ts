@@ -36,7 +36,9 @@ export function dwellingFactsFromSheet(
   sheet: Record<string, { value?: string | null } | undefined> | null | undefined,
 ): DwellingFacts {
   return {
-    yearBuilt: parsePropertyYear(cell(sheet, "year_built", "yearBuilt", "yr_built")),
+    yearBuilt: parsePropertyYear(
+      cell(sheet, "year_built", "yearBuilt", "yr_built", "year_of_construction", "year_constructed"),
+    ),
     roofYear: parsePropertyYear(cell(sheet, "roof_year", "roofYear", "roof_age", "year_roof")),
     construction: cell(sheet, "construction", "construction_type") || null,
   };

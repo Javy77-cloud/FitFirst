@@ -40,6 +40,16 @@ const HOME_DEDUCTIBLE_KEYS = new Set([
   "wind_hail_deductible",
 ]);
 
+/** Premium column on Coverage A–F. Included stays Included. Never the policy total. */
+const HOME_COVERAGE_LINE_PREMIUM_KEYS = new Set([
+  "coverage_a_premium",
+  "coverage_b_premium",
+  "coverage_c_premium",
+  "coverage_d_premium",
+  "coverage_e_premium",
+  "coverage_f_premium",
+]);
+
 /** Fill-from-DEC keys whose displayed text must keep a printed dollar sign. */
 export const HOME_DOLLAR_DISPLAY_FILL_KEYS = new Set([
   "coverageALimit",
@@ -51,6 +61,13 @@ export const HOME_DOLLAR_DISPLAY_FILL_KEYS = new Set([
   "aopDeductible",
   "hurricaneDeductible",
   "windHailDeductible",
+  "coverageAPremium",
+  "coverageBPremium",
+  "coverageCPremium",
+  "coverageDPremium",
+  "coverageEPremium",
+  "coverageFPremium",
+  "ordinanceOrLawPremium",
 ]);
 
 function compactForm(raw: string): string {
@@ -143,6 +160,14 @@ export function formatHomeDollarAmount(raw: string | null | undefined): string {
   return moneyLabel(trimmed);
 }
 
+/** Coverage-row premium: Included, or a dollar amount including a negative ordinance premium. */
+export function formatCoverageLinePremium(raw: string | null | undefined): string {
+  const trimmed = String(raw ?? "").replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (/^included$/i.test(trimmed)) return "Included";
+  return formatHomeDollarAmount(trimmed);
+}
+
 /**
  * Hurricane, AOP, and wind/hail.
  * Dollar amounts use $. A percent stays a percent. Both stay when the dec prints both.
@@ -214,7 +239,10 @@ export function enforceHomeDecDollars(fields: ExtractedField[], shopLine?: strin
   if (isAutoShopLine(shopLine)) return;
   for (const field of fields) {
     if (!field.normalizedValue.trim()) continue;
-    if (HOME_DOLLAR_COVERAGE_KEYS.has(field.fieldKey) || HOME_OPTIONAL_DOLLAR_KEYS.has(field.fieldKey)) {
+    if (HOME_COVERAGE_LINE_PREMIUM_KEYS.has(field.fieldKey)) {
+      const next = formatCoverageLinePremium(field.normalizedValue);
+      if (next && next !== field.normalizedValue) field.normalizedValue = next;
+    } else if (HOME_DOLLAR_COVERAGE_KEYS.has(field.fieldKey) || HOME_OPTIONAL_DOLLAR_KEYS.has(field.fieldKey)) {
       const next = formatHomeDollarAmount(field.normalizedValue);
       if (next && next !== field.normalizedValue) field.normalizedValue = next;
     } else if (HOME_DEDUCTIBLE_KEYS.has(field.fieldKey)) {

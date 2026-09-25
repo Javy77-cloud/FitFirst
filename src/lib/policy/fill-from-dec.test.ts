@@ -289,9 +289,13 @@ describe("fillPolicyFromDec field map", () => {
     );
     expect(html).toContain("$337,000");
     expect(html).toContain("$1,000");
-    expect(html).toContain("Wind/hail deductible");
+    expect(html).toContain("All Other Perils (AOP)");
+    expect(html).toContain("Windstorm or Hail (Other Than Hurricane)");
+    expect(html).toContain("Hurricane (% of Cov A)");
     expect(html).toContain("2% of Coverage A");
     expect(html).not.toContain("AOP deductible");
+    expect(html).not.toContain(">Deductible<");
+    expect(html).not.toContain("Wind/hail deductible");
     expect(html).toContain("Sinkhole");
     expect(html).toContain("Not Included");
     expect(html).toContain("Personal Injury");
@@ -306,6 +310,113 @@ describe("fillPolicyFromDec field map", () => {
     expect(html).toContain("Water Back Up and Sump Overflow");
     expect(html).toContain("$5,000");
     expect(html).toContain("$20.58");
+  });
+
+  it("fills the American Traditions coverage schedule with row premiums and separate deductibles", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        form: "HO3",
+        current_carrier: "American Traditions",
+        coverage_a: "337000",
+        coverage_a_premium: "1310.55",
+        coverage_b: "6740",
+        coverage_b_premium: "Included",
+        coverage_c: "84250",
+        coverage_c_premium: "Included",
+        coverage_d: "33700",
+        coverage_d_premium: "Included",
+        ordinance_law: "33700",
+        ordinance_law_premium: "-82.40",
+        all_other_perils: "1000",
+        windstorm_or_hail_other_than_hurricane: "1000",
+        hurricane_deductible: "2% of Coverage A",
+        sinkhole_deductible: "Not Included",
+        coverage_e: "100000",
+        coverage_e_premium: "12.35",
+        coverage_f: "5000",
+        coverage_f_premium: "8.23",
+        premium: "2500.00",
+        construction_type: "Masonry",
+        year_of_construction: "2024",
+        occupancy: "Owner",
+        type_of_residence: "Owner Occupied",
+      }),
+    });
+    expect(proposed.coverageAPremium).toBe("$1,310.55");
+    expect(proposed.coverageBPremium).toBe("Included");
+    expect(proposed.coverageCPremium).toBe("Included");
+    expect(proposed.coverageDPremium).toBe("Included");
+    expect(proposed.coverageEPremium).toBe("$12.35");
+    expect(proposed.coverageFPremium).toBe("$8.23");
+    expect(proposed.premium).toBe("2500.00");
+    expect(proposed.aopDeductible).toBe("$1,000");
+    expect(proposed.yearBuilt).toBe("2024");
+    expect(proposed.construction).toBe("Masonry");
+    expect(proposed.occupancy).toBe("Owner");
+
+    const windOnly = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ wind_hail_deductible: "1000", coverage_a: "337000" }),
+    });
+    expect(windOnly.aopDeductible).toBeUndefined();
+    expect(windOnly.windHailDeductible).toBe("$1,000");
+
+    const patch = groupAppliedFill(proposed, Object.keys(proposed));
+    expect(patch.coverageLimits.coverage_a_premium).toBe("$1,310.55");
+    expect(patch.coverageLimits.coverage_b_premium).toBe("Included");
+    expect(patch.coverageLimits.coverage_f_premium).toBe("$8.23");
+    expect(patch.term.premium).toBe("2500.00");
+    expect(patch.risk.yearBuilt).toBe(2024);
+
+    const html = renderToString(
+      createElement(PolicyCoverageTab, {
+        policy: {
+          id: "p-rippey",
+          coverageA: 337000,
+          coverageLimits: patch.coverageLimits,
+          faceAmount: null,
+          lineOfBusiness: "HO",
+          formType: "HO3",
+          policyType: "HO3",
+        },
+        terms: [],
+        currentTerm: {
+          id: "t-rippey",
+          role: "current",
+          premium: patch.term.premium ?? null,
+          aopDeductible: patch.term.aopDeductible ?? null,
+          hurricaneDeductible: patch.term.hurricaneDeductible ?? null,
+          comprehensiveDeductible: null,
+          collisionDeductible: null,
+          coverages: null,
+          termEffective: new Date("2026-09-25T12:00:00.000Z"),
+          termExpiration: new Date("2027-09-25T12:00:00.000Z"),
+        },
+      }),
+    );
+    expect(html).toContain("Coverage A");
+    expect(html).toContain("$337,000");
+    expect(html).toContain("$1,310.55");
+    expect(html).toContain("Coverage B");
+    expect(html).toContain("$6,740");
+    expect(html).toContain(">Included<");
+    expect(html).toContain("$84,250");
+    expect(html).toContain("Ordinance or Law");
+    expect(html).toContain("-$82.40");
+    expect(html).toContain("All Other Perils (AOP)");
+    expect(html).toContain("Windstorm or Hail (Other Than Hurricane)");
+    expect(html).toContain("Hurricane (% of Cov A)");
+    expect(html).toContain("2% of Coverage A");
+    expect(html).toContain("Sinkhole");
+    expect(html).toContain("Not Included");
+    expect(html).toContain("$100,000");
+    expect(html).toContain("$12.35");
+    expect(html).toContain("$5,000");
+    expect(html).toContain("$8.23");
+    expect(html).not.toContain(">Deductible<");
+    expect(html).not.toContain("AOP deductible");
+    expect(html).not.toContain("$2,500");
   });
 
   it("stores None for a blank rating value and does not invent optionals or a sinkhole dollar", () => {
@@ -979,6 +1090,7 @@ describe("fillPolicyFromDec wiring", () => {
     expect(action).toMatch(/reuseFreshAutoExtract: input\.source === "manual"/);
     expect(action).toMatch(/extractPurpose: "fill"/);
     expect(action).toMatch(/shouldForceAutoDecReread/);
+    expect(action).toMatch(/shouldForceHomeDecReread/);
     expect(source("src/app/policies/[id]/page.tsx")).toMatch(/export const maxDuration = 300/);
     expect(action).not.toMatch(/quoteSheets|quote_sheets|fillQuoteSheet/);
     const mint = source("src/app/actions/policy-mint.ts");
@@ -1100,9 +1212,12 @@ describe("manufactured home coverage display", () => {
     expect(html).toContain("$100,000");
     expect(html).toContain("$500");
     expect(html).toContain("$1,000");
-    expect(html).toContain("Hurricane deductible");
-    expect(html).toContain("Wind/hail deductible");
+    expect(html).toContain("All Other Perils (AOP)");
+    expect(html).toContain("Hurricane (% of Cov A)");
+    expect(html).toContain("Windstorm or Hail (Other Than Hurricane)");
     expect(html).toContain(">2%<");
+    expect(html).not.toContain("$3,678");
+    expect(html).not.toContain(">Deductible<");
     expect(html).toContain("2006");
     expect(html).not.toContain("$2,006");
 
