@@ -71,10 +71,11 @@ describe("deal Documents save must not open error.tsx", () => {
     expect(source("src/components/deal/documents-panel.tsx")).not.toMatch(/data-ff-link-deal-doc/);
     expect(source("src/components/deal/documents-panel.tsx")).not.toMatch(/RecentlyDeletedFiles/);
     expect(source("src/components/deal/documents-panel.tsx")).not.toMatch(/linkDealDocumentToProduct/);
-    expect(source("src/components/deal/documents-panel.tsx")).toMatch(/libraryHref\(\{ library: "shared", dealId \}\)/);
-    expect(source("src/components/deal/documents-panel.tsx")).toMatch(/liveDealLibraryDocs/);
+    expect(source("src/components/deal/documents-panel.tsx")).toMatch(/libraryHref\(\{ library: "shared" \}\)/);
+    expect(source("src/components/deal/documents-panel.tsx")).not.toMatch(/dealId \}/);
     expect(source("src/app/actions/documents.ts")).not.toMatch(/linkDealDocumentToProduct/);
-    expect(source("src/app/documents/page.tsx")).toMatch(/liveDealLibraryDocs/);
+    expect(source("src/app/documents/page.tsx")).not.toMatch(/liveDealLibraryDocs/);
+    expect(source("src/app/documents/page.tsx")).not.toMatch(/params\.deal/);
     expect(source("src/components/deal/documents-panel.tsx")).toMatch(/data-ff-product-docs-empty/);
     expect(source("src/components/deal/deal-docs-error-boundary.tsx")).toMatch(/data-ff-deal-docs-soft-error/);
     expect(source("src/components/deal/deal-docs-error-boundary.tsx")).toMatch(/getDerivedStateFromError/);
