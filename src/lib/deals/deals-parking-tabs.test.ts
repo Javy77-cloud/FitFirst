@@ -28,8 +28,9 @@ describe("Won-Lost + Archived parking tabs", () => {
     expect(page).toMatch(/subnav=/);
     expect(page).toMatch(/DealLineSwitcher/);
     expect(page).toMatch(/layout="rail"/);
-    expect(page).toMatch(/data-ff-deal-products-column/);
-    expect(page).toMatch(/leading=/);
+    expect(page).toMatch(/data-ff-deal-products-header/);
+    expect(page).not.toMatch(/data-ff-deal-products-column/);
+    expect(page).not.toMatch(/leading=\{/);
     const css = source("src/app/globals.css");
     expect(css).not.toMatch(/--ff-deal-products-headroom:\s*9\.5rem;/);
     expect(css).not.toMatch(/--ff-deal-products-qc-gap/);
@@ -54,11 +55,20 @@ describe("Won-Lost + Archived parking tabs", () => {
     expect(css).toMatch(
       /margin-top:\s*calc\(-1 \* \(var\(--ff-deal-tab-group-gap\) \+ var\(--ff-deal-tab-group-pad\)\)\);/,
     );
-    // Products no longer sit inside the top-left heading stack with Pipeline.
+    // Products sit in the deal header under the address block, on every tab.
     const headingSlice = page.slice(
       page.indexOf("data-ff-deal-top-left"),
       page.indexOf("subnav="),
     );
-    expect(headingSlice).not.toMatch(/DealLineSwitcher/);
+    expect(headingSlice).toMatch(/DealPackageShell/);
+    expect(headingSlice).toMatch(/mailingAddress=/);
+    expect(headingSlice).toMatch(/data-ff-deal-products-header/);
+    expect(headingSlice).toMatch(/DealLineSwitcher/);
+    expect(headingSlice.indexOf("mailingAddress=")).toBeLessThan(
+      headingSlice.indexOf("DealLineSwitcher"),
+    );
+    const railSlice = page.slice(page.indexOf("sidePanel="));
+    expect(railSlice).not.toMatch(/DealLineSwitcher/);
+    expect(railSlice).not.toMatch(/data-ff-deal-products-header/);
   });
 });
