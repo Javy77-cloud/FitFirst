@@ -16,6 +16,7 @@ import {
   autoVehicleCoverageBlocks,
   type AutoCoverageVehicle,
 } from "@/lib/policy/auto-coverage";
+import { homeCoverageSchedule } from "@/lib/policy/home-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import type { PolicyCoverageLine } from "@/lib/db/schema";
 
@@ -155,16 +156,6 @@ function CoverageScheduleTable({
   );
 }
 
-const HOME_SCHEDULED_LIMIT_KEYS = new Set([
-  "coverage_a",
-  "coverage_b",
-  "coverage_c",
-  "coverage_d",
-  "coverage_e",
-  "coverage_f",
-  "ordinance_or_law",
-]);
-
 function termScheduleSource(current: TermRow | null): ScheduleRow["source"] {
   return current?.source === "carrier_download" || current?.source === "ivans" || current?.source === "al3"
     ? "carrier_download"
@@ -173,25 +164,9 @@ function termScheduleSource(current: TermRow | null): ScheduleRow["source"] {
       : "unknown";
 }
 
-function limitCell(limits: Record<string, string>, key: string): string {
-  const value = limits[key]?.trim() ?? "";
-  if (!value) return "";
-  const label = scheduleLabel(key);
-  const covered = shownCoverageLimit(key, label, value);
-  if (covered !== value) return covered;
-  if (OPTIONAL_DOLLAR_LIMIT_KEYS.has(key)) return shownMoneyCell(value);
-  return covered;
-}
-
-function premiumCell(limits: Record<string, string>, key: string): string {
-  const raw = limits[`${key}_premium`]?.trim() ?? "";
-  if (!raw) return "";
-  return shownMoneyCell(raw);
-}
-
 /**
- * HO3 / DP / MHO schedule. Coverage rows are limit + premium.
- * Deductibles are separate rows and never sit on Coverage A–F.
+ * HO3 / DP / MHO schedule. Rows stay in desk order.
+ * Coverage A–F are limit + premium. Deductibles are their own rows at the end.
  */
 function buildHomeSchedule(
   policy: {
@@ -201,104 +176,19 @@ function buildHomeSchedule(
   },
   current: TermRow | null,
 ): ScheduleRow[] {
-  const rows: ScheduleRow[] = [];
-  const limits = policy.coverageLimits ?? {};
   const source = termScheduleSource(current);
-  const seen = new Set<string>();
-
-  const push = (key: string, label: string, limit: string, premium: string) => {
-    const shownLimit = limit.trim();
-    const shownPremium = premium.trim();
-    if ((!shownLimit || shownLimit === "—") && (!shownPremium || shownPremium === "—")) return;
-    if (seen.has(key)) return;
-    seen.add(key);
-    rows.push({
-      key,
-      label,
-      limit: shownLimit || "—",
-      deductible: "—",
-      premium: shownPremium || "—",
-      source,
-    });
-  };
-
-  if (policy.coverageA != null || limits.coverage_a?.trim() || limits.coverage_a_premium?.trim()) {
-    const limit =
-      policy.coverageA != null ? formatMoney(policy.coverageA) : limitCell(limits, "coverage_a") || "—";
-    push("coverage_a", "Coverage A", limit, premiumCell(limits, "coverage_a") || "—");
-  }
-  if (policy.faceAmount) {
-    push("face", "Face amount", formatMoney(policy.faceAmount), "—");
-  }
-
-  for (const key of ["coverage_b", "coverage_c", "coverage_d"] as const) {
-    push(key, scheduleLabel(key), limitCell(limits, key) || "—", premiumCell(limits, key) || "—");
-  }
-
-  push(
-    "ordinance_or_law",
-    "Ordinance or Law",
-    limitCell(limits, "ordinance_or_law") || "—",
-    premiumCell(limits, "ordinance_or_law") || "—",
-  );
-
-  const aop = current?.aopDeductible?.trim() || limits.aop_deductible?.trim() || "";
-  if (aop) push("aop_deductible", "All Other Perils (AOP)", shownDeductible(aop), "—");
-
-  const wind = limits.wind_hail_deductible?.trim() || "";
-  if (wind) {
-    push("wind_hail_deductible", "Windstorm or Hail (Other Than Hurricane)", shownDeductible(wind), "—");
-  }
-
-  const hurricane = current?.hurricaneDeductible?.trim() || limits.hurricane_deductible?.trim() || "";
-  if (hurricane) push("hurricane_deductible", "Hurricane (% of Cov A)", shownDeductible(hurricane), "—");
-
-  const sinkhole = limits.sinkhole_deductible?.trim() || "";
-  if (sinkhole) push("sinkhole_deductible", "Sinkhole", shownDeductible(sinkhole), "—");
-
-  for (const key of ["coverage_e", "coverage_f"] as const) {
-    push(key, scheduleLabel(key), limitCell(limits, key) || "—", premiumCell(limits, key) || "—");
-  }
-
-  for (const [key, value] of Object.entries(limits)) {
-    if (!value?.trim()) continue;
-    if (key.endsWith("_premium")) continue;
-    if (DEDUCTIBLE_LIMIT_KEYS.has(key) || HOME_SCHEDULED_LIMIT_KEYS.has(key)) continue;
-    const label = scheduleLabel(key);
-    push(`limit_${key}`, label, limitCell(limits, key) || shownMoneyCell(value), premiumCell(limits, key) || "—");
-  }
-  for (const [key, value] of Object.entries(limits)) {
-    if (!key.endsWith("_premium") || !value?.trim()) continue;
-    const base = key.slice(0, -"_premium".length);
-    if (seen.has(base) || seen.has(`limit_${base}`)) continue;
-    push(`limit_${base}`, scheduleLabel(base), "—", shownMoneyCell(value));
-  }
-
-  if (current?.coverages) {
-    if (Array.isArray(current.coverages)) {
-      for (const row of current.coverages) {
-        const label = row.label || row.key || "Coverage";
-        if (!label || rows.some((existing) => existing.label === label)) continue;
-        const extended = row as PolicyCoverageLine & { premium?: string };
-        const rowKey = `term_${row.key || label}`;
-        push(
-          rowKey,
-          label,
-          shownCoverageLimit(row.key || "", label, row.value?.trim() || "—"),
-          extended.premium?.trim() ? shownMoneyCell(extended.premium) : "—",
-        );
-      }
-    } else {
-      for (const [key, value] of Object.entries(current.coverages)) {
-        if (!value?.trim()) continue;
-        const label = titleCase(key);
-        if (rows.some((existing) => existing.label === label)) continue;
-        push(`term_map_${key}`, label, shownCoverageLimit(key, label, value), "—");
-      }
-    }
-  }
-
-  return rows;
+  return homeCoverageSchedule({
+    coverageA: policy.coverageA,
+    coverageLimits: policy.coverageLimits,
+    faceAmount: policy.faceAmount,
+    aopDeductible: current?.aopDeductible,
+    hurricaneDeductible: current?.hurricaneDeductible,
+    coverages: current?.coverages,
+  }).map((row) => ({
+    ...row,
+    deductible: "—",
+    source,
+  }));
 }
 
 function buildSchedule(

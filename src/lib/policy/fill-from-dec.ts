@@ -562,11 +562,15 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(out, "protectionClass", rawCell(rows, "protection_class"));
   put(out, "bceg", rawCell(rows, "bceg_grade", "bceg"));
   put(out, "county", rawCell(rows, "county"));
-  put(out, "dwellingReplacementCost", yesNo(rawCell(rows, "dwelling_replacement_cost")));
+  put(
+    out,
+    "dwellingReplacementCost",
+    yesNo(rawCell(rows, "dwelling_replacement_cost", "replacement_cost_dwelling")),
+  );
   put(
     out,
     "personalPropertyReplacementCost",
-    yesNo(rawCell(rows, "personal_property_replacement_cost")),
+    yesNo(rawCell(rows, "personal_property_replacement_cost", "replacement_cost_contents")),
   );
   put(out, "burglarAlarm", yesNo(rawCell(rows, "burglar_alarm", "burglar")));
   put(out, "fireAlarm", yesNo(rawCell(rows, "fire_alarm")));
@@ -639,7 +643,19 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
       rawCell(rows, "coverage_f_premium", "medical_payments_premium", "medical_payments_to_others_premium"),
     ),
   );
-  put(out, "ordinanceOrLaw", formatDecDeductible(rawCell(rows, "ordinance_or_law", "ordinance_law")));
+  put(
+    out,
+    "ordinanceOrLaw",
+    formatDecDeductible(
+      rawCell(rows, "ordinance_or_law", "ordinance_law", "building_ordinance_or_law", "building_ordinance_law"),
+    ),
+  );
+  put(out, "theft", formatOptionalAmount(rawCell(rows, "theft", "theft_limit", "theft_coverage")));
+  put(
+    out,
+    "extendedReplacementCostDwelling",
+    formatOptionalAmount(rawCell(rows, "extended_replacement_cost_dwelling", "extended_replacement_cost")),
+  );
   put(
     out,
     "aopDeductible",
@@ -1121,6 +1137,8 @@ const LIMIT_KEYS: Record<string, string> = {
   number_of_families: "families",
   dwelling_replacement_cost: "dwellingReplacementCost",
   personal_property_replacement_cost: "personalPropertyReplacementCost",
+  theft: "theft",
+  extended_replacement_cost_dwelling: "extendedReplacementCostDwelling",
   unit_year: "unitYear",
   unit_make: "unitMake",
   unit_serial: "unitSerial",
@@ -1461,6 +1479,8 @@ export function groupAppliedFill(
     ["families", "number_of_families"],
     ["dwellingReplacementCost", "dwelling_replacement_cost"],
     ["personalPropertyReplacementCost", "personal_property_replacement_cost"],
+    ["theft", "theft"],
+    ["extendedReplacementCostDwelling", "extended_replacement_cost_dwelling"],
     ["unitYear", "unit_year"],
     ["unitMake", "unit_make"],
     ["unitSerial", "unit_serial"],
