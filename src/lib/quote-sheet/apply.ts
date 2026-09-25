@@ -17,6 +17,7 @@ import {
   reapplyDefaultsAfterManualCoverageA,
 } from "./home-coverage-rules";
 import { streetsAreSameLocation } from "./home-address-fill";
+import { isDealDetailsProductFact } from "./product-fact-scope";
 import { applyInspectionExistenceFromDoc } from "./home-inspections";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
 import {
@@ -400,8 +401,15 @@ export function applyExtractedToSheet(
       overwriteWeakCheck && isWeakCheckOverwriteable(current) && !isProtectedSheetSource(current);
     const canReplaceCoverageDefault =
       line === "home" && isReplaceableHomeCoverageFill(key, current);
+    const canReplaceDealDetails = isDealDetailsProductFact(key, current, { includeAddress: true });
 
-    if (!canFillBlank && !canReplacePublic && !canReplaceWeakCheck && !canReplaceCoverageDefault) {
+    if (
+      !canFillBlank &&
+      !canReplacePublic &&
+      !canReplaceWeakCheck &&
+      !canReplaceCoverageDefault &&
+      !canReplaceDealDetails
+    ) {
       skippedKeys.push(key);
       if (
         recordMismatches &&
@@ -526,7 +534,8 @@ export function applyPublicToSheet(
       continue;
     }
     const current = values[key];
-    if (neverCheckCoverageA(key, current) || !fieldIsBlank(current)) {
+    const replaceDealDetails = isDealDetailsProductFact(key, current, { includeAddress: true });
+    if (neverCheckCoverageA(key, current) || (!fieldIsBlank(current) && !replaceDealDetails)) {
       skippedKeys.push(key);
       continue;
     }

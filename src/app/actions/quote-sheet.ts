@@ -141,6 +141,7 @@ import {
 } from "@/lib/vin-decode";
 import type { VinDecodeValues } from "@/lib/vin-decode";
 import { fillSheetFromDealDetails, type DealSheetCopyInput } from "@/lib/quote-sheet/fill-from-deal";
+import { clearCrossProductDealFacts } from "@/lib/quote-sheet/product-fact-scope";
 import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { cascadeValuesFromDealHints } from "@/lib/deals/insurance-cascade";
 import {
@@ -1210,15 +1211,36 @@ export async function runFillFromDealDetails(
   if (!input) {
     return { filledKeys: [], skippedKeys: [], note: MASTER_FILL_SKIP_NO_DEAL };
   }
-  const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
-  if (opened.instanceKey) {
-    input.propertyOneliner = null;
-    if (input.risk) {
-      input.risk = { address1: null, city: null, county: null, state: null, zip: null };
+  let fresh = await loadFreshSheetValues(sheet.id, sheet.values);
+  const [dealRow] = await db
+    .select({
+      shopProducts: deals.shopProducts,
+      shopLines: deals.shopLines,
+      lineOfBusiness: deals.lineOfBusiness,
+      quotingLine: deals.quotingLine,
+      quotingForm: deals.quotingForm,
+      policySubType: deals.policySubType,
+    })
+    .from(deals)
+    .where(eq(deals.id, dealId));
+  const multiProduct = dealRow ? instancesFromDeal(dealRow).length > 1 : false;
+  let clearedKeys: string[] = [];
+  if (multiProduct || opened.instanceKey) {
+    input.isolateProductFacts = true;
+    input.coverageAmount = null;
+    input.currentCarrier = null;
+    const laterProduct = Boolean(opened.instanceKey);
+    if (laterProduct) {
+      input.skipSharedPropertyAddress = true;
+      input.propertyOneliner = null;
+      input.risk = null;
     }
+    const cleared = clearCrossProductDealFacts(fresh, { includeAddress: laterProduct });
+    fresh = cleared.values;
+    clearedKeys = cleared.clearedKeys;
   }
   const applied = fillSheetFromDealDetails(input, fresh);
-  if (!applied.filledKeys.length) {
+  if (!applied.filledKeys.length && clearedKeys.length === 0) {
     return {
       filledKeys: [],
       skippedKeys: applied.skippedKeys,

@@ -46,6 +46,10 @@ import {
   mhoYes,
 } from "@/lib/custom-fields/mho-details-fields";
 import { SHEET_DEFAULT_SOURCE_LABEL } from "@/lib/quote-sheet/sheet-defaults";
+import {
+  isCrossProductFactKey,
+  isSharedPropertyAddressKey,
+} from "@/lib/quote-sheet/product-fact-scope";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -98,6 +102,16 @@ export type DealSheetCopyInput = {
   lead?: LeadCopyFields | null;
   shopProducts?: readonly string[] | null;
   quotingLine?: string | null;
+  /**
+   * Multi-product deal (or a product copy). Copy applicant + co-applicant only.
+   * Coverage and risk characteristics stay on the active product.
+   */
+  isolateProductFacts?: boolean;
+  /**
+   * Later product. Do not copy the shared deal/risk insured address.
+   * The first property product still may.
+   */
+  skipSharedPropertyAddress?: boolean;
 };
 
 export type DealSheetCopyResult = {
@@ -314,7 +328,14 @@ export function fillSheetFromDealDetails(
   const lead = input.lead;
   const risk = input.risk;
 
+  const skipSharedFact = (key: string) => {
+    if (!input.isolateProductFacts || !isCrossProductFactKey(key)) return false;
+    if (isSharedPropertyAddressKey(key) && !input.skipSharedPropertyAddress) return false;
+    return true;
+  };
+
   const put = (key: string, raw?: string | null) => {
+    if (skipSharedFact(key)) return;
     const value = (raw ?? "").trim();
     if (!value) return;
     // Life / Health Risk Profile has no identity cells — do not invent applicant/contact keys.
@@ -337,6 +358,7 @@ export function fillSheetFromDealDetails(
 
   /** Replace blank cells and starter defaults. Leave agent-confirmed and extracted cells. */
   const putOverDefault = (key: string, raw?: string | null) => {
+    if (skipSharedFact(key)) return;
     const value = (raw ?? "").trim();
     if (!value) return;
     if (Object.keys(existing).length > 0 && !Object.prototype.hasOwnProperty.call(existing, key)) {
