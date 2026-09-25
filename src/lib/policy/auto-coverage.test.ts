@@ -36,7 +36,7 @@ describe("personal auto coverage schedule", () => {
     const pip = rows.find((row) => row.key === "pip");
     const comp = rows.find((row) => row.key === "comprehensive");
     expect(pip).toMatchObject({ limit: "$10,000", deductible: "1000", premium: "$220" });
-    expect(comp).toMatchObject({ deductible: "500", premium: "—" });
+    expect(comp).toMatchObject({ deductible: "500", premium: "None" });
     expect(rows.map((row) => row.label)).toEqual(
       expect.arrayContaining(["Bodily injury", "Property damage", "PIP", "Comprehensive", "Collision"]),
     );

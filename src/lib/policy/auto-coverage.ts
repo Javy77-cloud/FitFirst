@@ -67,7 +67,8 @@ export const PAP_COVERAGE_FILL_KEYS_BEFORE = [
   "collision_deductible",
 ] as const;
 
-const BLANK = "—";
+/** Empty coverage cells are an explicit absence, not a blank column. */
+const BLANK = "None";
 
 function show(value: string | null | undefined): string {
   const trimmed = value?.trim() ?? "";
