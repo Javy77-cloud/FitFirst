@@ -63,7 +63,7 @@ export function PolicyInformationCard({
   carrierName?: string | null;
   contact?: { id: string; firstName: string; lastName: string } | null;
   account?: { id: string; name: string } | null;
-  /** Resolved person name (owner profile Name); never AFA / selling agency. */
+  /** Live Settings name for the assigned producer. Not the frozen policies.producer string. */
   producerDisplayName?: string | null;
   /** Agents: Overview is fully read-only. Admins can edit (sensitive fields confirm). */
   readOnly?: boolean;

@@ -9,6 +9,7 @@ import {
   ownerIdForWrite,
   ownerMatchesMine,
   resolveDirectoryOwnerId,
+  isListedProducerSpelling,
   sameProducerIdentity,
 } from "./producer-identity";
 
@@ -53,6 +54,13 @@ describe("producer identity — Javy vs Francisco phantom agent", () => {
     expect(sameProducerIdentity(javy, francisco)).toBe(true);
     expect(sameProducerIdentity(francisco, javy)).toBe(true);
     expect(sameProducerIdentity(javy, { ...javy, name: "Francisco Javier Garcia Rivera" })).toBe(true);
+  });
+
+  it("keeps a Settings rename off the nickname list from collapsing the demo agent", () => {
+    expect(isListedProducerSpelling("Javy Rivera")).toBe(true);
+    expect(isListedProducerSpelling("Francisco Javier Garcia")).toBe(true);
+    expect(isListedProducerSpelling("Javier Garcia")).toBe(false);
+    expect(isListedProducerSpelling("Maya Chen")).toBe(false);
   });
 
   it("does not collapse demo Javier Garcia or Maya into Javy", () => {

@@ -165,8 +165,9 @@ import { DEFAULT_HEALTH_SUBFILTERS, DEFAULT_LIFE_SUBFILTERS } from "@/lib/desk/l
 import { SavedToast } from "@/components/desk/saved-toast";
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, isActionFlash } from "@/lib/desk/action-flash";
 import { eq } from "drizzle-orm";
+import { resolveAssignedProducerName } from "@/lib/activity/producer";
 import { db } from "@/lib/db";
-import { agencySettings, users } from "@/lib/db/schema";
+import { agencySettings } from "@/lib/db/schema";
 import { carriersForDealLine } from "@/lib/deals/carriers-for-line";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB, formatMoney } from "@/lib/domain";
@@ -230,7 +231,7 @@ export default async function DealPage({
   const dealCfValuesPromise = loadRecordValues(deal.id, "deals").catch(
     () => ({} as Record<string, string>),
   );
-  const [comms, scripts, carrierRows, allQuoteLogs, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment, dealPromises] =
+  const [comms, scripts, carrierRows, allQuoteLogs, dealLayoutBundle, deskLineSettings, ownerName, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment, dealPromises] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
@@ -238,14 +239,7 @@ export default async function DealPage({
       listQuoteLogs(),
       loadModuleLayoutBundle("deals", deal.id, deal.lineOfBusiness).catch(() => null),
       loadDeskLineSettings().catch(() => null),
-      deal.ownerId
-        ? db
-            .select({ name: users.name })
-            .from(users)
-            .where(eq(users.id, deal.ownerId))
-            .then((rows) => rows[0] ?? null)
-            .catch(() => null)
-        : Promise.resolve(null),
+      resolveAssignedProducerName(deal.ownerId),
       ensureSeededPipelines()
         .catch(() => null)
         .then(() => listPipelines().catch(() => [])),
@@ -863,7 +857,7 @@ export default async function DealPage({
                   fallback: stageView.slug,
                   liveQuoteIds,
                 })}
-                owner={ownerRow?.name}
+                owner={ownerName}
                 activity={
                   relabelConvertActivityTitle(comms[0]?.title ?? null, {
                     lineOfBusiness: deal.lineOfBusiness,

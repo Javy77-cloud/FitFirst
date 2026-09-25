@@ -168,7 +168,8 @@ export function QuickCommsBoard({
             : policyId
               ? "this policy"
               : "this lead");
-  const toLine = contextLine([contactName, contactPhone, contactEmail]);
+  // Bold header already shows the contact. Subline is phone · email only.
+  const toLine = contextLine([contactPhone, contactEmail]);
   const dial = telHref(contactPhone);
   const firstName = party.split(" ")[0] || party;
 

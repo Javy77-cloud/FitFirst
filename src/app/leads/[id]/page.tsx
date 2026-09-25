@@ -26,7 +26,7 @@ import { RecordDeveloperActions } from "@/components/developer-hub/record-action
 import { parseMacroKind } from "@/lib/developer-hub/macros";
 import { getLead, listRecordActivities } from "@/lib/db/queries";
 import { listEnabledMacrosFor, listEnabledScriptsFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
-import { listDeskUsers } from "@/lib/db/activity-queries";
+import { resolveAssignedProducerName } from "@/lib/activity/producer";
 import { isInboundSocialSource, listAwardableAgents } from "@/lib/leads/offers";
 import { leadActivityByKind } from "@/lib/leads/lead-activity";
 import { DEFAULT_TENANT_ID, type LineOfBusiness } from "@/lib/domain";
@@ -57,10 +57,9 @@ export default async function LeadDetailPage({
   const { id } = await params;
   const { qc } = (await searchParams) ?? {};
   if (!isUuid(id)) notFound();
-  const [row, users, session, agents, routingLog, macros, buttons, scripts, tagExtra, leadLayout, deskLineSettings, comms, agencyRow] =
+  const [row, session, agents, routingLog, macros, buttons, scripts, tagExtra, leadLayout, deskLineSettings, comms, agencyRow] =
     await Promise.all([
       getLead(id),
-      listDeskUsers(),
       currentDeskSession(),
       listAwardableAgents(),
       latestRoutingLog(id),
@@ -88,7 +87,7 @@ export default async function LeadDetailPage({
     leadId: lead.id,
     dealId: deal?.id ?? null,
   });
-  const ownerName = users.find((user) => user.id === lead.ownerId)?.name ?? null;
+  const ownerName = await resolveAssignedProducerName(lead.ownerId);
   const partyName = `${lead.firstName} ${lead.lastName}`.trim();
   const officeAddress = officeMeetingAddress({
     agencyName: agencyRow?.agencyName,

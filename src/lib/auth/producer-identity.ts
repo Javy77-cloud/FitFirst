@@ -33,6 +33,13 @@ const JAVY_IDENTITY_NAMES = [
 
 const IDENTITY_GROUPS: readonly (readonly string[])[] = [JAVY_IDENTITY_NAMES];
 
+/** True when this spelling is one of the historical same-person nicknames, not a later Settings name. */
+export function isListedProducerSpelling(raw: string | null | undefined): boolean {
+  const name = normalizeProducerName(raw);
+  if (!name) return false;
+  return IDENTITY_GROUPS.some((group) => (group as readonly string[]).includes(name));
+}
+
 export function normalizeProducerName(raw: string | null | undefined): string {
   return (raw ?? "")
     .normalize("NFKD")
