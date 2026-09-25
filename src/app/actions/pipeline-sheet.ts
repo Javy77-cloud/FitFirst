@@ -69,14 +69,15 @@ export async function saveDealPipelineCell(
     const [account] = deal.accountId
       ? await db.select().from(accounts).where(eq(accounts.id, deal.accountId))
       : [null];
-    const title = formatDealTitle({
-      contact,
-      lead,
-      accountName: account?.name,
-      primaryNamedInsured: deal.primaryNamedInsured,
-      existingTitle: deal.title,
-      line: nextLine,
-    });
+    const title =
+      formatDealTitle({
+        contact,
+        lead,
+        accountName: account?.name,
+        primaryNamedInsured: deal.primaryNamedInsured,
+        existingTitle: deal.title,
+        line: nextLine,
+      }) || deal.title;
     await db
       .update(deals)
       .set({ lineOfBusiness: nextLine, title, updatedAt: new Date() })

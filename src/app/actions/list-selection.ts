@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { archiveDeal, convertLeadToDeal } from "@/app/actions/crm";
+import { buildDealTitle, clientNameFromStoredTitle } from "@/lib/deals/deal-title";
 import { deleteDeskActivity } from "@/app/actions/activities-desk";
 import { deleteTask } from "@/app/actions/alerts";
 import { isProtectedAnaRecord } from "@/lib/developer-hub/protected";
@@ -160,6 +161,30 @@ export async function duplicateSelectedRecord(formData: FormData): Promise<{
       .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, id)));
     if (!row) return { ok: false, message: "Deal not found." };
     const shopLines = (row.shopLines ?? []).filter(isShopLine);
+    const [contact] = row.contactId
+      ? await db
+          .select({ firstName: contacts.firstName, lastName: contacts.lastName })
+          .from(contacts)
+          .where(eq(contacts.id, row.contactId))
+      : [];
+    const [account] = row.accountId
+      ? await db.select({ name: accounts.name }).from(accounts).where(eq(accounts.id, row.accountId))
+      : [];
+    const [lead] = row.leadId
+      ? await db
+          .select({ firstName: leads.firstName, lastName: leads.lastName })
+          .from(leads)
+          .where(eq(leads.id, row.leadId))
+      : [];
+    const title =
+      buildDealTitle({
+        contact,
+        account,
+        primaryNamedInsured: row.primaryNamedInsured,
+        lead,
+      }) ||
+      clientNameFromStoredTitle(row.title) ||
+      "Untitled deal";
     const [copy] = await db
       .insert(deals)
       .values({
@@ -167,7 +192,7 @@ export async function duplicateSelectedRecord(formData: FormData): Promise<{
         leadId: row.leadId,
         contactId: row.contactId,
         accountId: row.accountId,
-        title: row.title.endsWith("(copy)") ? row.title : `${row.title} (copy)`,
+        title,
         ...NEW_DEAL_PIPELINE_STAGE,
         shopFlow: seedNewDealShopFlow({
           shopLines: shopLines.length ? shopLines : ["home"],

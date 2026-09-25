@@ -4,7 +4,19 @@ import {
   isDealProductId,
   parseDealProduct,
 } from "@/lib/deals/deal-products";
-import { isDuplicateInstance, parseProductInstanceToken, resolveVisibleProductInstances } from "@/lib/deals/product-instances";
+import {
+  isDuplicateInstance,
+  parseProductInstanceToken,
+  resolveVisibleProductInstances,
+  storageLineForInstance,
+} from "@/lib/deals/product-instances";
+import {
+  instanceOwnsSheet,
+  insuredAddressForProductTab,
+  isPropertyCoveringProduct,
+  legacyPropertyOwnerKey,
+  tabRiskForInstance,
+} from "@/lib/deals/product-property";
 import {
   addressFactsFromSheetValues,
   labelProductInstances,
@@ -941,16 +953,29 @@ export function listProductStageChips(input: {
   shopFlow?: unknown;
   pipelineStage?: string | null;
   sheets?: readonly { line: string; values?: Record<string, { value?: string | null } | null> | null }[] | null;
+  /** Per-form risks. A null productKey row is the first property product only. */
+  risks?: readonly { productKey?: string | null; address1?: string | null; city?: string | null }[] | null;
 }): ListProductStageChip[] {
   const instances = resolveVisibleProductInstances(input);
   const stages = productStagesFromShopFlow(input.shopFlow);
   const sheetByLine = new Map((input.sheets ?? []).map((sheet) => [sheet.line, sheet.values ?? {}]));
+  const legacyOwner = legacyPropertyOwnerKey(instances);
   const labels = labelProductInstances(
     instances.map((instance) => {
-      const shopLine = dealProductDef(instance.productId).shopLine;
-      const line = instance.key === instance.productId ? shopLine : `${shopLine}~${instance.key}`;
+      const line = storageLineForInstance(instance, instances);
       const values = sheetByLine.get(line);
-      const facts = addressFactsFromSheetValues(values as never);
+      const property = isPropertyCoveringProduct(instance.productId);
+      const insured = property
+        ? insuredAddressForProductTab({
+            instanceKey: instance.key,
+            ownsSheet: instanceOwnsSheet(instance, instances),
+            sheetValues: values as never,
+            ownRisk: tabRiskForInstance(input.risks ?? [], instance.key, legacyOwner),
+          })
+        : null;
+      const facts = insured
+        ? { address: insured.street, city: insured.city }
+        : addressFactsFromSheetValues(values as never);
       return {
         key: instance.key,
         productId: instance.productId,

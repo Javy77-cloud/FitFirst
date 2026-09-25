@@ -257,6 +257,55 @@ export function addressFromRiskRow(
   };
 }
 
+/**
+ * Street for one product tab, computed at render.
+ * Own risk first. A null product_key row is only the first property product
+ * (callers pass that row as ownRisk). Then this form's address1 or sidecar.
+ * Never property_address, property_oneliner, the deal-level prefill, or another tab.
+ */
+export function insuredAddressForProductTab(input: {
+  instanceKey: string;
+  ownsSheet: boolean;
+  sheetValues?: SheetValues;
+  ownRisk?: { address1?: string | null; city?: string | null } | null;
+}): { street: string; city: string } {
+  const riskStreet = String(input.ownRisk?.address1 ?? "").replace(/\s+/g, " ").trim();
+  if (riskStreet) {
+    return {
+      street: riskStreet,
+      city: String(input.ownRisk?.city ?? "").replace(/\s+/g, " ").trim(),
+    };
+  }
+  if (!input.sheetValues) return { street: "", city: "" };
+  if (input.ownsSheet) {
+    return {
+      street: cellValue(input.sheetValues, "address1"),
+      city: cellValue(input.sheetValues, "city"),
+    };
+  }
+  return {
+    street: cellValue(input.sheetValues, sidecarField(input.instanceKey, "address1")),
+    city: cellValue(input.sheetValues, sidecarField(input.instanceKey, "city")),
+  };
+}
+
+/**
+ * Match a risk to one product tab. A keyed row wins. An unscoped row
+ * (product_key null) belongs only to legacyOwnerKey — the first property product.
+ */
+export function tabRiskForInstance<T extends { productKey?: string | null }>(
+  rows: readonly T[],
+  instanceKey: string,
+  legacyOwnerKey: string | null,
+): T | null {
+  const keyed = rows.find((row) => String(row.productKey ?? "").trim() === instanceKey);
+  if (keyed) return keyed;
+  if (legacyOwnerKey && instanceKey === legacyOwnerKey) {
+    return rows.find((row) => !String(row.productKey ?? "").trim()) ?? null;
+  }
+  return null;
+}
+
 export function riskBelongsToInstance(input: {
   productKey: string | null | undefined;
   instanceKey: string;

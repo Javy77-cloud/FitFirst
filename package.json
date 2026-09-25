@@ -19,6 +19,7 @@
     "appetite:import": "tsx --env-file=.env scripts/import-appetite.ts",
     "appetite:import-nationals": "tsx --env-file=.env scripts/import-appetite.ts data/appetite/fitfirst-nationals-appetite.csv data/appetite/fitfirst-nationals-state-rules.csv",
     "db:assign-owner": "tsx --env-file=.env scripts/assign-owner.ts",
+    "deals:retitle": "tsx --env-file=.env scripts/regenerate-deal-titles.ts",
     "db:merge-gloria-heather": "tsx --env-file=.env scripts/merge-gloria-heather-multiproduct.ts",
     "fixtures:pdf": "tsx scripts/generate-pdfs.ts"
   },

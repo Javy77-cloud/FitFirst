@@ -19,7 +19,7 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/data-ff-deal-title/);
     expect(page).toMatch(/showBrand=\{false\}/);
     expect(page).toMatch(/utilityChrome/);
-    expect(page).toMatch(/<h1[^>]*data-ff-deal-title[^>]*>\s*\{deal\.title\}/);
+    expect(page).toMatch(/<h1[^>]*data-ff-deal-title[^>]*>\s*\{visibleDealTitle\}/);
     expect(page).not.toMatch(/FitFirst/);
     expect(page).toMatch(/recordContext=\{\{/);
     expect(page).not.toMatch(/deal-quick-actions/);
@@ -245,7 +245,7 @@ describe("deal detail final rebuild", () => {
 
   it("keeps the deal title and tabs without Developer Hub record chrome", () => {
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page).toMatch(/<h1[^>]*data-ff-deal-title[^>]*>\s*\{deal\.title\}/);
+    expect(page).toMatch(/<h1[^>]*data-ff-deal-title[^>]*>\s*\{visibleDealTitle\}/);
     expect(page).toMatch(/AGENT_DEAL_TABS/);
     expect(page).not.toMatch(/RecordDeveloperActions/);
     expect(page).not.toMatch(/WidgetHost/);

@@ -198,7 +198,7 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     expect(source("src/lib/desk/action-flash.ts")).toMatch(/SHEET_CONFIRM_HASH = "ff-sheet-confirm"/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/lineRiskFingerprint/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/hydrateCopiedLineFingerprints/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/displayDealTitle/);
     expect(source("src/components/desk/desk-page-trail.tsx")).not.toMatch(
       /border-navy bg-navy text-white/,
     );

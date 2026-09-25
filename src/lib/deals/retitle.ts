@@ -1,58 +1,43 @@
 import { eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { accounts, contacts, deals, leads } from "@/lib/db/schema";
+import { deals } from "@/lib/db/schema";
 import { lifeHealthShopRepair } from "./deal-products";
-import { dealTitleForRecords } from "./deal-title";
 
 let retitlePromise: Promise<number> | null = null;
 
-/** One-shot First Last / Lob rename. Additive — does not wipe seed or coverage. */
+/**
+ * Page-load boot. Does not rewrite deals.title — that is
+ * scripts/regenerate-deal-titles.ts, which writes an audit row per change.
+ * Life/Health shop-line repair stays; it does not touch the title.
+ */
 export async function retitleExistingDeals(): Promise<number> {
   const rows = await db
     .select({
-      deal: deals,
-      contact: contacts,
-      lead: leads,
-      account: accounts,
+      id: deals.id,
+      shopProducts: deals.shopProducts,
+      shopLines: deals.shopLines,
+      lineOfBusiness: deals.lineOfBusiness,
+      quotingLine: deals.quotingLine,
+      quotingForm: deals.quotingForm,
+      policySubType: deals.policySubType,
+      updatedAt: deals.updatedAt,
     })
     .from(deals)
-    .leftJoin(contacts, eq(deals.contactId, contacts.id))
-    .leftJoin(leads, eq(deals.leadId, leads.id))
-    .leftJoin(accounts, eq(deals.accountId, accounts.id))
     .where(eq(deals.tenantId, DEFAULT_TENANT_ID));
 
   let changed = 0;
   for (const row of rows) {
-    const shopRepair = lifeHealthShopRepair({
-      shopProducts: row.deal.shopProducts,
-      shopLines: row.deal.shopLines,
-      lineOfBusiness: row.deal.lineOfBusiness,
-      quotingLine: row.deal.quotingLine,
-      quotingForm: row.deal.quotingForm,
-      policySubType: row.deal.policySubType,
-    });
-    const next = dealTitleForRecords({
-      lineOfBusiness: row.deal.lineOfBusiness,
-      primaryNamedInsured: row.deal.primaryNamedInsured,
-      title: row.deal.title,
-      contact: row.contact,
-      lead: row.lead,
-      account: row.account,
-      quotingForm: row.deal.quotingForm,
-      policySubType: row.deal.policySubType,
-    });
-    if ((!next || next === row.deal.title) && !shopRepair) continue;
+    const shopRepair = lifeHealthShopRepair(row);
+    if (!shopRepair) continue;
     await db
       .update(deals)
       .set({
-        ...(next && next !== row.deal.title ? { title: next } : {}),
-        ...(shopRepair
-          ? { shopLines: shopRepair.shopLines, shopProducts: shopRepair.shopProducts }
-          : {}),
-        updatedAt: row.deal.updatedAt ?? new Date(),
+        shopLines: shopRepair.shopLines,
+        shopProducts: shopRepair.shopProducts,
+        updatedAt: row.updatedAt ?? new Date(),
       })
-      .where(eq(deals.id, row.deal.id));
+      .where(eq(deals.id, row.id));
     changed += 1;
   }
   return changed;

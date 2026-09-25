@@ -5,8 +5,7 @@ import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { formatPersonName } from "@/lib/crm/display";
-import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
-import { formatDealTitle } from "@/lib/deals/deal-title";
+import { buildDealTitle, clientNameFromStoredTitle } from "@/lib/deals/deal-title";
 import { matchDealLookup } from "@/lib/deals/lookup";
 import { uploadDealCta } from "@/lib/deals/pipeline-desk";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -43,14 +42,11 @@ export async function createDealFromUploadSearch(formData: FormData) {
   const [pickedContact] = contactId
     ? await db.select().from(contacts).where(eq(contacts.id, contactId))
     : [];
-  const typed = splitTypedPartyName(dealName);
-  const title = formatDealTitle({
-    firstName: pickedContact?.firstName || typed.firstName,
-    lastName: pickedContact?.lastName || typed.lastName,
-    primaryNamedInsured: dealName,
-    existingTitle: dealName,
-    line: "HO",
-  });
+  const title =
+    buildDealTitle({
+      contact: pickedContact,
+      primaryNamedInsured: clientNameFromStoredTitle(dealName),
+    }) || "Untitled deal";
   const [pipeline] = await db
     .select()
     .from(pipelines)
@@ -69,7 +65,9 @@ export async function createDealFromUploadSearch(formData: FormData) {
       contactId: pickedContact?.id ?? null,
       accountKind: "personal",
       bindTarget: "contact",
-      primaryNamedInsured: pickedContact ? formatPersonName(pickedContact) : dealName,
+      primaryNamedInsured: pickedContact
+        ? formatPersonName(pickedContact)
+        : clientNameFromStoredTitle(dealName),
     })
     .returning();
   if (!deal) throw new Error("Deal create failed: could not insert a deal row.");

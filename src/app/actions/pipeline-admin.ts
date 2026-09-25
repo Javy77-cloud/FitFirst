@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { accounts, contacts, deals, pipelineStages, pipelines, renewalQueue } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
 import { formatPersonName } from "@/lib/crm/display";
-import { formatDealTitle } from "@/lib/deals/deal-title";
+import { buildDealTitle, clientNameFromStoredTitle } from "@/lib/deals/deal-title";
 import { defaultStageColor, STATUS_COLOR_KEYS, type StatusColorKey } from "@/lib/desk/status-colors";
 import { isUuid } from "@/lib/ids";
 import { matchDealLookup } from "@/lib/deals/lookup";
@@ -101,16 +101,14 @@ export async function createPipelineDeal(formData: FormData) {
   const quotingLine =
     picked?.quotingLine ||
     (pipelineSlug === "life" ? "life" : pipelineSlug === "health" ? "health" : null);
-  const namedTitle = formatDealTitle({
-    firstName: pickedContact?.firstName,
-    lastName: pickedContact?.lastName,
-    accountName: pickedAccount && !pickedContact ? pickedAccount.name : null,
-    primaryNamedInsured: pickedContact ? formatPersonName(pickedContact) : title,
-    existingTitle: title,
-    line: lineOfBusiness,
-    quotingForm,
-    policySubType,
-  });
+  const namedTitle =
+    buildDealTitle({
+      contact: pickedContact,
+      account: pickedAccount,
+      primaryNamedInsured: clientNameFromStoredTitle(title),
+    }) ||
+    clientNameFromStoredTitle(title) ||
+    "Untitled deal";
   const [deal] = await db
     .insert(deals)
     .values({

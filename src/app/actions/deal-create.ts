@@ -356,12 +356,7 @@ export async function createDealFromExistingPick(
   if (!contact) return { ok: false, message: "Contact not found." };
 
   const draft = packageCreateDraft(packageLinesFromForm(formData));
-  const title = formatDealTitle({
-    firstName: contact.firstName,
-    lastName: contact.lastName,
-    line: draft.lineOfBusiness,
-    quotingForm: draft.quotingForm,
-  });
+  const title = formatDealTitle({ contact, line: draft.lineOfBusiness }) || "Untitled deal";
   const [deal] = await db
     .insert(deals)
     .values({

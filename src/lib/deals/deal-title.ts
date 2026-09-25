@@ -1,10 +1,8 @@
 import { LOB_TO_SHOP_LINE, QUOTING_FORMS, SHOP_LINE_LABELS } from "@/lib/domain";
 import {
   dealFamilyFromHints,
-  inferDealProducts,
   type DealProductId,
 } from "@/lib/deals/deal-products";
-import { productChipLabel } from "@/lib/deals/product-stages";
 import { isQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { matchesContains } from "@/lib/search/live-query";
 
@@ -208,70 +206,98 @@ export function formatDealPersonName(
   firstName?: string | null,
   lastName?: string | null,
 ): string {
-  return [firstName, lastName]
-    .map((part) => (part ?? "").trim())
-    .filter(Boolean)
-    .join(" ");
+  return personName(firstName, lastName);
 }
 
-/** Header title follows the active product chip — Heather / Auto, not stuck on / HO3. */
-export function dealTitleForActiveProduct(input: {
-  title?: string | null;
-  product: DealProductId;
-  quotingForm?: string | null;
-  sheetForm?: string | null;
-  label?: string | null;
-}): string {
-  const name = stripDealTitleLob(input.title);
-  const suffix =
-    input.label?.trim() ||
-    productChipLabel({
-      product: input.product,
-      quotingForm: input.quotingForm,
-      sheetForm: input.sheetForm,
-    });
-  if (!name) return suffix;
-  return joinDealTitleParts(name, suffix);
+function collapseWhitespace(value: string | null | undefined): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
-/** List + header title: Life/Health never inherit leftover / HO3 from stale shop_lines. */
-export function visibleDealTitle(deal: {
-  title?: string | null;
-  shopProducts?: string[] | null;
-  shopLines?: string[] | null;
-  lineOfBusiness?: string | null;
-  quotingLine?: string | null;
-  quotingForm?: string | null;
-  policySubType?: string | null;
-}): string {
-  const products = inferDealProducts(deal);
-  const product = products[0] ?? "homeowners";
-  return dealTitleForActiveProduct({
-    title: deal.title,
-    product,
-    quotingForm: deal.quotingForm ?? deal.policySubType,
-  });
+export type BuildDealTitleInput = {
+  contact?: { firstName?: string | null; lastName?: string | null } | null;
+  account?: { name?: string | null } | null;
+  accountName?: string | null;
+  primaryNamedInsured?: string | null;
+  lead?: { firstName?: string | null; lastName?: string | null } | null;
+};
+
+function personName(first?: string | null, last?: string | null): string {
+  return [collapseWhitespace(first), collapseWhitespace(last)].filter(Boolean).join(" ");
 }
 
-/** First Last / {form} — e.g. Gloria Martinez / DP3. One slash. Form label beats generic Homeowners. */
+/**
+ * Deal name is only the client. Contact, then account, then primary named
+ * insured, then lead. Never a product, address, or policy number.
+ */
+export function buildDealTitle(input: BuildDealTitleInput): string {
+  const contact = personName(input.contact?.firstName, input.contact?.lastName);
+  if (contact) return contact;
+  const account = collapseWhitespace(input.account?.name ?? input.accountName);
+  if (account) return account;
+  const insured = collapseWhitespace(input.primaryNamedInsured);
+  if (insured) return insured;
+  return personName(input.lead?.firstName, input.lead?.lastName);
+}
+
+/** Text before the first " / " — display fallback until stored titles are regenerated. */
+export function clientNameFromStoredTitle(title: string | null | undefined): string {
+  const stored = collapseWhitespace(title);
+  if (!stored) return "";
+  const head = stored.split(/\s+\/\s+/)[0]?.trim() ?? "";
+  return head || stored;
+}
+
+export function displayDealTitle(input: BuildDealTitleInput & { title?: string | null }): string {
+  return buildDealTitle(input) || clientNameFromStoredTitle(input.title);
+}
+
+/**
+ * Header used to append the active product chip (and its street). The name
+ * is the client only. `product` / `label` stay on the type so older callers compile.
+ */
+export function dealTitleForActiveProduct(
+  input: {
+    title?: string | null;
+    product?: DealProductId;
+    quotingForm?: string | null;
+    sheetForm?: string | null;
+    label?: string | null;
+  } & BuildDealTitleInput,
+): string {
+  return displayDealTitle(input);
+}
+
+/** Lists and the deal header. Product chips stay on the tabs, not in the name. */
+export function visibleDealTitle(
+  deal: {
+    title?: string | null;
+    primaryNamedInsured?: string | null;
+    contact?: BuildDealTitleInput["contact"];
+    lead?: BuildDealTitleInput["lead"];
+    account?: BuildDealTitleInput["account"];
+    accountName?: string | null;
+    shopProducts?: string[] | null;
+    shopLines?: string[] | null;
+    lineOfBusiness?: string | null;
+    quotingLine?: string | null;
+    quotingForm?: string | null;
+    policySubType?: string | null;
+  },
+): string {
+  return displayDealTitle(deal);
+}
+
+/** Client name only. Line, form, and subtype are ignored so older callers stop appending products. */
 export function formatDealTitle(input: DealTitleInput): string {
-  const person = resolveDealPerson(input);
-  const name = formatDealPersonName(person.firstName, person.lastName) || person.accountName;
-  const family = dealFamilyFromHints({
-    lineOfBusiness: input.line,
-    quotingForm: input.quotingForm,
-    policySubType: input.policySubType,
+  return buildDealTitle({
+    contact: input.contact,
+    accountName: input.accountName,
+    primaryNamedInsured:
+      collapseWhitespace(input.primaryNamedInsured) ||
+      personName(input.firstName, input.lastName) ||
+      null,
+    lead: input.lead,
   });
-  const formHint =
-    dealTitleFormWord(input.quotingForm, family) ??
-    dealTitleFormWord(input.policySubType, family) ??
-    null;
-  const lob = formHint ?? dealTitleLobWord(input.line, input.quotingForm ?? input.policySubType);
-  if (!name) return lob;
-  if (name.toLowerCase() === lob.toLowerCase()) return name;
-  const suffix = `${TITLE_PART_SEP}${lob}`.toLowerCase();
-  if (name.toLowerCase().endsWith(suffix)) return name;
-  return joinDealTitleParts(name, lob);
 }
 
 export function dealTitleFromPerson(
@@ -328,16 +354,13 @@ export function dealTitleForRecords(input: {
   quotingForm?: string | null;
   policySubType?: string | null;
 }): string {
-  return formatDealTitle({
-    firstName: input.firstName,
-    lastName: input.lastName,
+  return buildDealTitle({
     contact: input.contact,
+    account: input.account,
+    primaryNamedInsured:
+      collapseWhitespace(input.primaryNamedInsured) ||
+      personName(input.firstName, input.lastName) ||
+      null,
     lead: input.lead,
-    accountName: input.account?.name,
-    primaryNamedInsured: input.primaryNamedInsured,
-    existingTitle: input.title,
-    line: input.lineOfBusiness,
-    quotingForm: input.quotingForm,
-    policySubType: input.policySubType,
   });
 }

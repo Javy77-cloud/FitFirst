@@ -77,11 +77,13 @@ export async function ensureShoppingDealForLead(input: {
     .values({
       tenantId: DEFAULT_TENANT_ID,
       leadId: lead.id,
-      title: formatDealTitle({
-        firstName: input.firstName,
-        lastName: input.lastName,
-        line: SHOP_LINE_TO_LOB[input.line],
-      }),
+      title:
+        formatDealTitle({
+          firstName: input.firstName,
+          lastName: input.lastName,
+          lead,
+          line: SHOP_LINE_TO_LOB[input.line],
+        }) || "Untitled deal",
       pipelineStage: "shopping",
       lineOfBusiness: SHOP_LINE_TO_LOB[input.line],
       state: "FL",

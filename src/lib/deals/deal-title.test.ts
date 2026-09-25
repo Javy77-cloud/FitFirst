@@ -1,4 +1,6 @@
+import { createElement } from "react";
 import { readFileSync } from "node:fs";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DEAL_STAGES } from "@/lib/domain";
 import { SEEDED_PIPELINES } from "@/lib/wire/pipeline";
@@ -6,9 +8,12 @@ import { DEALS_LIST_COLUMNS, defaultVisibleIds, PIPELINE_LIST_COLUMNS } from "@/
 import { normalizeDealsVisibleColumns, TABLE_COLUMNS } from "@/lib/desk/columns";
 import { matchesDealFilters } from "@/lib/crm/lists";
 import {
+  buildDealTitle,
+  clientNameFromStoredTitle,
   dealSearchHaystack,
   dealTitleForActiveProduct,
   dealTitleFromPerson,
+  displayDealTitle,
   visibleDealTitle,
   dealTitleFormWord,
   dealTitleLobWord,
@@ -26,70 +31,106 @@ function source(file: string) {
   return readFileSync(file, "utf8");
 }
 
-describe("BH1 — deal titles are First Last / Lob", () => {
-  it("names converts and new deals First Last / Homeowners with one slash", () => {
-    expect(dealTitleFromPerson("Javier", "Canales", "HO")).toBe("Javier Canales / Homeowners");
-    expect(dealTitleFromPerson("Javier", "Canales", "AUTO")).toBe("Javier Canales / Auto");
-    expect(formatDealTitle({ firstName: "Elena", lastName: "Ruiz", line: "HO" })).toBe("Elena Ruiz / Homeowners");
+describe("deal title is the client name only", () => {
+  it("builds a person, a business, a named insured, or a lead — and trims whitespace", () => {
+    expect(buildDealTitle({ contact: { firstName: "Gloria", lastName: "Martinez" } })).toBe(
+      "Gloria Martinez",
+    );
+    expect(
+      buildDealTitle({
+        contact: { firstName: "  Gloria  ", lastName: "  Martinez  " },
+        account: { name: "Should Not Win LLC" },
+        primaryNamedInsured: "Someone Else",
+        lead: { firstName: "Edmerson", lastName: "Vazquez" },
+      }),
+    ).toBe("Gloria Martinez");
+    expect(buildDealTitle({ account: { name: "  Harbor Key Marine LLC  " } })).toBe(
+      "Harbor Key Marine LLC",
+    );
+    expect(buildDealTitle({ accountName: "Harbor Key Marine LLC" })).toBe("Harbor Key Marine LLC");
+    expect(
+      buildDealTitle({
+        accountName: "Harbor Key Marine LLC",
+        primaryNamedInsured: "Gloria Martinez",
+        lead: { firstName: "Edmerson", lastName: "Vazquez" },
+      }),
+    ).toBe("Harbor Key Marine LLC");
+    expect(buildDealTitle({ primaryNamedInsured: "  Gloria   Martinez  " })).toBe("Gloria Martinez");
+    expect(
+      buildDealTitle({
+        primaryNamedInsured: "Gloria Martinez",
+        lead: { firstName: "Edmerson", lastName: "Vazquez" },
+      }),
+    ).toBe("Gloria Martinez");
+    expect(buildDealTitle({ lead: { firstName: " Elena ", lastName: " Ruiz " } })).toBe("Elena Ruiz");
+    expect(buildDealTitle({})).toBe("");
+    expect(buildDealTitle({ contact: { firstName: "   ", lastName: "" }, lead: { firstName: "Ana", lastName: "Dib" } })).toBe(
+      "Ana Dib",
+    );
+  });
+
+  it("ignores line, form, address, and the active product chip", () => {
+    expect(dealTitleFromPerson("Javier", "Canales", "HO")).toBe("Javier Canales");
+    expect(dealTitleFromPerson("Javier", "Canales", "AUTO")).toBe("Javier Canales");
+    expect(formatDealTitle({ firstName: "Elena", lastName: "Ruiz", line: "HO" })).toBe("Elena Ruiz");
     expect(formatDealTitle({ accountName: "Harbor Key Marine LLC", line: "GL" })).toBe(
-      "Harbor Key Marine LLC / GL",
-    );
-    expect(joinDealTitleParts("Javier Canales", "Homeowners")).toBe("Javier Canales / Homeowners");
-    expect((dealTitleFromPerson("Javier", "Canales", "HO").match(/\//g) ?? []).length).toBe(1);
-    expect(dealTitleFromPerson("Javier", "Canales", "HO")).not.toContain("Javier / Canales");
-    expect(dealTitleLobWord("HO")).toBe("Homeowners");
-    expect(dealTitleLobWord("FLOOD")).toBe("Flood");
-    expect(dealTitleLobWord("AUTO")).toBe("Auto");
-    expect(dealTitleForActiveProduct({ title: "Heather Camirand / HO3", product: "auto" })).toBe(
-      "Heather Camirand / Auto",
-    );
-    expect(dealTitleForActiveProduct({ title: "Heather Camirand / HO3", product: "flood" })).toBe(
-      "Heather Camirand / Flood",
+      "Harbor Key Marine LLC",
     );
     expect(
-      dealTitleForActiveProduct({
-        title: "Gloria Martinez / HO3",
-        product: "landlord",
+      formatDealTitle({
+        firstName: "Gloria",
+        lastName: "Martinez",
+        line: "HO",
         quotingForm: "DP3",
+        policySubType: "DP3",
       }),
-    ).toBe("Gloria Martinez / DP3");
+    ).toBe("Gloria Martinez");
+    expect(dealTitleForActiveProduct({ title: "Heather Camirand / HO3", product: "auto" })).toBe(
+      "Heather Camirand",
+    );
     expect(
       dealTitleForActiveProduct({
-        title: "Gloria Martinez / HO3",
-        product: "landlord",
-        quotingForm: "HO3",
+        title: "Gloria Martinez / HO3 / HO3 / DP3",
+        product: "homeowners",
+        label: "HO3 10358 Northwest 30th",
       }),
-    ).toBe("Gloria Martinez / DP3");
+    ).toBe("Gloria Martinez");
     expect(
-      dealTitleForActiveProduct({
-        title: "Tyler Bhattel / Term Life",
-        product: "life_term",
-        quotingForm: "HO3",
+      displayDealTitle({
+        contact: { firstName: "Gloria", lastName: "Martinez" },
+        title: "Gloria Martinez / HO3 / HO3 / DP3",
       }),
-    ).toBe("Tyler Bhattel / Term Life");
-    expect(
-      visibleDealTitle({
-        title: "Tyler Bhattel / Term Life",
-        shopLines: ["home"],
-        shopProducts: [],
-        lineOfBusiness: "LIFE",
-        quotingLine: "life",
-        quotingForm: "Term Life",
-      }),
-    ).toBe("Tyler Bhattel / Term Life");
-    expect(
-      visibleDealTitle({
-        title: "Tyler Barthel / HO3",
-        shopLines: ["home"],
-        lineOfBusiness: "LIFE",
-        quotingLine: "life",
-      }),
-    ).toBe("Tyler Barthel / Term Life");
-    expect(dealTitleLobWord("LIFE", "HO3")).toBe("Life");
-    expect(dealTitleFormWord("HO3", "life")).toBeNull();
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);
-    expect(source("src/lib/crm/convert.ts")).toMatch(/formatDealTitle|dealTitleFromPerson/);
+    ).toBe("Gloria Martinez");
+    expect(clientNameFromStoredTitle("Gloria Martinez / HO3 10358 Northwest 30th")).toBe(
+      "Gloria Martinez",
+    );
+    expect(visibleDealTitle({ title: "Tyler Bhattel / Term Life", lineOfBusiness: "LIFE" })).toBe(
+      "Tyler Bhattel",
+    );
+    const html = renderToString(
+      createElement(
+        "h1",
+        { "data-ff-deal-title": true },
+        displayDealTitle({
+          contact: { firstName: "Gloria", lastName: "Martinez" },
+          title: "Gloria Martinez / HO3 / HO3 / DP3",
+          primaryNamedInsured: "Gloria Martinez / HO3 10358 NW 30th TER",
+        }),
+      ),
+    );
+    expect(html).toContain("Gloria Martinez");
+    expect(html).not.toContain("10358");
+    expect(html).not.toContain("HO3");
+    expect(html).not.toContain("Northwest");
+    expect(html).not.toContain("NW 30th");
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).toMatch(/displayDealTitle/);
+    expect(page).not.toMatch(/dealTitleForActiveProduct/);
+    expect(page).toMatch(/insuredAddressForProductTab/);
+    expect(source("src/lib/crm/convert.ts")).toMatch(/formatDealTitle|dealTitleFromPerson|buildDealTitle/);
     expect(source("src/lib/crm/convert.ts")).not.toMatch(/\$\{lead\.lastName\} · \$\{line\} shop/);
+    expect(dealTitleLobWord("HO")).toBe("Homeowners");
+    expect(joinDealTitleParts("Javier Canales", "Homeowners")).toBe("Javier Canales / Homeowners");
   });
 });
 
@@ -101,7 +142,7 @@ describe("BH2 — LOB change retitles the deal", () => {
       title: "Javier Canales Home",
       lead: { firstName: "Javier", lastName: "Canales" },
     });
-    expect(next).toBe("Javier Canales / Auto");
+    expect(next).toBe("Javier Canales");
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(/dealTitleForRecords|formatDealTitle/);
   });
 });
@@ -126,7 +167,7 @@ describe("BH3 — existing shop titles are rewritten", () => {
         existingTitle: "Canales - HO shop",
         line: "HO",
       }),
-    ).toBe("Javier Canales / Homeowners");
+    ).toBe("Javier Canales");
     expect(
       dealTitleForRecords({
         lineOfBusiness: "HO",
@@ -134,13 +175,14 @@ describe("BH3 — existing shop titles are rewritten", () => {
         contact: { firstName: "Ana", lastName: "Dib" },
         primaryNamedInsured: "Ana Dib",
       }),
-    ).toBe("Ana Dib / Homeowners");
+    ).toBe("Ana Dib");
     expect(
       formatDealTitle({
         existingTitle: "Javier Canales Home",
         line: "HO",
       }),
-    ).toBe("Javier Canales / Homeowners");
+    ).toBe("");
+    expect(clientNameFromStoredTitle("Javier Canales / Homeowners")).toBe("Javier Canales");
     expect(
       formatDealTitle({
         firstName: "Javier",
@@ -148,7 +190,7 @@ describe("BH3 — existing shop titles are rewritten", () => {
         existingTitle: "Javier / Canales / Home",
         line: "HO",
       }),
-    ).toBe("Javier Canales / Homeowners");
+    ).toBe("Javier Canales");
   });
 });
 
@@ -244,14 +286,17 @@ describe("sep7bq — First Last / Lob backfill", () => {
     expect(sql).toMatch(/NOT IN \('Home'/);
     expect(sql).not.toMatch(/DROP TABLE/);
     expect(sql).not.toMatch(/db:seed/);
-    expect(source("src/lib/deals/retitle.ts")).toMatch(/dealTitleForRecords/);
+    expect(source("scripts/regenerate-deal-titles.ts")).toMatch(/buildDealTitle/);
+    expect(source("scripts/regenerate-deal-titles.ts")).toMatch(/deal\.title_updated/);
+    expect(source("scripts/regenerate-deal-titles.ts")).toMatch(/Owner request \(Javy\)/);
+    expect(source("src/lib/deals/retitle.ts")).not.toMatch(/dealTitleForRecords/);
+    expect(source("src/lib/deals/retitle.ts")).not.toMatch(/title: next/);
     expect(source("src/lib/deals/deal-title.ts")).toMatch(/formatDealPersonName/);
   });
 });
 
 describe("sep7 — Deal Details applicant rename retitles even when lead differs", () => {
-  it("builds First Last / Lob from deal fields and ignores linked lead/contact names", () => {
-    // Edmerson Vasquez lead → Gloria Martinez applicant on Deal Details
+  it("lets a linked contact win, then the named insured, then the lead", () => {
     expect(
       formatDealTitle({
         firstName: "Gloria",
@@ -262,7 +307,7 @@ describe("sep7 — Deal Details applicant rename retitles even when lead differs
         contact: { firstName: "Edmerson", lastName: "Vazquez" },
         line: "HO",
       }),
-    ).toBe("Gloria Martinez / Homeowners");
+    ).toBe("Edmerson Vazquez");
     expect(
       dealTitleForRecords({
         lineOfBusiness: "HO",
@@ -272,20 +317,16 @@ describe("sep7 — Deal Details applicant rename retitles even when lead differs
         title: "Edmerson Vazquez / Homeowners",
         lead: { firstName: "Edmerson", lastName: "Vazquez" },
       }),
-    ).toBe("Gloria Martinez / Homeowners");
-    // Insured/applicant fields beat lead when explicit first/last absent
+    ).toBe("Gloria Martinez");
     expect(
-      dealTitleForRecords({
-        lineOfBusiness: "HO",
-        primaryNamedInsured: "Gloria Martinez",
-        title: "Edmerson Vazquez / Homeowners",
+      formatDealTitle({
+        firstName: "Gloria",
+        lastName: "Martinez",
         lead: { firstName: "Edmerson", lastName: "Vazquez" },
+        line: "HO",
       }),
-    ).toBe("Gloria Martinez / Homeowners");
-    expect(source("src/app/actions/custom-fields.ts")).toMatch(/formatDealTitle/);
-    expect(source("src/app/actions/custom-fields.ts")).toMatch(
-      /Omit contact\/lead|omit contact\/lead|intentionally omit contact/i,
-    );
+    ).toBe("Gloria Martinez");
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/buildDealTitle/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/leadId \/ contactId are intentionally not touched/);
   });
 });
@@ -309,7 +350,7 @@ describe("sep13 — deal title uses deepest cascade form label", () => {
         quotingForm: "DP3",
         policySubType: "DP3",
       }),
-    ).toBe("Gloria Martinez / DP3");
+    ).toBe("Gloria Martinez");
     expect(
       formatDealTitle({
         firstName: "Gloria",
@@ -317,7 +358,7 @@ describe("sep13 — deal title uses deepest cascade form label", () => {
         line: "HO",
         quotingForm: "HO3",
       }),
-    ).toBe("Gloria Martinez / HO3");
+    ).toBe("Gloria Martinez");
     expect(
       formatDealTitle({
         firstName: "Tyler",
@@ -325,8 +366,8 @@ describe("sep13 — deal title uses deepest cascade form label", () => {
         line: "LIFE",
         policySubType: "Term Life",
       }),
-    ).toBe("Tyler Bhattel / Term Life");
-    expect(source("src/app/actions/custom-fields.ts")).toMatch(/quotingForm: form\?\.id/);
+    ).toBe("Tyler Bhattel");
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/quotingForm: form\.id/);
     expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(
       /data-ff-pipeline-strip/,
     );

@@ -1,6 +1,6 @@
 import { mergeDealListCascadeSync } from "@/lib/deals/insurance-cascade";
 import { DEAL_WORK_TAB_KEY } from "@/lib/deals/tabs";
-import { formatDealTitle, parseTitlePerson, stripDealTitleLob } from "@/lib/deals/deal-title";
+import { buildDealTitle, clientNameFromStoredTitle, formatDealPersonName } from "@/lib/deals/deal-title";
 
 /** Custom-field keys that must not ride along when cloning Deal Details. */
 export const DEAL_COPY_SKIP_KEYS = new Set([DEAL_WORK_TAB_KEY]);
@@ -31,23 +31,19 @@ export type SourceDealTitleParts = {
   policySubType?: string | null;
 };
 
-/** Rebuild First Last / {form} — never append "(copy)". */
+/** Client name only — never append "(copy)" or a product. */
 export function titleForCopiedDeal(input: SourceDealTitleParts): string {
-  const line = input.lineOfBusiness || "HO";
-  const fromTitle = parseTitlePerson(input.title);
-  const stripped = stripDealTitleLob(input.title);
-  // Drop a trailing "(copy)" leftover from older duplicates.
-  const cleaned = stripped.replace(/\s*\(copy\)\s*$/i, "").trim();
-  return formatDealTitle({
-    firstName: input.firstName || input.contact?.firstName || fromTitle.firstName,
-    lastName: input.lastName || input.contact?.lastName || fromTitle.lastName,
-    accountName: input.accountName,
-    primaryNamedInsured: input.primaryNamedInsured,
-    existingTitle: cleaned || input.title,
-    line,
-    quotingForm: input.quotingForm,
-    policySubType: input.policySubType,
-  });
+  const cleaned = String(input.title ?? "").replace(/\s*\(copy\)\s*$/i, "").trim();
+  return (
+    buildDealTitle({
+      contact: input.contact,
+      accountName: input.accountName,
+      primaryNamedInsured:
+        input.primaryNamedInsured ||
+        formatDealPersonName(input.firstName, input.lastName) ||
+        null,
+    }) || clientNameFromStoredTitle(cleaned)
+  );
 }
 
 export type CreateDealPickHit = {

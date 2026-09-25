@@ -145,7 +145,12 @@ export function DealListTable({
                   >
                     <td data-col="deal" data-sheet-col="deal">
                       <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                        {visibleDealTitle(deal)}
+                        {visibleDealTitle({
+                          ...deal,
+                          contact,
+                          lead,
+                          account,
+                        })}
                       </Link>
                     </td>
                     <td data-col="actions" data-sheet-col="actions">

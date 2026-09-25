@@ -87,6 +87,7 @@ import {
 } from "@/lib/deals/product-instances";
 import {
   instanceOwnsSheet,
+  insuredAddressForProductTab,
   insuredFieldsFromAddress,
   isPropertyCoveringProduct,
   legacyPropertyOwnerKey,
@@ -144,7 +145,7 @@ import { quoteIdsWithFolderPolicy } from "@/lib/policy/mint-gate";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
 import { dealStageView } from "@/lib/deals/deal-columns";
 import { uniqueDisplayPhones } from "@/lib/deals/header-addresses";
-import { dealTitleForActiveProduct } from "@/lib/deals/deal-title";
+import { displayDealTitle } from "@/lib/deals/deal-title";
 import {
   excludedCarrierIdsFromLogs,
   hasShopMarketAction,
@@ -288,6 +289,13 @@ export default async function DealPage({
   const dealCfValues = await dealCfValuesPromise;
   const dealValues = { ...dealCfValues, ...(dealLayoutBundle?.stored ?? {}) };
   const isAna = deal.id === DEAL_ID;
+  const visibleDealTitle = displayDealTitle({
+    contact,
+    account,
+    primaryNamedInsured: deal.primaryNamedInsured,
+    lead,
+    title: deal.title,
+  });
   const partyName =
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
@@ -506,33 +514,27 @@ export default async function DealPage({
   );
   const instanceLabelRows = productInstances.map((instance) => {
     const line = storageLineForInstance(instance, productInstances);
-    const sheet =
-      sheetsForProperties.find((row) => row.line === line) ??
-      (instance.key === activeInstance.key ? activeSheet : null);
-    const facts = addressFactsFromSheetValues(sheet?.values);
+    const sheet = sheetsForProperties.find((row) => row.line === line) ?? null;
     const owns = instanceOwnsSheet(instance, productInstances);
-    let address = facts.address;
-    let city = facts.city;
-    if (isPropertyCoveringProduct(instance.productId)) {
-      const resolved = resolveProductPropertyAddress({
-        instanceKey: instance.key,
-        ownsSheet: owns,
-        legacyOwner: instance.key === legacyPropertyKey,
-        storedDeal: dealValues,
-        sheetValues: sheet?.values,
-        dwellingFire: isDwellingFireProduct(dealProductDef(instance.productId).quotingForm, instance.productId),
-        ownRisk: riskForInstance(propertyRiskRows, instance.key, legacyPropertyKey),
-      });
-      address = resolved.address.street;
-      city = resolved.address.city;
-    }
+    const property = isPropertyCoveringProduct(instance.productId);
+    const insured = property
+      ? insuredAddressForProductTab({
+          instanceKey: instance.key,
+          ownsSheet: owns,
+          sheetValues: sheet?.values,
+          ownRisk: riskForInstance(propertyRiskRows, instance.key, legacyPropertyKey),
+        })
+      : null;
+    const facts = insured
+      ? { address: insured.street, city: insured.city }
+      : addressFactsFromSheetValues(sheet?.values);
     return {
       key: instance.key,
       productId: instance.productId,
       quotingForm: deal.quotingForm,
       sheetForm: sheet?.values?.quoting_form?.value ?? null,
-      address,
-      city,
+      address: facts.address,
+      city: facts.city,
       vehicles: vehiclesFromSheetValues(sheet?.values),
     };
   });
@@ -592,7 +594,7 @@ export default async function DealPage({
   const noticeReturnTo = `/deals/${deal.id}?tab=${activeTab}&product=${activeInstance.key}`;
   const noticeProps = {
     dealId: deal.id,
-    dealName: deal.title,
+    dealName: visibleDealTitle,
     contactId: deal.contactId,
     product: activeProduct,
     stage: activeProductState.stage,
@@ -651,13 +653,6 @@ export default async function DealPage({
       shopLine: productLine,
       quotingForm: form,
     };
-  });
-  const visibleDealTitle = dealTitleForActiveProduct({
-    title: deal.title,
-    product: activeProduct,
-    quotingForm: titleForm,
-    sheetForm: titleForm,
-    label: activeInstanceLabel,
   });
   const quoteChoices = lineQuotes
     .filter((row) => row.quote.stub !== true)

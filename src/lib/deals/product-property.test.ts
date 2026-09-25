@@ -14,8 +14,11 @@ import {
   DEAL_INSURED_ADDRESS_KEYS,
   DEAL_MAILING_ADDRESS_KEYS,
   editProductAddress,
+  insuredAddressForProductTab,
+  instanceOwnsSheet,
   legacyPropertyOwnerKey,
   newCopyPropertySeed,
+  tabRiskForInstance,
   vehiclesOnAutoSheet,
   overlaySharedProductSheet,
   productTabShowsError,
@@ -206,6 +209,71 @@ describe("per-product address edits", () => {
     expect(restored.mailing_address).toBe(DEAL_STREET);
     expect(restored.city).toBe("Miami Beach");
     expect(dealLevelPropertyAddress(dealInsured).street).toBe(DEAL_STREET);
+  });
+
+  it("labels each tab from that form's own insured address, live", () => {
+    const instances = [
+      { key: "homeowners", productId: "homeowners" as const },
+      { key: "landlord", productId: "landlord" as const },
+      { key: "homeowners~88uvyj", productId: "homeowners" as const },
+    ];
+    const legacy = legacyPropertyOwnerKey(instances);
+    expect(legacy).toBe("homeowners");
+    const homeSheet = {
+      address1: { value: "10358 NW 30th TER" },
+      property_address: { value: "10358 NW 30th TER, Doral, FL 33172" },
+      city: { value: "Doral" },
+    };
+    const landlordSheet = {
+      property_address: { value: "10358 NW 30th TER, Doral, FL 33172" },
+    };
+    const copySheet = {
+      address1: { value: "16021 Northwest 79th Court" },
+      city: { value: "Miami" },
+    };
+    const risks = [{ productKey: null as string | null, address1: "8944 Adriatico Lane", city: "Kissimmee" }];
+    const rows = instances.map((instance) => {
+      const owns = instanceOwnsSheet(instance, instances);
+      const sheet =
+        instance.key === "homeowners"
+          ? homeSheet
+          : instance.key === "landlord"
+            ? landlordSheet
+            : copySheet;
+      const ownRisk = tabRiskForInstance(risks, instance.key, legacy);
+      const insured = insuredAddressForProductTab({
+        instanceKey: instance.key,
+        ownsSheet: owns,
+        sheetValues: sheet,
+        ownRisk,
+      });
+      return {
+        key: instance.key,
+        productId: instance.productId,
+        quotingForm: instance.productId === "landlord" ? "DP3" : "HO3",
+        address: insured.street,
+        city: insured.city,
+      };
+    });
+    const labels = labelProductInstances(rows);
+    expect(labels.get("homeowners")).toBe("HO3 8944 Adriatico");
+    expect(labels.get("landlord")).toBe("DP3");
+    expect(labels.get("homeowners~88uvyj")).toBe("HO3 16021 Northwest 79th");
+    expect(labels.get("homeowners")).not.toContain("10358");
+    expect(labels.get("landlord")).not.toContain("10358");
+    expect(labels.get("landlord")).not.toContain("8944");
+    const bare = insuredAddressForProductTab({
+      instanceKey: "homeowners",
+      ownsSheet: true,
+      sheetValues: { property_address: { value: "10358 NW 30th TER" } },
+      ownRisk: null,
+    });
+    expect(bare).toEqual({ street: "", city: "" });
+    expect(
+      labelProductInstances([{ key: "homeowners", productId: "homeowners", quotingForm: "HO3", address: bare.street }]).get(
+        "homeowners",
+      ),
+    ).toBe("HO3");
   });
 
   it("labels the ~suffix tab from that product's street", () => {

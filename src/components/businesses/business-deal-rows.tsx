@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { RecordLink } from "@/components/record-links";
+import { displayDealTitle } from "@/lib/deals/deal-title";
 import { formatMoney } from "@/lib/domain";
 
 type DealRow = {
@@ -41,7 +42,7 @@ export function BusinessDealRows({
     <ul className="divide-y divide-border" data-ff-business-deals="">
       {deals.map((deal) => (
         <li key={deal.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
-          <RecordLink href={`/deals/${deal.id}`}>{deal.title}</RecordLink>
+          <RecordLink href={`/deals/${deal.id}`}>{displayDealTitle({ title: deal.title })}</RecordLink>
           <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase text-muted-foreground">
             {deal.pipelineStage}
           </span>

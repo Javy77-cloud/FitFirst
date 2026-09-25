@@ -54,7 +54,7 @@ describe("lead → deal convert carry", () => {
     expect(copy.risk.city).toBe("Melbourne");
     expect(copy.sheetValues.named_insured?.value ?? "").toBe("");
     expect(copy.primaryNamedInsured).toBeNull();
-    expect(copy.title).toBe("Elena Ruiz / Homeowners");
+    expect(copy.title).toBe("Elena Ruiz");
   });
 
   it("treats a missing carry list as all-fields (convert default)", () => {

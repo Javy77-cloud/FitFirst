@@ -10,6 +10,7 @@ import {
   coverageGapUnreadCountExclusion,
 } from "@/lib/coverage/notification-flag";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { displayDealTitle } from "@/lib/deals/deal-title";
 import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
 import { isUuid } from "@/lib/ids";
 import { partyPolicyGlance } from "@/lib/book-lists/party-stats";
@@ -2911,7 +2912,17 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
   }
   for (const row of dealRows) {
     if (!canViewOwned(session, row.ownerId)) continue;
-    if (matchesQuery(q, row.title, row.primaryNamedInsured, row.notes)) hits.push(hitFromDeal(row));
+    if (matchesQuery(q, row.title, row.primaryNamedInsured, row.notes)) {
+      hits.push(
+        hitFromDeal({
+          ...row,
+          title: displayDealTitle({
+            title: row.title,
+            primaryNamedInsured: row.primaryNamedInsured,
+          }),
+        }),
+      );
+    }
   }
   for (const row of contactRows) {
     if (!canViewOwned(session, row.ownerId)) continue;

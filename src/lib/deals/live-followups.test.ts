@@ -6,7 +6,7 @@ import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import type { Carrier, Quote } from "@/lib/db/schema";
-import { dealTitleForActiveProduct } from "./deal-title";
+import { displayDealTitle } from "./deal-title";
 import { quotesTabMark } from "./quote-completeness";
 import {
   nextShopFlowAfterSheetConfirm,
@@ -63,25 +63,28 @@ const carrier = {
 } as Carrier;
 
 describe("Javy live follow-ups after PR #28", () => {
-  it("Gloria HO3→DP3 chip updates the title suffix even when the shared sheet is HO3", () => {
+  it("the deal header stays the client name when the active chip changes", () => {
     expect(productChipLabel({ product: "landlord", quotingForm: "HO3" })).toBe("DP3");
     expect(
-      dealTitleForActiveProduct({
+      displayDealTitle({
         title: "Gloria Martinez / HO3",
-        product: "landlord",
-        quotingForm: "HO3",
-        sheetForm: null,
+        contact: { firstName: "Gloria", lastName: "Martinez" },
       }),
-    ).toBe("Gloria Martinez / DP3");
+    ).toBe("Gloria Martinez");
     expect(
-      dealTitleForActiveProduct({
+      displayDealTitle({
         title: "Heather Camirand / HO3",
-        product: "auto",
-        quotingForm: "HO3",
+        contact: { firstName: "Heather", lastName: "Camirand" },
       }),
-    ).toBe("Heather Camirand / Auto");
+    ).toBe("Heather Camirand");
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/displayDealTitle/);
+  });
+
+  it("chip labels stay on the product, not the deal name", () => {
+    expect(productChipLabel({ product: "auto", quotingForm: "HO3" })).toBe("Auto");
+    expect(displayDealTitle({ title: "Heather Camirand / HO3" })).toBe("Heather Camirand");
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/sheetFormForProduct\(activeProduct, lineForm\)/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);
+    expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/dealTitleForActiveProduct/);
   });
 
   it("drops the misleading products ready fraction", () => {

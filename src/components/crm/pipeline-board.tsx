@@ -112,7 +112,11 @@ export function PipelineBoard({
                           href={`/deals/${deal.id}`}
                           className="text-sm font-medium text-primary hover:underline"
                         >
-                          {visibleDealTitle(deal)}
+                          {visibleDealTitle({
+                            ...deal,
+                            contact: row?.contact,
+                            lead: row?.lead,
+                          })}
                         </Link>
                         <div className="mt-1 text-[11px] text-navy">
                           <InsuredLink href={href} name={insured} />

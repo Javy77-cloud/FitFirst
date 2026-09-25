@@ -366,7 +366,7 @@ export function presentRadarCards(
       const quoteSent = stamps.includes("Quote sent");
       return {
         id: deal.id,
-        title: visibleDealTitle(deal),
+        title: visibleDealTitle({ ...deal, contact: row.contact, lead: row.lead }),
         // Stack name is primary applicant only — never append co-applicant.
         insured:
           primaryApplicantDisplayName(
