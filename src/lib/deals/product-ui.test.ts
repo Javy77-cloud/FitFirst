@@ -102,21 +102,24 @@ describe("deal shop flow + product chrome", () => {
     expect(rail).toMatch(/bottom-full/);
     expect(rail).toContain(">Products<");
     expect(rail).not.toMatch(/>Policy form</);
-    expect(rail).toMatch(/flex w-max max-w-full min-w-0 flex-col items-end/);
-    expect(rail).toMatch(/width:23ch/);
+    expect(rail).toMatch(/inline-grid w-max max-w-full min-w-0 gap-1/);
+    expect(rail).toMatch(/minmax\(29ch, max-content\)/);
+    expect(rail).not.toMatch(/items-end/);
     expect(rail).toMatch(/data-ff-policy-form-selected/);
     expect(rail).toMatch(/divide-y/);
     expect(rail).toMatch(/hover:bg-\[#f3f4f6\]/);
     expect(rail).toMatch(/data-ff-policy-form-caption/);
     expect(rail.indexOf("data-ff-policy-form-trigger")).toBeLessThan(rail.indexOf("data-ff-policy-form-caption"));
     expect(rail.indexOf("data-ff-policy-form-caption")).toBeLessThan(rail.indexOf(">Products<"));
-    expect(rail.indexOf(">Products<")).toBeLessThan(rail.indexOf("Add or change product"));
+    expect(rail.indexOf(">Products<")).toBeLessThan(rail.indexOf(">Add or change<"));
+    expect(rail).not.toContain("Add or change product");
+    expect(rail).toMatch(/justify-between gap-3" data-ff-policy-form-caption/);
     const field = rail.slice(
       rail.indexOf("data-ff-policy-form-field"),
       rail.indexOf("data-ff-policy-form-caption"),
     );
     expect(field).not.toContain(">Products<");
-    expect(field).not.toContain("Add or change product");
+    expect(field).not.toContain("Add or change");
     const menu = rail.slice(rail.indexOf("data-ff-policy-form-menu"));
     expect(menu.indexOf("HO3 16021 Northwest 79th")).toBeLessThan(menu.indexOf("DP3 10358 Northwest 30th"));
     expect(menu.indexOf("DP3 10358 Northwest 30th")).toBeLessThan(menu.indexOf("HO3 8944 Adriatico"));
@@ -130,20 +133,21 @@ describe("deal shop flow + product chrome", () => {
         layout: "rail",
         labelFacts: {
           homeowners: {
-            address: "8944 Adriatico Ln",
+            address: "8944 S Adriatico Ln",
             city: "Kissimmee",
             state: "FL",
             zip: "34747",
             quotingForm: "HO3",
           },
           landlord: {
-            address: "10358 Corporate Blvd",
-            city: "Orlando",
+            address: "10358 NW 30th TER",
+            city: "Doral",
             state: "FL",
+            zip: "33172",
             quotingForm: "DP3",
           },
           "homeowners~new": {
-            address: "Edmerson Miami Lakes HO",
+            address: "16021 NW 79th Ct",
             city: "Miami Lakes",
             state: "FL",
             quotingForm: "HO3",
@@ -151,14 +155,33 @@ describe("deal shop flow + product chrome", () => {
         },
       }),
     );
-    expect(addressed).toContain("HO3 · 8944");
-    expect(addressed).toContain("DP3 · 10358");
+    expect(addressed).toContain("HO3 · 8944 South");
+    expect(addressed).not.toMatch(/>HO3 · 8944</);
+    expect(addressed).toContain("DP3 · 10358 Northwest");
+    expect(addressed).toContain("HO3 · 16021 Northwest");
     expect(addressed).not.toContain("Adriatico");
-    expect(addressed).not.toContain("Corporate");
     expect(addressed).not.toContain("Kissimmee");
-    expect(addressed).not.toContain("Orlando");
+    expect(addressed).not.toContain("Doral");
     expect(addressed).not.toContain("34747");
-    expect(addressed).toMatch(/width:15ch/);
+    expect(addressed).not.toContain("33172");
+    expect(addressed).toMatch(/minmax\(29ch, max-content\)/);
+    const wide = renderToString(
+      createElement(DealLineSwitcher, {
+        dealId: "deal-gloria",
+        products: ["landlord"],
+        active: "landlord",
+        tab: "quotes",
+        layout: "rail",
+        labelFacts: {
+          landlord: {
+            address: "10358 Northwest 30th St",
+            quotingForm: "DP3",
+          },
+        },
+      }),
+    );
+    expect(wide).toContain("DP3 · 10358 Northwest");
+    expect(wide).toMatch(/minmax\(31ch, max-content\)/);
   });
 
   it("picker is grouped tiles, not a wall of unlabeled checkboxes", () => {

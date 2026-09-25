@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACTIVE_PRODUCT_FIELD_EXTRA_CH,
+  ACTIVE_PRODUCT_FIELD_REFERENCE,
+  activeProductFieldCh,
   compactStreetLabel,
   labelProductInstances,
   policyFormMenuLabel,
@@ -136,6 +139,57 @@ describe("product instance labels", () => {
     ).toBe("DP3 · 10358 Northwest");
     expect(
       policyFormMenuLabel({
+        code: "DP3",
+        fallback: "DP3",
+        address: "10358 NW 30th TER",
+        city: "Doral",
+        state: "FL",
+        zip: "33172",
+      }),
+    ).toBe("DP3 · 10358 Northwest");
+    expect(
+      policyFormMenuLabel({
+        code: "803",
+        fallback: "803",
+        address: "8944 South Adriatico Ln",
+        city: "Kissimmee",
+        state: "FL",
+        zip: "34747",
+      }),
+    ).toBe("803 · 8944 South");
+    expect(
+      policyFormMenuLabel({
+        code: "803",
+        fallback: "803",
+        address: "8944 S Adriatico Ln",
+      }),
+    ).toBe("803 · 8944 South");
+    expect(
+      policyFormMenuLabel({
+        code: "803",
+        fallback: "803",
+        address: "8944 Adriatico Ln S",
+        city: "Kissimmee",
+        state: "FL",
+        zip: "34747",
+      }),
+    ).toBe("803 · 8944 South");
+    expect(
+      policyFormMenuLabel({
+        code: "803",
+        fallback: "803",
+        address: "16021 NW79th Ct",
+      }),
+    ).toBe("803 · 16021 Northwest");
+    expect(
+      policyFormMenuLabel({
+        code: "803",
+        fallback: "803",
+        address: "16021 N W 79th Ct",
+      }),
+    ).toBe("803 · 16021 Northwest");
+    expect(
+      policyFormMenuLabel({
         code: "HO3",
         fallback: "HO3",
         address: "8944 Adriatico Ln",
@@ -153,8 +207,29 @@ describe("product instance labels", () => {
         state: "FL",
       }),
     ).toBe("DP3 · 10358");
+    expect(
+      policyFormMenuLabel({
+        code: "HO3",
+        fallback: "HO3",
+        address: "100 Main St, West Palm Beach, FL 33401",
+        city: "West Palm Beach",
+        state: "FL",
+        zip: "33401",
+      }),
+    ).toBe("HO3 · 100");
     expect(policyFormMenuLabel({ code: "HO3", fallback: "HO3 8944 Adriatico" })).toBe(
       "HO3 8944 Adriatico",
     );
+  });
+
+  it("sizes the active product field to the reference street plus 10 characters", () => {
+    const floor = ACTIVE_PRODUCT_FIELD_REFERENCE.length + ACTIVE_PRODUCT_FIELD_EXTRA_CH;
+    expect(ACTIVE_PRODUCT_FIELD_REFERENCE).toBe("803.16021 northwest");
+    expect(floor).toBe(29);
+    expect(activeProductFieldCh("HO3 · 8944")).toBe(floor);
+    expect(activeProductFieldCh("803 · 8944 South")).toBe(floor);
+    const long = "DP3 · 10358 Northwest";
+    expect(activeProductFieldCh(long)).toBe(long.length + ACTIVE_PRODUCT_FIELD_EXTRA_CH);
+    expect(activeProductFieldCh(long)).toBeGreaterThan(floor);
   });
 });
