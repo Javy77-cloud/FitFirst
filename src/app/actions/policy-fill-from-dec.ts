@@ -28,6 +28,7 @@ import { issuedPolicyDocType } from "@/lib/policy/issued-upload";
 import { loadGeminiRows, type GeminiMintRow } from "@/lib/policy/load-gemini-rows";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { writeLicense } from "@/lib/pii/write";
+import { markPolicyDecAsCurrent } from "@/lib/policy/mark-dec-current";
 import { riskIdForExtractedFieldsCache } from "@/lib/renewal/fill-compare-from-decs";
 import {
   buildPolicyFillAuditInsert,
@@ -613,6 +614,11 @@ export async function fillPolicyFromDec(input: {
     return { ok: false, error: message };
   }
 
+  if (input.source === "manual") {
+    const marked = await markPolicyDecAsCurrent({ policyId: policy.id, documentId: doc.id });
+    if (!marked.ok) return marked;
+  }
+
   revalidatePath(`/policies/${policy.id}`);
   revalidatePath("/policies");
   return {
@@ -630,6 +636,17 @@ export async function fillPolicyFromDecOnIssue(input: {
   documentId?: string | null;
 }): Promise<FillPolicyFromDecResult> {
   try {
+    const documentId = input.documentId?.trim() ?? "";
+    if (documentId) {
+      const marked = await markPolicyDecAsCurrent({ policyId: input.policyId, documentId });
+      if (!marked.ok) {
+        console.error("mark current declaration at issue", {
+          policyId: input.policyId,
+          documentId,
+          error: marked.error,
+        });
+      }
+    }
     const result = await fillPolicyFromDec({
       policyId: input.policyId,
       documentId: input.documentId,

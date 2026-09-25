@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { fillOverwriteWarning } from "@/lib/policy/fill-from-dec";
+import { FILL_DEC_CURRENT_NOTICE, fillOverwriteWarning } from "@/lib/policy/fill-from-dec";
 import { flashAction } from "@/lib/flash-client";
 
 export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
@@ -90,6 +90,7 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
         flashAction(result.error, "error");
         return;
       }
+      flashAction(FILL_DEC_CURRENT_NOTICE);
       setOpen(false);
       router.refresh();
     });

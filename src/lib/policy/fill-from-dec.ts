@@ -119,6 +119,10 @@ export type AppliedFillPatch = {
   drivers: AppliedDriver[];
 };
 
+/** Neutral notice after a manual fill marks the declaration Current. */
+export const FILL_DEC_CURRENT_NOTICE =
+  "This declaration page is set as the current policy. Change term role if this isn't right.";
+
 export function fillOverwriteWarning(count: number): string {
   const n = Math.max(0, Math.floor(count));
   return `replaces ${n} ${n === 1 ? "field" : "fields"}`;
