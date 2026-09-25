@@ -1,9 +1,12 @@
-import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { listPolicies } from "@/lib/db/queries";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
+import {
+  PipelineFilterControls,
+  PipelineFilterPopover,
+  PipelineFilterSearch,
+} from "@/components/filters/pipeline-filter-popover";
 import { firstParam, pickFilterParams } from "@/lib/saved-filters";
 import {
   enabledPageFilters,
@@ -25,7 +28,9 @@ import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { LAPSE_STATUSES } from "@/lib/home/aggregate";
 import { deskNow } from "@/lib/home/as-of";
 import { partyLabel } from "@/lib/desk/policy-name";
+import { BookKpiStrip } from "@/components/book-lists/book-kpi-strip";
 import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
+import { policyBookKpis } from "@/lib/book-lists/kpi";
 import { loadPolicyNeedSignals, loadRenewalPremiums } from "@/lib/book-lists/load";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { matchesBookLens, parseBookHeat, parseBookLayout, parseBookLens } from "@/lib/book-lists/lenses";
@@ -135,16 +140,6 @@ function policyFilterValues(
 
 export const dynamic = "force-dynamic";
 
-const FILTER_COPY: Record<string, string> = {
-  "status:in_force": "Active and Bound only. Quotes are not on this list.",
-  "written:this_month": "In-force terms effective this desk month (September 2026).",
-  "written:last_month": "In-force terms effective last desk month (August 2026).",
-  "renewal:30": "In-force terms expiring in the next 30 days.",
-  "renewal:60": "In-force terms expiring in the next 60 days.",
-  "renewal:90": "In-force terms expiring in the next 90 days.",
-  "attention:lapse": "Lapsed, cancelled, or expired — not in-force premium.",
-};
-
 export default async function PoliciesPage({
   searchParams,
 }: {
@@ -197,16 +192,6 @@ export default async function PoliciesPage({
   const rows = all.filter((row) =>
     matchesPageFilters(policyFilterValues(row.policy, resolvedFor(row), row.carrier?.name), filter),
   );
-  const key = Object.entries(filter)
-    .filter(([, value]) => value)
-    .map(([name, value]) => `${name}:${value}`)
-    .join(" · ");
-  const pair = Object.entries(filter).find(([, value]) => value);
-  const hint =
-    FILTER_COPY[pair ? `${pair[0]}:${pair[1]}` : ""] ??
-    (key
-      ? `Filtered · ${key}`
-      : "Urgency first: renewal proximity, cold silence, and open needs.");
   const cards = rows
     .map((row) => {
       const { policy, contact, account, carrier } = row;
@@ -253,72 +238,69 @@ export default async function PoliciesPage({
       );
     })
     .filter((card) => matchesBookLens(card, { heat, lens, q }));
+  const kpi = policyBookKpis(cards, lineSettings);
 
   return (
     <AppShell title="Policies">
-      <p className="mb-3 text-base text-muted-foreground">{hint}</p>
-      <div className="mb-3 rounded-xl border border-border/80 bg-card/80 px-3 py-2 shadow-sm">
-        <PipelineFilterPopover
-          moduleId="policies"
-          fields={filterFieldsFromPageFilters(visibleFilters)}
-          searchPlaceholder="Find a policy, party, or carrier…"
-          preserveParams={["heat", "lens", "view"]}
-          canConfigure={session.isAdmin}
-          searchClassName={PAGE_FILTER_SEARCH_CLASS}
-          searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
-        />
-      </div>
-      {key ? (
-        <p className="mb-3 text-sm">
-          <Link href="/policies" className="text-primary hover:underline">
-            Clear filter
-          </Link>
-        </p>
-      ) : null}
-      <ModuleListActions
-        module="policies"
-        recordIds={cards.map((card) => card.id)}
-        records={rows.map(({ policy, contact, account, carrier }) => ({
-          id: policy.id,
-          label: policyListLabel(labelTemplate, policy, {
-            ownerName: partyLabel(contact, account),
-            carrier: carrier?.name,
-          }),
-          email: contact?.email ?? account?.email,
-          phone: contact?.phone ?? account?.phone,
-          policyId: policy.id,
-          contactId: contact?.id ?? policy.contactId,
-          accountId: account?.id ?? policy.accountId,
-          dealId: policy.dealId,
-        }))}
+      <PipelineFilterPopover
+        moduleId="policies"
+        fields={filterFieldsFromPageFilters(visibleFilters)}
+        searchPlaceholder="Find a policy, party, or carrier…"
+        preserveParams={["heat", "lens", "view"]}
+        canConfigure={session.isAdmin}
+        searchClassName={PAGE_FILTER_SEARCH_CLASS}
+        searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
       >
-        <BookCommandWorkspace
-          surface="policies"
-          path="/policies"
-          layout={layout}
-          columns={POLICY_COLUMNS}
-          cards={cards}
-          heat={heat}
-          lens={lens}
-          q={q}
-          empty="No policies in this lens. Bind a shopping deal when a market is actually written."
-          lineSettings={lineSettings}
-          preserve={{ view: layout === "stack" ? "stack" : undefined }}
-          renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
-          renderExtra={(card) => (
-            <>
-              <AssignRecordTags
-                module="policies"
-                recordId={card.id}
-                tags={card.tags}
-                catalog={tagCatalog}
-                emptyPlaceholder="none"
-              />
-              <span className="sr-only">{tagSortText(card.tags)}</span>
-            </>
-          )}
-        />
-      </ModuleListActions>
+        <BookKpiStrip label={kpi.label} items={kpi.items} flat />
+        <ModuleListActions
+          module="policies"
+          recordIds={cards.map((card) => card.id)}
+          records={rows.map(({ policy, contact, account, carrier }) => ({
+            id: policy.id,
+            label: policyListLabel(labelTemplate, policy, {
+              ownerName: partyLabel(contact, account),
+              carrier: carrier?.name,
+            }),
+            email: contact?.email ?? account?.email,
+            phone: contact?.phone ?? account?.phone,
+            policyId: policy.id,
+            contactId: contact?.id ?? policy.contactId,
+            accountId: account?.id ?? policy.accountId,
+            dealId: policy.dealId,
+          }))}
+          hideSelectionCue
+          afterCheck={<PipelineFilterSearch />}
+          afterActions={<PipelineFilterControls />}
+        >
+          <BookCommandWorkspace
+            surface="policies"
+            path="/policies"
+            layout={layout}
+            columns={POLICY_COLUMNS}
+            cards={cards}
+            heat={heat}
+            lens={lens}
+            q={q}
+            banner={null}
+            empty="No policies in this lens. Bind a shopping deal when a market is actually written."
+            lineSettings={lineSettings}
+            preserve={{ view: layout === "stack" ? "stack" : undefined }}
+            renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
+            renderExtra={(card) => (
+              <>
+                <AssignRecordTags
+                  module="policies"
+                  recordId={card.id}
+                  tags={card.tags}
+                  catalog={tagCatalog}
+                  emptyPlaceholder="none"
+                />
+                <span className="sr-only">{tagSortText(card.tags)}</span>
+              </>
+            )}
+          />
+        </ModuleListActions>
+      </PipelineFilterPopover>
     </AppShell>
   );
 }

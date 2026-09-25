@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
-/** Measure the widest Contacts KPI chip and lock every chip to that width. */
+/** Measure the widest KPI chip and lock every chip on the row to that width. */
 export function BookKpiFlatRow({ label, children }: { label: string; children: ReactNode }) {
   const ref = useRef<HTMLElement>(null);
 
