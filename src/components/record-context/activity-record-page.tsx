@@ -68,7 +68,7 @@ export async function ActivityRecordPage({
                 <StagePill stage={activity.status} />
                 <span className="uppercase text-muted-foreground">{activity.kind}</span>
                 {activity.assignee ? (
-                  <span className="text-muted-foreground">Owner {activity.assignee}</span>
+                  <span className="text-muted-foreground">Producer {activity.assignee}</span>
                 ) : null}
               </div>
               <section className="ff-card p-4">

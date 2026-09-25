@@ -154,7 +154,7 @@ export default async function LeadDetailPage({
           {deal ? <StagePill stage={deal.pipelineStage} /> : null}
           <span className="text-muted-foreground">{sourceLabel(lead.source ?? "manual")}</span>
           <span className="text-muted-foreground">
-            {ownerName ? `Owner · ${ownerName}` : "Unassigned"}
+            {ownerName ? `Producer · ${ownerName}` : "Unassigned"}
           </span>
           {lineLabel ? <span className="text-muted-foreground">{lineLabel}</span> : null}
           {lead.preferredLanguage ? (

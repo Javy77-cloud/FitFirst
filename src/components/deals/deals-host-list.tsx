@@ -25,7 +25,7 @@ export const DEALS_HOST_LIST_COLUMNS: ListColumn[] = [
   { id: "quotes", label: "Quotes" },
   { id: "stamps", label: "Stamps" },
   { id: "next", label: "Next" },
-  { id: "owner", label: "Owner", defaultOn: false },
+  { id: "owner", label: "Producer", defaultOn: false },
   { id: "phase", label: "Phase", defaultOn: false },
 ];
 
