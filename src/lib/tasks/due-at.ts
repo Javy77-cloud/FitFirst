@@ -71,6 +71,13 @@ export function taskDueInputParts(
   return { date: wall.date, time: wall.time };
 }
 
+/**
+ * Longest automatic lead before a due instant.
+ * Desk commitment nudges, call pings, and due-soon heat use this.
+ * An explicit reminder offset the user picked is separate.
+ */
+export const AUTO_REMIND_LEAD_MS = 60 * 60 * 1000;
+
 /** Popup `createdAt` — future dues wait until that instant; past dues fire now. */
 export function taskReminderFireAt(dueDate: Date, now = new Date()): Date {
   return dueDate.getTime() > now.getTime() ? dueDate : now;

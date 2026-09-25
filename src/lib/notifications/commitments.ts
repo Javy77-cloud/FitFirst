@@ -1,4 +1,5 @@
 import { commitmentNudgeUrgency } from "@/lib/notifications/panel";
+import { AUTO_REMIND_LEAD_MS } from "@/lib/tasks/due-at";
 import { parseReviewTaskIdFromSource } from "@/lib/time/et";
 
 export type CommitmentRecordType = "contact" | "deal" | "policy" | "lead" | "account";
@@ -26,7 +27,8 @@ export type Commitment = {
   orphan: boolean;
 };
 
-export const DUE_SOON_HOURS = 48;
+/** Same automatic lead as the commitment bell — about one hour, not two days. */
+export const DUE_SOON_HOURS = AUTO_REMIND_LEAD_MS / 3_600_000;
 
 export function commitmentHeat(dueAt: Date, asOf: Date): CommitmentHeat {
   const ms = dueAt.getTime() - asOf.getTime();

@@ -224,6 +224,8 @@ export function googleEventWriteBody(draft: CalendarEventDraft) {
     location: draft.location || undefined,
     start: { dateTime: draft.startAt.toISOString() },
     end: { dateTime: draft.endAt.toISOString() },
+    // Calendar default reminders are often a day or more. Desk owns the nudge.
+    reminders: { useDefault: false },
     extendedProperties: {
       private: { [FITFIRST_ACTIVITY_PROP]: draft.activityId },
     },
@@ -237,6 +239,8 @@ export function outlookEventWriteBody(draft: CalendarEventDraft) {
     location: draft.location ? { displayName: draft.location } : undefined,
     start: { dateTime: draft.startAt.toISOString().replace(/Z$/, ""), timeZone: "UTC" },
     end: { dateTime: draft.endAt.toISOString().replace(/Z$/, ""), timeZone: "UTC" },
+    // Do not inherit an Outlook default that fires days ahead. Desk owns the nudge.
+    isReminderOn: false,
     singleValueExtendedProperties: [
       { id: OUTLOOK_FITFIRST_PROP_ID, value: draft.activityId },
     ],

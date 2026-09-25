@@ -59,18 +59,19 @@ describe("et wall clock ↔ UTC", () => {
 });
 
 describe("priority → notification urgency round-trip", () => {
-  it("chosen HIGH always wins over time-based medium", () => {
+  it("chosen HIGH colors a nudge that is already inside the window", () => {
     expect(normalizeTaskPriority("high")).toBe("high");
     expect(urgencyFromTaskPriority("high", "medium")).toBe("high");
-    expect(urgencyFromTaskPriority("high", null)).toBe("high");
+    expect(urgencyFromTaskPriority("high", null)).toBeNull();
   });
 
   it("chosen LOW wins over time-based high", () => {
     expect(urgencyFromTaskPriority("low", "high")).toBe("low");
+    expect(urgencyFromTaskPriority("low", null)).toBeNull();
   });
 
-  it("normal without time window still surfaces medium (no silent drop)", () => {
-    expect(urgencyFromTaskPriority("normal", null)).toBe("medium");
+  it("normal or none outside the window stay quiet", () => {
+    expect(urgencyFromTaskPriority("normal", null)).toBeNull();
     expect(urgencyFromTaskPriority("none", "medium")).toBe("medium");
     expect(urgencyFromTaskPriority(null, "medium")).toBe("medium");
   });

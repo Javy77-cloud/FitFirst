@@ -8,6 +8,7 @@ import {
   TASK_DUE_TIMEZONE,
   taskDueFromForm,
   taskDueInputParts,
+  AUTO_REMIND_LEAD_MS,
   taskReminderFireAt,
 } from "./due-at";
 
@@ -59,6 +60,10 @@ describe("formatTaskDueAt / taskDueInputParts", () => {
       date: "2026-09-16",
       time: "23:59",
     });
+  });
+
+  it("caps automatic reminder lead at about one hour", () => {
+    expect(AUTO_REMIND_LEAD_MS).toBe(60 * 60 * 1000);
   });
 
   it("schedules reminders at the due instant, not start-of-day", () => {

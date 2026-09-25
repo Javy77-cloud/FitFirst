@@ -101,13 +101,23 @@ describe("notification panel signals", () => {
     );
   });
 
-  it("nudges promises only when due soon or overdue", () => {
+  it("nudges promises only within about an hour, or when overdue", () => {
     expect(commitmentNudgeUrgency(new Date("2026-09-19T10:00:00.000Z"), asOf)).toBe("high");
-    expect(commitmentNudgeUrgency(new Date("2026-09-21T06:00:00.000Z"), asOf)).toBe("medium");
+    expect(commitmentNudgeUrgency(new Date("2026-09-19T13:30:00.000Z"), asOf)).toBe("high");
+    expect(commitmentNudgeUrgency(new Date("2026-09-19T15:00:00.000Z"), asOf)).toBeNull();
+    expect(commitmentNudgeUrgency(new Date("2026-09-21T06:00:00.000Z"), asOf)).toBeNull();
     expect(commitmentNudgeUrgency(new Date("2026-09-25T13:00:00.000Z"), asOf)).toBeNull();
     expect(commitmentNudgeWhy({ title: "Call Friday", dueAt: new Date("2026-09-18T13:00:00.000Z"), asOf })).toMatch(
       /overdue/,
     );
+    expect(
+      commitmentNudgeWhy({
+        title: "VP Painting - Hourly",
+        dueAt: new Date("2026-09-21T13:00:00.000Z"),
+        asOf,
+      }),
+    ).toMatch(/due in 2 days/);
+    expect(commitmentNudgeUrgency(new Date("2026-09-21T13:00:00.000Z"), asOf)).toBeNull();
   });
 
   it("sorts High → Medium → Low then soonest deadline", () => {
@@ -128,9 +138,18 @@ describe("notification panel signals", () => {
 
 describe("commitmentNudgeUrgency respects task priority", () => {
   const asOf = new Date("2026-09-20T12:00:00.000Z");
-  it("HIGH priority stays high even when due in ~1 day (was medium)", () => {
-    const due = new Date("2026-09-21T18:00:00.000Z"); // ~30h out → time-based medium
-    expect(commitmentNudgeUrgency(due, asOf)).toBe("medium");
+  it("priority does not open a nudge a day early", () => {
+    const due = new Date("2026-09-21T18:00:00.000Z");
+    expect(commitmentNudgeUrgency(due, asOf)).toBeNull();
+    expect(commitmentNudgeUrgency(due, asOf, "high")).toBeNull();
+    expect(commitmentNudgeUrgency(due, asOf, "normal")).toBeNull();
+    expect(commitmentNudgeUrgency(due, asOf, "low")).toBeNull();
+  });
+
+  it("HIGH stays high inside the one-hour window", () => {
+    const due = new Date("2026-09-20T12:40:00.000Z");
+    expect(commitmentNudgeUrgency(due, asOf)).toBe("high");
     expect(commitmentNudgeUrgency(due, asOf, "high")).toBe("high");
+    expect(commitmentNudgeUrgency(due, asOf, "low")).toBe("low");
   });
 });
