@@ -5,7 +5,15 @@ import { loadJavyHomeShopListAction } from "@/app/actions/deal-desk";
 import { Button } from "@/components/ui/button";
 import { JAVY_HOME_SHOP_CARRIER_IDS, JAVY_HOME_SHOP_LABEL } from "@/lib/appetite/javy-home-shop-list";
 
-export function LoadHomeShopListButton({ dealId }: { dealId: string }) {
+export function LoadHomeShopListButton({
+  dealId,
+  line,
+  product,
+}: {
+  dealId: string;
+  line?: string | null;
+  product?: string | null;
+}) {
   const [pending, startTransition] = useTransition();
   return (
     <Button
@@ -18,6 +26,8 @@ export function LoadHomeShopListButton({ dealId }: { dealId: string }) {
       onClick={() => {
         const data = new FormData();
         data.set("dealId", dealId);
+        if (line) data.set("line", line);
+        if (product) data.set("product", product);
         startTransition(async () => {
           await loadJavyHomeShopListAction(data);
         });

@@ -24,10 +24,37 @@ import { JAVY_AUTO_SHOP_CARRIER_IDS } from "@/lib/appetite/javy-auto-shop-list";
 import { matchFloodShopCarriers } from "@/lib/appetite/javy-flood-shop-list";
 import { confirmWhy, type QuoteConfirmKind } from "@/lib/deals/quote-confirm";
 import { flashAction } from "@/lib/flash-action";
+import { fillStayHref } from "@/lib/documents/deal-docs-save";
+import {
+  attemptLogMatchesInstance,
+  parseProductInstanceToken,
+  tagAttemptWhy,
+} from "@/lib/deals/product-instances";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
+}
+
+/** Markets actions stay on the product that was open. A bare tab drops a second HO3 onto the first. */
+function marketsStayHref(dealId: string, form: FormData) {
+  return fillStayHref({
+    dealId,
+    tab: "markets",
+    line: str(form, "line"),
+    product: str(form, "product"),
+  });
+}
+
+function formProductKey(form: FormData): string | null {
+  const raw = str(form, "product");
+  if (!raw) return null;
+  return parseProductInstanceToken(raw)?.key ?? raw;
+}
+
+function logsForProduct<T extends { why?: string | null }>(rows: T[], productKey: string | null): T[] {
+  if (!productKey) return rows;
+  return rows.filter((row) => attemptLogMatchesInstance(row.why, productKey));
 }
 
 export async function addManualMarket(formData: FormData) {
@@ -48,7 +75,10 @@ export async function addManualMarket(formData: FormData) {
     lineOfBusiness: addLob,
     result: "maybe",
     bindable: false,
-    why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} Agent added this carrier. Overrides appetite even when the system says skip.`,
+    why: tagAttemptWhy(
+      `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} Agent added this carrier. Overrides appetite even when the system says skip.`,
+      formProductKey(formData),
+    ),
     snapYearBuilt: risk.yearBuilt,
     snapRoofYear: risk.roofYear,
     snapRoofCovering: risk.roofCovering,
@@ -66,7 +96,7 @@ export async function addManualMarket(formData: FormData) {
   });
 
   revalidatePath(`/deals/${dealId}`);
-  flashAction(`/deals/${dealId}?tab=markets`, "market-added");
+  flashAction(marketsStayHref(dealId, formData), "market-added");
 }
 
 export async function confirmQuotePull(formData: FormData) {
@@ -219,13 +249,16 @@ export async function removeSelectedMarketsAction(formData: FormData) {
       lineOfBusiness: deal.lineOfBusiness || "HO",
       result: "declined",
       bindable: false,
-      why: `${EXPLICIT_MARKET_ACTION_MARKER} ${EXCLUDE_MARKET_MARKER} Agent removed carrier from Markets — do not shop.`,
+      why: tagAttemptWhy(
+        `${EXPLICIT_MARKET_ACTION_MARKER} ${EXCLUDE_MARKET_MARKER} Agent removed carrier from Markets — do not shop.`,
+        formProductKey(formData),
+      ),
     });
   }
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(
-    `/deals/${dealId}?tab=markets`,
+    marketsStayHref(dealId, formData),
     ids.length === 1 ? "Carrier removed from Markets" : `${ids.length} carriers removed from Markets`,
   );
 }
@@ -234,14 +267,15 @@ export async function clearDealMarketsAction(formData: FormData) {
   const dealId = str(formData, "dealId");
   if (!dealId) throw new Error("Deal is missing.");
   const rows = await db.select().from(quoteAttemptLogs).where(eq(quoteAttemptLogs.dealId, dealId));
-  const ids = rows
+  const productKey = formProductKey(formData);
+  const ids = logsForProduct(rows, productKey)
     .filter((row) => isExplicitMarketActionText(row.why) || (row.why ?? "").includes(EXCLUDE_MARKET_MARKER))
     .map((row) => row.id);
   if (ids.length) {
     await db.delete(quoteAttemptLogs).where(and(eq(quoteAttemptLogs.dealId, dealId), inArray(quoteAttemptLogs.id, ids)));
   }
   revalidatePath(`/deals/${dealId}`);
-  flashAction(`/deals/${dealId}?tab=markets`, "Markets list cleared");
+  flashAction(marketsStayHref(dealId, formData), "Markets list cleared");
 }
 
 export async function loadJavyHomeShopListAction(formData: FormData) {
@@ -258,7 +292,8 @@ export async function loadJavyHomeShopListAction(formData: FormData) {
   const homeCarrierIds = resolveHomeShopCarrierIds(deskCarriers);
 
   const existingLogs = await db.select().from(quoteAttemptLogs).where(eq(quoteAttemptLogs.dealId, dealId));
-  const already = new Set(manualCarrierIdsFromLogs(existingLogs));
+  const productKey = formProductKey(formData);
+  const already = new Set(manualCarrierIdsFromLogs(logsForProduct(existingLogs, productKey)));
   let added = 0;
   for (const carrierId of homeCarrierIds) {
     if (already.has(carrierId)) continue;
@@ -270,7 +305,10 @@ export async function loadJavyHomeShopListAction(formData: FormData) {
       lineOfBusiness: deal.lineOfBusiness || "HO",
       result: "maybe",
       bindable: false,
-      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Home shop list.`,
+      why: tagAttemptWhy(
+        `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Home shop list.`,
+        productKey,
+      ),
       snapYearBuilt: risk.yearBuilt,
       snapRoofYear: risk.roofYear,
       snapRoofCovering: risk.roofCovering,
@@ -290,7 +328,7 @@ export async function loadJavyHomeShopListAction(formData: FormData) {
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(
-    `/deals/${dealId}?tab=markets`,
+    marketsStayHref(dealId, formData),
     added === 0 ? "Home list already on this deal" : `Loaded ${added} Home carriers`,
   );
 }
@@ -305,7 +343,8 @@ export async function loadJavyAutoShopListAction(formData: FormData) {
   const autoShopSnap = await autoSnapshotFieldsForDeal(dealId, autoShopLob);
 
   const existingLogs = await db.select().from(quoteAttemptLogs).where(eq(quoteAttemptLogs.dealId, dealId));
-  const already = new Set(manualCarrierIdsFromLogs(existingLogs));
+  const productKey = formProductKey(formData);
+  const already = new Set(manualCarrierIdsFromLogs(logsForProduct(existingLogs, productKey)));
   let added = 0;
   for (const carrierId of JAVY_AUTO_SHOP_CARRIER_IDS) {
     if (already.has(carrierId)) continue;
@@ -317,7 +356,10 @@ export async function loadJavyAutoShopListAction(formData: FormData) {
       lineOfBusiness: deal.lineOfBusiness || "AUTO",
       result: "maybe",
       bindable: false,
-      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Auto shop list.`,
+      why: tagAttemptWhy(
+        `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Auto shop list.`,
+        productKey,
+      ),
       snapYearBuilt: risk.yearBuilt,
       snapRoofYear: risk.roofYear,
       snapRoofCovering: risk.roofCovering,
@@ -338,7 +380,7 @@ export async function loadJavyAutoShopListAction(formData: FormData) {
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(
-    `/deals/${dealId}?tab=markets`,
+    marketsStayHref(dealId, formData),
     added === 0 ? "Auto list already on this deal" : `Loaded ${added} Auto carriers`,
   );
 }
@@ -357,7 +399,8 @@ export async function loadJavyFloodShopListAction(formData: FormData) {
   const floodCarriers = matchFloodShopCarriers(deskCarriers);
 
   const existingLogs = await db.select().from(quoteAttemptLogs).where(eq(quoteAttemptLogs.dealId, dealId));
-  const already = new Set(manualCarrierIdsFromLogs(existingLogs));
+  const productKey = formProductKey(formData);
+  const already = new Set(manualCarrierIdsFromLogs(logsForProduct(existingLogs, productKey)));
   let added = 0;
   for (const carrier of floodCarriers) {
     if (already.has(carrier.id)) continue;
@@ -369,7 +412,10 @@ export async function loadJavyFloodShopListAction(formData: FormData) {
       lineOfBusiness: deal.lineOfBusiness || "FLOOD",
       result: "maybe",
       bindable: false,
-      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Flood shop list.`,
+      why: tagAttemptWhy(
+        `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Flood shop list.`,
+        productKey,
+      ),
       snapYearBuilt: risk.yearBuilt,
       snapRoofYear: risk.roofYear,
       snapRoofCovering: risk.roofCovering,
@@ -389,7 +435,7 @@ export async function loadJavyFloodShopListAction(formData: FormData) {
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(
-    `/deals/${dealId}?tab=markets`,
+    marketsStayHref(dealId, formData),
     added === 0 ? "Flood list already on this deal" : `Loaded ${added} Flood carriers`,
   );
 }

@@ -7,11 +7,15 @@ export function ManualCarrierAdd({
   carriers,
   alreadyIds,
   dealLine,
+  line,
+  product,
 }: {
   dealId: string;
   carriers: { id: string; name: string; writtenLines?: string[] | null }[];
   alreadyIds: string[];
   dealLine: string;
+  line?: string | null;
+  product?: string | null;
 }) {
   const available = carriersForDealLine(carriers, dealLine).filter(
     (carrier) => !alreadyIds.includes(carrier.id),
@@ -20,6 +24,8 @@ export function ManualCarrierAdd({
   return (
     <form action={addManualMarket} className="flex flex-wrap items-end gap-2" data-ff-manual-carrier>
       <input type="hidden" name="dealId" value={dealId} />
+      {line ? <input type="hidden" name="line" value={line} /> : null}
+      {product ? <input type="hidden" name="product" value={product} /> : null}
       <label className="min-w-[12rem] flex-1 text-xs">
         Add carrier manually
         <select

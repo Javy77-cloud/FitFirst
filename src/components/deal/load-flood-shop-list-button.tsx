@@ -5,7 +5,15 @@ import { loadJavyFloodShopListAction } from "@/app/actions/deal-desk";
 import { Button } from "@/components/ui/button";
 import { JAVY_FLOOD_SHOP_LABEL, JAVY_FLOOD_SHOP_NAMES } from "@/lib/appetite/javy-flood-shop-list";
 
-export function LoadFloodShopListButton({ dealId }: { dealId: string }) {
+export function LoadFloodShopListButton({
+  dealId,
+  line,
+  product,
+}: {
+  dealId: string;
+  line?: string | null;
+  product?: string | null;
+}) {
   const [pending, startTransition] = useTransition();
   return (
     <Button
@@ -18,6 +26,8 @@ export function LoadFloodShopListButton({ dealId }: { dealId: string }) {
       onClick={() => {
         const data = new FormData();
         data.set("dealId", dealId);
+        if (line) data.set("line", line);
+        if (product) data.set("product", product);
         startTransition(async () => {
           await loadJavyFloodShopListAction(data);
         });
