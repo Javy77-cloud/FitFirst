@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -189,7 +191,7 @@ export function SpeechNoteDialog({
             onClick={save}
             data-ff-notice-note-save=""
           >
-            {pending ? pendingLabel : saveLabel}
+            {pending ? <ProcessingLabel>{pendingLabel}</ProcessingLabel> : saveLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

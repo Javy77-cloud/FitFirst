@@ -2,7 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { WaitSpinner } from "@/components/desk/wait-hold";
+import { ProcessingLabel } from "@/components/desk/wait-hold";
 
 export function FillSubmitButton({
   label,
@@ -16,14 +16,7 @@ export function FillSubmitButton({
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" variant={variant} disabled={pending}>
-      {pending ? (
-        <span className="inline-flex items-center gap-2">
-          <WaitSpinner />
-          {pendingLabel}
-        </span>
-      ) : (
-        label
-      )}
+      {pending ? <ProcessingLabel>{pendingLabel}</ProcessingLabel> : label}
     </Button>
   );
 }

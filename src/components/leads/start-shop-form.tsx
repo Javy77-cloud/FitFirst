@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState, useTransition } from "react";
 import { createDealFromLead } from "@/app/actions/crm";
 import { Button } from "@/components/ui/button";
@@ -43,7 +45,7 @@ export function StartShopForm({
         disabled={pending}
         onClick={() => setOpen(true)}
       >
-        {pending ? "Converting…" : label}
+        {pending ? <ProcessingLabel>Converting…</ProcessingLabel> : label}
       </Button>
       <LeadStatusConfirmDialog
         open={open}

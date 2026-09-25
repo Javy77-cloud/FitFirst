@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState, useTransition } from "react";
 import { saveModuleRecordValues } from "@/app/actions/custom-fields";
 import { MaskedPiiField } from "@/components/pii/masked-field";
@@ -52,7 +54,7 @@ export function ContactLicenseField({
             });
           }}
         >
-          {pending ? "Saving…" : "Save"}
+          {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save"}
         </Button>
         <Button type="button" size="xs" variant="ghost" onClick={() => setEditing(false)}>
           Cancel

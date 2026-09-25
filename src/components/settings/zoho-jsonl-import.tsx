@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState } from "react";
 
 type ZohoScan = {
@@ -73,7 +75,7 @@ export function ZohoJsonlImportCard() {
           ) : null}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">Checking import/zoho…</p>
+        <p className="text-sm text-muted-foreground"><ProcessingLabel>Checking import/zoho…</ProcessingLabel></p>
       )}
     </section>
   );

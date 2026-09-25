@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState } from "react";
 import {
   bulkSyncMedicareContactsAction,
@@ -166,7 +168,7 @@ export function MedicareBulkSyncPanel({
           onClick={() => void onSync()}
           data-ff-healthsherpa-medicare-bulk-run=""
         >
-          {busy ? "Syncing Medicare contacts…" : HEALTHSHERPA_MEDICARE_BULK_TITLE}
+          {busy ? <ProcessingLabel>Syncing Medicare contacts…</ProcessingLabel> : HEALTHSHERPA_MEDICARE_BULK_TITLE}
         </Button>
       </div>
       {authBanner ? (

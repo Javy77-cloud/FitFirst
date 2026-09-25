@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { searchDealsForCreate } from "@/app/actions/deal-create";
@@ -178,7 +180,7 @@ export function AddNewDealDialog({
                 data-ff-add-deal-search-results=""
               >
                 {!query.trim() ? null : searching && hits.length === 0 ? (
-                  <li className="px-3 py-2 text-sm text-muted-foreground">Searching…</li>
+                  <li className="px-3 py-2 text-sm text-muted-foreground"><ProcessingLabel>Searching…</ProcessingLabel></li>
                 ) : hits.length === 0 ? (
                   <li className="px-3 py-2 text-sm text-muted-foreground">
                     No matches for “{query.trim()}”.

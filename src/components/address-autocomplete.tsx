@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useId, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -597,7 +599,7 @@ export function AddressAutocomplete({
         </ul>
       ) : null}
       {loading && listActive ? (
-        <p className="mt-0.5 text-[10px] text-muted-foreground">Looking up addresses…</p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground"><ProcessingLabel>Looking up addresses…</ProcessingLabel></p>
       ) : null}
       {!skipVerify ? (
         <div className="mt-1.5 space-y-1" data-ff-address-toolbar>
@@ -622,7 +624,7 @@ export function AddressAutocomplete({
           <div className="flex flex-wrap items-center gap-1.5">
             {verifyStatus === "checking" ? (
               <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="checking">
-                Checking address…
+                <ProcessingLabel>Checking address…</ProcessingLabel>
               </span>
             ) : null}
             {verifyStatus === "confirmed" ? (

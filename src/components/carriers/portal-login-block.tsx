@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState } from "react";
 import {
   logQuoteHandoffCheck,
@@ -167,7 +169,7 @@ export function PortalLoginBlock({
       className="ff-portal-save min-w-[9rem] font-semibold shadow-sm"
       style={{ backgroundColor: "#002868", color: "#ffffff", borderColor: "#002868" }}
     >
-      {busy === "save" ? "Saving…" : "Save portal login"}
+      {busy === "save" ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save portal login"}
     </Button>
   );
 

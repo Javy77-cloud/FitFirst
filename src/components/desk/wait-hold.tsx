@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /** In-dialog hold: big spinner + sweeping bar so the wait is obvious. */
@@ -55,6 +55,26 @@ export function WaitSpinner({ className }: { className?: string }) {
         className,
       )}
       aria-hidden="true"
+      data-ff-wait-spinner=""
     />
+  );
+}
+
+/**
+ * Shared processing cue for any wait that used to be static faded text.
+ * Spinner stays visible even when a parent button is disabled.
+ */
+export function ProcessingLabel({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5", className)} data-ff-processing="">
+      <WaitSpinner />
+      <span>{children}</span>
+    </span>
   );
 }

@@ -947,6 +947,11 @@ body[data-ff-col-resize] {
     left: 100%;
   }
 }
+/* Pending controls used to fade the whole button, which hid the only "still running" cue. */
+:is(button, [data-slot="button"]):is(:disabled, [aria-disabled="true"], [data-disabled]):has([data-ff-processing]) {
+  opacity: 1;
+  cursor: wait;
+}
 a.ff-pending-link:has([data-ff-link-pending="1"]) {
   opacity: 0.72;
 }

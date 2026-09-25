@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
@@ -30,7 +32,7 @@ function ConfirmSubmitButton({ reviewed }: { reviewed: boolean }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" disabled={!reviewed || pending}>
-      {pending ? "Confirming…" : "Confirm"}
+      {pending ? <ProcessingLabel>Confirming…</ProcessingLabel> : "Confirm"}
     </Button>
   );
 }

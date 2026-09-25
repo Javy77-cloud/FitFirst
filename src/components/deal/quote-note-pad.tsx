@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useRef, useState, useTransition } from "react";
 import { promoteQuoteNeedToGapAction } from "@/app/actions/carrier-gaps";
 import { addQuoteNoteAction } from "@/app/actions/quotes";
@@ -257,7 +259,7 @@ export function QuoteNotePad({
               onClick={onSave}
               data-ff-quote-note-save={quoteId}
             >
-              {pending ? "Saving…" : "Save note"}
+              {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save note"}
             </Button>
           </DialogFooter>
         </DialogContent>

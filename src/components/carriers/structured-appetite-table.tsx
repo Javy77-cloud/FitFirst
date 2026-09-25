@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState, useTransition } from "react";
 import { saveCarrierAppetiteRows } from "@/app/actions/carriers-ops";
 import { Button } from "@/components/ui/button";
@@ -195,7 +197,7 @@ export function StructuredAppetiteTable({
           disabled={pending}
           onClick={save}
         >
-          {pending ? "Saving…" : "Save Appetite Rows"}
+          {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save Appetite Rows"}
         </Button>
       </div>
     </div>

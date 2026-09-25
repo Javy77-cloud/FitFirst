@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -149,7 +151,7 @@ export function SmartSearch({ defaultQuery = "" }: { defaultQuery?: string }) {
           className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md border border-border bg-card shadow-md"
         >
           {loading && hits.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">Searching…</p>
+            <p className="px-3 py-2 text-sm text-muted-foreground"><ProcessingLabel>Searching…</ProcessingLabel></p>
           ) : hits.length === 0 ? (
             <p className="px-3 py-2 text-sm text-muted-foreground">
               No records containing “{trimmed}”.

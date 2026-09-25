@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState, useTransition } from "react";
 import { Eye } from "lucide-react";
 import {
@@ -97,7 +99,7 @@ export function RenewalCompareDrawer({
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-3 px-4 pb-6">
-            {pending && !payload ? <p className="text-sm text-muted-foreground">Loading compare…</p> : null}
+            {pending && !payload ? <p className="text-sm text-muted-foreground"><ProcessingLabel>Loading compare…</ProcessingLabel></p> : null}
             {error ? (
               <p className="text-sm text-destructive" role="alert">
                 {error}

@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState } from "react";
 import { searchActivityRecords } from "@/app/actions/activity-records";
 import { Input } from "@/components/ui/input";
@@ -41,7 +43,7 @@ export function ActivityRecordPicker({
         autoComplete="off"
         aria-label="Search leads, deals, or contacts"
       />
-      {busy ? <p className="mt-1 text-[11px] text-muted-foreground">Searching…</p> : null}
+      {busy ? <p className="mt-1 text-[11px] text-muted-foreground"><ProcessingLabel>Searching…</ProcessingLabel></p> : null}
       {hits.length > 0 ? (
         <ul className="mt-1 max-h-40 space-y-0.5 overflow-auto rounded-md border border-border bg-card p-1">
           {hits.map((hit) => (

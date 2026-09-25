@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -245,7 +247,7 @@ export function LeadStatusConfirmDialog({
             onClick={onConfirm}
             data-ff-lead-status-confirm=""
           >
-            {pending ? "Working…" : confirmLabel}
+            {pending ? <ProcessingLabel>Working…</ProcessingLabel> : confirmLabel}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={onCancel} disabled={pending}>
             Cancel
@@ -331,7 +333,7 @@ function NurtureLeadDialog({
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="submit" size="sm" disabled={pending}>
-              {pending ? "Saving…" : "Save nurture"}
+              {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save nurture"}
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

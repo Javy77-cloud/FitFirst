@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { prepareDealBlobUpload, saveDealDocumentFromBlob, saveDealDocuments } from "@/app/actions/documents";
@@ -276,7 +278,7 @@ export function SourceDocsUpload({
           + Add another document
         </button>
         <Button type="submit" size="sm" disabled={saving}>
-          {saving ? "Saving…" : "Save files"}
+          {saving ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save files"}
         </Button>
       </div>
     </form>

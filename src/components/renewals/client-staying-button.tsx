@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { markClientStaying } from "@/app/actions/renewals-board";
@@ -94,7 +96,7 @@ export function ClientStayingButton({
           });
         }}
       >
-        {pending ? "Saving…" : RENEWAL_HANDLED_LABEL}
+        {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : RENEWAL_HANDLED_LABEL}
       </Button>
 
       <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
