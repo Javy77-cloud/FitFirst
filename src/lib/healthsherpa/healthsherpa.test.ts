@@ -451,8 +451,8 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     expect(html).toContain("data-ff-using-healthsherpa");
     expect(html).toContain("data-ff-healthsherpa-handoff");
     expect(html).toContain("data-ff-healthsherpa-collapse=\"Medicare\"");
-    expect(html).toContain("Skip re-keying");
-    expect(html).toContain("HealthSherpa Medicare API key is not configured");
+    expect(html).not.toContain("Skip re-keying");
+    expect(html).not.toContain("HealthSherpa Medicare API key is not configured");
     const ready = renderToString(
       createElement(MasterSheetCompare, {
         dealId: "deal-health",
@@ -467,7 +467,7 @@ describe("HealthSherpa Medicare + Marketplace", () => {
         healthSherpa: { medicareReady: true, acaReady: false },
       }),
     );
-    expect(ready).toContain(HEALTHSHERPA_EXTERNAL_ID_STAMP);
+    expect(ready).not.toContain(HEALTHSHERPA_EXTERNAL_ID_STAMP);
   });
 
   it("collects HealthSherpa API-key headers without preferring Bearer over X-API-Key", () => {

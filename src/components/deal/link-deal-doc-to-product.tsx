@@ -31,11 +31,8 @@ export function LinkDealDocToProduct({
 
   return (
     <div className="mb-2 rounded-md border border-dashed border-border/80 p-2" data-ff-link-deal-doc="" data-ff-deal-library="">
-      <p className="text-xs font-semibold text-navy" data-ff-deal-library-heading="">
+      <p className="mb-2 text-xs font-semibold text-navy" data-ff-deal-library-heading="">
         Deal library ({candidates.length})
-      </p>
-      <p className="mb-2 text-helper text-muted-foreground">
-        On this deal, not on this form yet. Link adds this form and leaves the file on any other form.
       </p>
       <ul className="space-y-1.5">
           {candidates.map((doc) => (

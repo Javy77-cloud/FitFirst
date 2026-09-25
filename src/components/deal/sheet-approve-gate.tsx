@@ -146,6 +146,8 @@ export function SheetApproveGate({
       data-ff-sheet-approve
       data-ff-sheet-approve-state={needsReapprove || reapprove ? "reapprove" : "first"}
       data-ff-sheet-reapprove={reapprove ? "1" : "0"}
+      data-ff-sheet-confirm-next={opensQuotes ? "quotes" : "markets"}
+      data-ff-sheet-form-label={formLabel}
     >
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="line" value={line} />
@@ -154,13 +156,6 @@ export function SheetApproveGate({
       <input type="hidden" name="sure" value={reviewed ? "yes" : ""} />
       <p className="text-sm font-semibold text-navy">
         {reapprove ? "Re-confirm rating-critical changes" : "Confirm Risk Profile"}
-      </p>
-      <p className="mt-1 text-helper text-muted-foreground" data-ff-sheet-confirm-next={opensQuotes ? "quotes" : "markets"}>
-        {reapprove && opensQuotes
-          ? `Coverage A, year built, roof, claims, or another rating field changed on the ${formLabel} Risk Profile. Confirm again, then continue to Quotes. Markets stay as last shopped.`
-          : opensQuotes
-          ? `Glance the ${formLabel} Risk Profile. Confirm opens Quotes so you can recheck.`
-          : `Glance the ${formLabel} Risk Profile. Confirm opens Markets so you can select carriers and request quotes.`}
       </p>
       <label className="mt-3 flex items-start gap-2 text-sm">
         <input

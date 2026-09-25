@@ -11,6 +11,7 @@ import {
   leads,
   policies,
 } from "@/lib/db/schema";
+import { buildDealTitle, clientNameFromStoredTitle } from "@/lib/deals/deal-title";
 import { ensureDealRisk } from "@/lib/deals/ensure-risk";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { writeEin } from "@/lib/pii/write";
@@ -203,6 +204,7 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
   counts.push(vendorCounts);
 
   const contactByZoho = new Map<string, string>();
+  const contactNameByZoho = new Map<string, { firstName: string; lastName: string }>();
   const contactsFile = fileFor("Contacts");
   const contactCounts = emptyCounts("Contacts", "contacts");
   if (contactsFile) {
@@ -244,6 +246,7 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
         sourceId: zohoId,
         updatedAt: new Date(),
       };
+      contactNameByZoho.set(zohoId, { firstName: mapped.firstName, lastName: mapped.lastName });
       if (existing) {
         await db.update(contacts).set(values).where(eq(contacts.id, existing.id));
         contactByZoho.set(zohoId, existing.id);
@@ -259,6 +262,7 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
   counts.push(contactCounts);
 
   const accountByZoho = new Map<string, string>();
+  const accountNameByZoho = new Map<string, string>();
   const accountsFile = fileFor("Accounts");
   const accountCounts = emptyCounts("Accounts", "businesses");
   if (accountsFile) {
@@ -318,6 +322,7 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
         accountCounts.created += 1;
       }
       accountByZoho.set(zohoId, id);
+      accountNameByZoho.set(zohoId, mapped.name);
       if (officerId) {
         await db.update(contacts).set({ accountId: id, updatedAt: new Date() }).where(eq(contacts.id, officerId));
       }
@@ -326,11 +331,28 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
   counts.push(accountCounts);
 
   const existingContacts = await db
-    .select({ id: contacts.id, zohoId: contacts.zohoId, accountId: contacts.accountId })
+    .select({
+      id: contacts.id,
+      zohoId: contacts.zohoId,
+      accountId: contacts.accountId,
+      firstName: contacts.firstName,
+      lastName: contacts.lastName,
+    })
     .from(contacts)
     .where(eq(contacts.tenantId, tenantId));
   for (const row of existingContacts) {
-    if (row.zohoId) contactByZoho.set(row.zohoId, row.id);
+    if (!row.zohoId) continue;
+    contactByZoho.set(row.zohoId, row.id);
+    if (!contactNameByZoho.has(row.zohoId)) {
+      contactNameByZoho.set(row.zohoId, { firstName: row.firstName, lastName: row.lastName });
+    }
+  }
+  const existingAccounts = await db
+    .select({ zohoId: accounts.zohoId, name: accounts.name })
+    .from(accounts)
+    .where(eq(accounts.tenantId, tenantId));
+  for (const row of existingAccounts) {
+    if (row.zohoId && !accountNameByZoho.has(row.zohoId)) accountNameByZoho.set(row.zohoId, row.name);
   }
 
   const leadByZoho = new Map<string, string>();
@@ -405,8 +427,18 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
         .select({ id: deals.id })
         .from(deals)
         .where(and(eq(deals.tenantId, tenantId), eq(deals.zohoId, zohoId)));
+      const contactParty = mapped.contactZohoId ? contactNameByZoho.get(mapped.contactZohoId) : null;
+      const accountName = mapped.accountZohoId ? accountNameByZoho.get(mapped.accountZohoId) : null;
+      const title =
+        buildDealTitle({
+          contact: contactParty,
+          accountName,
+          primaryNamedInsured: clientNameFromStoredTitle(mapped.title),
+        }) ||
+        clientNameFromStoredTitle(mapped.title) ||
+        "Untitled deal";
       const values = {
-        title: mapped.title,
+        title,
         pipelineStage: mapped.pipelineStage,
         lineOfBusiness: mapped.lineOfBusiness,
         accountKind: mapped.accountKind,

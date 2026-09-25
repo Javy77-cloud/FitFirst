@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { OutsideStageOverrideDialog } from "@/components/deals/outside-stage-override-dialog";
 import { OutsideFitFirstStamp } from "@/components/deal/outside-fitfirst-stamp";
 import Link from "next/link";
@@ -136,6 +137,7 @@ export function QuotesPanel({
   outsideOverride = false,
   outsideOverrideDetail = null,
   pipelineSlug = "p-c",
+  createNotice = null,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -173,6 +175,7 @@ export function QuotesPanel({
   outsideOverride?: boolean;
   outsideOverrideDetail?: import("@/lib/deals/outside-stage-override").OutsideStageOverride | null;
   pipelineSlug?: string;
+  createNotice?: ReactNode;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -275,16 +278,21 @@ export function QuotesPanel({
       product={product}
     />
   );
+  const noticeAnchor = createNotice ? (
+    <div className="absolute bottom-full left-0 z-20">{createNotice}</div>
+  ) : null;
 
   if (sorted.length === 0) {
     return (
       <div
-        className="space-y-3"
+        className="relative flex flex-col gap-3"
         data-ff-deal-quotes=""
         data-ff-deal-quotes-empty=""
         data-ff-quotes-empty=""
         data-ff-quotes-line={activeLine ?? ""}
       >
+        {noticeAnchor}
+        {manualQuoteForm}
         <div className="ff-card space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">
@@ -302,19 +310,8 @@ export function QuotesPanel({
             sheetStale={sheetStale}
             completeness={completeness}
           />
-          {!outsideOverride ? (
           <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
-            0 quote rows · build carriers on Markets first
-          </p>
-          ) : (
-          <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
-            0 quote rows in FitFirst — empty is expected after an outside override. Upload the Issued declaration to mint.
-          </p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            {manualQuoteCarriers.length > 0
-              ? "Request Quotes does not write a premium. Enter the carrier premium below to create the quote row."
-              : "Confirm & request quotes lands on Markets so you can load a list and add carriers. Real quote rows show here once portals or Fill return them."}
+            0 quote rows
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Link
@@ -340,7 +337,6 @@ export function QuotesPanel({
             alreadyIds={[]}
             dealLine={dealLine}
           />
-          {manualQuoteForm}
           {product &&
           outsideOverride &&
           (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue) ? (
@@ -361,13 +357,14 @@ export function QuotesPanel({
   }
 
   return (
-    <div className="space-y-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
+    <div className="relative flex flex-col gap-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
+      {noticeAnchor}
+      {manualQuoteForm}
       <QuotesWarningStrip
         quotes={sorted.map((row) => row.quote)}
         sheetStale={sheetStale}
         completeness={completeness}
       />
-      {manualQuoteForm}
       {product &&
       (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue || outsideOverride) ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -417,9 +414,7 @@ export function QuotesPanel({
                   : "Current quotes"}
             </h3>
           </div>
-          <p className="text-sm text-muted-foreground">
-            No current quotes yet. Prior premiums stay under each carrier after a re-request.
-          </p>
+          <p className="text-sm text-muted-foreground">No current quotes yet.</p>
         </div>
       )}
     </div>

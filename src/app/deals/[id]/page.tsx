@@ -40,10 +40,8 @@ import {
   parseAgentDealTab,
   resolveDealResumeTab,
 } from "@/lib/deals/tabs";
-import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { resolvePartyEmail } from "@/lib/comms/resolve-party-email";
-import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_LOCK } from "@/lib/desk/activity-rail";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { reportFromSheet } from "@/lib/completeness/report";
 import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
@@ -52,7 +50,6 @@ import { loadRecordContext } from "@/lib/record-context";
 import { quotingFormById, quotingUnlockedForLine } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
 import { quotingFormIsManufacturedHome } from "@/lib/quote-sheet/home-address-fill";
-import { resolveDealHeaderAddresses } from "@/lib/deals/header-addresses";
 import {
   DWELLING_INSURED_ADDRESS_LABEL,
   DWELLING_MAILING_ADDRESS_LABEL,
@@ -86,7 +83,10 @@ import {
   storageLineForInstance,
 } from "@/lib/deals/product-instances";
 import {
+  headerAddressesForProductTab,
+  headerRiskOwnerKey,
   instanceOwnsSheet,
+  insuredAddressForProductTab,
   insuredFieldsFromAddress,
   isPropertyCoveringProduct,
   legacyPropertyOwnerKey,
@@ -144,7 +144,7 @@ import { quoteIdsWithFolderPolicy } from "@/lib/policy/mint-gate";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
 import { dealStageView } from "@/lib/deals/deal-columns";
 import { uniqueDisplayPhones } from "@/lib/deals/header-addresses";
-import { dealTitleForActiveProduct } from "@/lib/deals/deal-title";
+import { displayDealTitle } from "@/lib/deals/deal-title";
 import {
   excludedCarrierIdsFromLogs,
   hasShopMarketAction,
@@ -287,19 +287,16 @@ export default async function DealPage({
   const dealFields = dealLayoutBundle?.fields ?? [];
   const dealCfValues = await dealCfValuesPromise;
   const dealValues = { ...dealCfValues, ...(dealLayoutBundle?.stored ?? {}) };
-  const isAna = deal.id === DEAL_ID;
+  const visibleDealTitle = displayDealTitle({
+    contact,
+    account,
+    primaryNamedInsured: deal.primaryNamedInsured,
+    lead,
+    title: deal.title,
+  });
   const partyName =
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
-  const dwellingFire = isDwellingFireProduct(deal.quotingForm, deal.policySubType);
-  const headerAddresses = resolveDealHeaderAddresses({
-    stored: dealValues,
-    risk,
-    contact,
-    lead,
-    account,
-    dwellingFire,
-  });
   const clientAddress = homeAddressFromRecords({ risk, lead, contact });
   const officeAddress = officeMeetingAddress({
     agencyName: agencyRow?.agencyName,
@@ -360,6 +357,16 @@ export default async function DealPage({
   const activePropertyRisk = isPropertyCoveringProduct(activeProduct)
     ? riskForInstance(propertyRiskRows, activeInstance.key, legacyPropertyKey)
     : null;
+  const headerAddresses = headerAddressesForProductTab({
+    instanceKey: activeInstance.key,
+    ownsSheet: activeOwnsPropertySheet,
+    sheetValues: activeSheet.values,
+    ownRisk: riskForInstance(propertyRiskRows, activeInstance.key, headerRiskOwnerKey(productInstances)),
+  });
+  const headerDwellingFire = isDwellingFireProduct(
+    dealProductDef(activeProduct).quotingForm,
+    activeProduct,
+  );
   const activePropertyAddress = isPropertyCoveringProduct(activeProduct)
     ? resolveProductPropertyAddress({
         instanceKey: activeInstance.key,
@@ -506,33 +513,27 @@ export default async function DealPage({
   );
   const instanceLabelRows = productInstances.map((instance) => {
     const line = storageLineForInstance(instance, productInstances);
-    const sheet =
-      sheetsForProperties.find((row) => row.line === line) ??
-      (instance.key === activeInstance.key ? activeSheet : null);
-    const facts = addressFactsFromSheetValues(sheet?.values);
+    const sheet = sheetsForProperties.find((row) => row.line === line) ?? null;
     const owns = instanceOwnsSheet(instance, productInstances);
-    let address = facts.address;
-    let city = facts.city;
-    if (isPropertyCoveringProduct(instance.productId)) {
-      const resolved = resolveProductPropertyAddress({
-        instanceKey: instance.key,
-        ownsSheet: owns,
-        legacyOwner: instance.key === legacyPropertyKey,
-        storedDeal: dealValues,
-        sheetValues: sheet?.values,
-        dwellingFire: isDwellingFireProduct(dealProductDef(instance.productId).quotingForm, instance.productId),
-        ownRisk: riskForInstance(propertyRiskRows, instance.key, legacyPropertyKey),
-      });
-      address = resolved.address.street;
-      city = resolved.address.city;
-    }
+    const property = isPropertyCoveringProduct(instance.productId);
+    const insured = property
+      ? insuredAddressForProductTab({
+          instanceKey: instance.key,
+          ownsSheet: owns,
+          sheetValues: sheet?.values,
+          ownRisk: riskForInstance(propertyRiskRows, instance.key, legacyPropertyKey),
+        })
+      : null;
+    const facts = insured
+      ? { address: insured.street, city: insured.city }
+      : addressFactsFromSheetValues(sheet?.values);
     return {
       key: instance.key,
       productId: instance.productId,
       quotingForm: deal.quotingForm,
       sheetForm: sheet?.values?.quoting_form?.value ?? null,
-      address,
-      city,
+      address: facts.address,
+      city: facts.city,
       vehicles: vehiclesFromSheetValues(sheet?.values),
     };
   });
@@ -592,7 +593,7 @@ export default async function DealPage({
   const noticeReturnTo = `/deals/${deal.id}?tab=${activeTab}&product=${activeInstance.key}`;
   const noticeProps = {
     dealId: deal.id,
-    dealName: deal.title,
+    dealName: visibleDealTitle,
     contactId: deal.contactId,
     product: activeProduct,
     stage: activeProductState.stage,
@@ -630,6 +631,11 @@ export default async function DealPage({
   const hasRequestedQuotes =
     shopMarketsAction || lineQuotes.some((row) => row.quote.stub !== true);
   const noticeStampVisible = isRenderableNoticeStamp(noticeProps.noticeType);
+  const createNoticeControl = !noticeStampVisible ? (
+    <div data-ff-deal-create-notice="">
+      <DealNotices {...noticeProps} placement="header" />
+    </div>
+  ) : null;
   const titleForm =
     sheetFormForProduct(activeProduct, lineForm) ?? dealProductDef(activeProduct).quotingForm;
   const docSlotProducts = dealProducts.map((id) => {
@@ -651,13 +657,6 @@ export default async function DealPage({
       shopLine: productLine,
       quotingForm: form,
     };
-  });
-  const visibleDealTitle = dealTitleForActiveProduct({
-    title: deal.title,
-    product: activeProduct,
-    quotingForm: titleForm,
-    sheetForm: titleForm,
-    label: activeInstanceLabel,
   });
   const quoteChoices = lineQuotes
     .filter((row) => row.quote.stub !== true)
@@ -821,11 +820,6 @@ export default async function DealPage({
                   {visibleDealTitle}
                 </h1>
                 <PromiseChips commitments={serializeCommitments(dealPromises)} />
-                {!noticeStampVisible ? (
-                  <div className="mt-1.5" data-ff-deal-create-notice="">
-                    <DealNotices {...noticeProps} placement="header" />
-                  </div>
-                ) : null}
               </div>
               <DealPackageShell
                 name={partyName}
@@ -838,8 +832,8 @@ export default async function DealPage({
                 dob={dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth}
                 insuredAddress={headerAddresses.insured}
                 mailingAddress={headerAddresses.mailing}
-                insuredLabel={dwellingFire ? DWELLING_INSURED_ADDRESS_LABEL : undefined}
-                mailingLabel={dwellingFire ? DWELLING_MAILING_ADDRESS_LABEL : undefined}
+                insuredLabel={headerDwellingFire ? DWELLING_INSURED_ADDRESS_LABEL : undefined}
+                mailingLabel={headerDwellingFire ? DWELLING_MAILING_ADDRESS_LABEL : undefined}
                 stage={displayProductStage({
                   stage: activeProductState.stage,
                   selectedQuoteIds: activeProductState.selectedQuoteIds,
@@ -885,10 +879,23 @@ export default async function DealPage({
               />
             </div>
           }
-          subnav={
-              dealProducts.length ? (
-                <>
-                  <DealLineSwitcher
+          subnav={null}
+          corner={
+            <div className="w-full" data-ff-deal-motivation-gap="">
+              <DealMotivation stats={motivation} />
+            </div>
+          }
+          banner={null}
+          sidePanel={
+            <div className="min-w-0 w-full space-y-3" data-ff-deal-rail-stack="">
+              <div className="relative min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
+                {dealProducts.length ? (
+                  <div
+                    className="absolute inset-x-0 bottom-full z-20 w-full"
+                    data-ff-deal-products-column=""
+                  >
+                    <DealLineSwitcher
+                      layout="rail"
                     dealId={deal.id}
                     products={productInstances.map((row) => row.key)}
                     active={activeInstance.key}
@@ -972,33 +979,8 @@ export default async function DealPage({
                       }),
                     )}
                   />
-                </>
-              ) : null
-          }
-          corner={
-            <div
-              className="w-full"
-              style={{ marginBottom: "calc(-50px + 0.75rem)" }}
-              data-ff-deal-motivation-gap=""
-            >
-              <DealMotivation stats={motivation} />
-            </div>
-          }
-          banner={
-            isAna ? (
-              <div className="mt-2 rounded-md bg-fit-yellow-bg px-3 py-2 text-base text-fit-yellow">
-                Ana Dib HO3 fixture. Coverage A is $321,000 (Javy-tested). Shopping / unbound. Do not
-                bind this shop. Quotes are not coverage.
-              </div>
-            ) : null
-          }
-          sidePanel={
-            <div
-              className={ACTIVITY_RAIL_ASIDE_CLASS}
-              data-ff-deal-right-rail=""
-              data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
-            >
-              <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
+                  </div>
+                ) : null}
                 <QuickCommsBoard
                   items={comms}
                   dealId={deal.id}
@@ -1158,6 +1140,7 @@ export default async function DealPage({
                       </div>
                     ) : lifeHealthLine ? (
                       <LifeHealthQuotesPanel
+                        createNotice={createNoticeControl}
                         dealId={deal.id}
                         quotes={lineQuotes}
                         logs={logs}
@@ -1207,6 +1190,7 @@ export default async function DealPage({
                       />
                     ) : (
                       <QuotesPanel
+                        createNotice={createNoticeControl}
                         dealId={deal.id}
                         quotes={lineQuotes}
                         logs={logs}

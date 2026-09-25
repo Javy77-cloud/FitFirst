@@ -624,18 +624,19 @@ export async function setDealSheetProduct(formData: FormData) {
       quotingLine: line,
       quotingForm: formId ?? deal.quotingForm,
       policySubType: productRaw,
-      title: dealTitleForRecords({
-        lineOfBusiness,
-        firstName: custom.first_name || undefined,
-        lastName: custom.last_name || undefined,
-        primaryNamedInsured: deal.primaryNamedInsured,
-        title: deal.title,
-        contact,
-        lead,
-        account,
-        quotingForm: formId ?? deal.quotingForm,
-        policySubType: productRaw,
-      }),
+      title:
+        dealTitleForRecords({
+          lineOfBusiness,
+          firstName: custom.first_name || undefined,
+          lastName: custom.last_name || undefined,
+          primaryNamedInsured: deal.primaryNamedInsured,
+          title: deal.title,
+          contact,
+          lead,
+          account,
+          quotingForm: formId ?? deal.quotingForm,
+          policySubType: productRaw,
+        }) || deal.title,
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));

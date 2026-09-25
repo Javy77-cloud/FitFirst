@@ -18,6 +18,7 @@ import {
 import { isUuid } from "@/lib/ids";
 import { newDeskToken, tokenExpiresAt, usernameFromEmail } from "@/lib/people/tokens";
 import { flagsForStatus } from "@/lib/people/status";
+import { buildDealTitle, clientNameFromStoredTitle } from "@/lib/deals/deal-title";
 import { ensureDealRisk } from "@/lib/deals/ensure-risk";
 import { ensureDeskAgentRow } from "@/lib/people/store";
 import {
@@ -611,8 +612,17 @@ async function applyDeal(item: PreviewRow, lookups: ImportLookups, actor: JobAct
   if (["closed_won", "bound"].includes(stage.toLowerCase()) && (isAnaEmail(contactEmail) || isAnaContactId(contact?.id))) {
     throw new Error(ANA_PROTECTED_MESSAGE);
   }
+  const resolvedTitle =
+    buildDealTitle({
+      contact,
+      account,
+      lead,
+      primaryNamedInsured: existing?.primaryNamedInsured,
+    }) ||
+    clientNameFromStoredTitle(title) ||
+    "Untitled deal";
   const payload = {
-    title,
+    title: resolvedTitle,
     pipelineStage: stage,
     lineOfBusiness: cell(values, "line_of_business") || "HO",
     state: cell(values, "state") || "FL",

@@ -129,7 +129,6 @@ export function RepeatableUnitBlocks({
   const serverCount = visibleUnitCount(withOverlays(values, pruned), kind, product);
   const shownCount = shownRepeatableCount(units.count, serverCount, serverChanged);
   const canRemove = canRemoveUnit(shownCount);
-  const keepOneHintId = `ff-keep-one-${kind}`;
   const renderedKeys = new Set<string>();
   for (let index = 1; index <= shownCount; index += 1) {
     for (const field of fieldsForUnit(kind, index)) renderedKeys.add(field.key);
@@ -319,13 +318,12 @@ export function RepeatableUnitBlocks({
           disabled={!canRemove || pending}
           data-testid={removeTestId}
           data-ff-remove-unit-last={kind}
-          aria-describedby={canRemove ? undefined : keepOneHintId}
           onClick={() => void removeAt(shownCount)}
         >
           {pending ? "Removing…" : removeLabel}
         </button>
         {canRemove ? null : (
-          <span id={keepOneHintId} className="py-2 pr-3 text-xs text-muted-foreground" data-ff-remove-blocked={kind}>
+          <span className="sr-only" data-ff-remove-blocked={kind}>
             {keepOneHint}
           </span>
         )}

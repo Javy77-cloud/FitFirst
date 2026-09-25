@@ -44,7 +44,7 @@ export function presentPipelineCard(row: PipelineCardRow): PipelineCardView {
   const { deal, contact, lead, risk } = row;
   return {
     id: deal.id,
-    title: visibleDealTitle(deal),
+    title: visibleDealTitle({ ...deal, contact, lead }),
     pipelineStage: deal.pipelineStage,
     pipelineStageSlug: deal.pipelineStageSlug,
     lineOfBusiness: deal.lineOfBusiness,

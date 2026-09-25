@@ -88,7 +88,7 @@ describe("Life/Health Markets + Quotes + one Create notice", () => {
     );
     expect(html).toContain("data-ff-life-health-quotes");
     expect(html).toContain("data-ff-life-health-quote-writer");
-    expect(html).toContain("not a P&amp;C rate pull");
+    expect(html).not.toContain("not a P&amp;C rate pull");
     expect(html).toContain("Americo");
     expect(html).not.toContain("Home Co");
     expect(html).not.toContain("Go to Markets");
@@ -98,7 +98,8 @@ describe("Life/Health Markets + Quotes + one Create notice", () => {
 
     const healthMarkets = renderToString(createElement(HealthMarketsEmpty));
     expect(healthMarkets).toContain("data-ff-health-markets-empty");
-    expect(healthMarkets).toContain("no rate pull");
+    expect(healthMarkets).toContain("Health Markets");
+    expect(healthMarkets).not.toContain("no rate pull");
 
     const pcEmpty = renderToString(
       createElement(QuotesPanel, {

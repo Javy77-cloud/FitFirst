@@ -145,7 +145,7 @@ describe("Life UW MATRIX appetite v1", () => {
     expect(declineHtml).toContain("data-ff-life-appetite");
     expect(declineHtml).toContain("AIDS / HIV");
     expect(declineHtml).toContain('data-ff-life-appetite-outcome="decline"');
-    expect(declineHtml).toContain("Full MATRIX when spreadsheet provided");
+    expect(declineHtml).not.toContain("Full MATRIX when spreadsheet provided");
 
     const unknown = predictLifeAppetite({
       medicalConditions: "Asthma",
@@ -532,7 +532,8 @@ describe("Life UW MATRIX appetite v1", () => {
       }),
     );
     expect(thinHtml).toContain("data-ff-life-appetite-empty");
-    expect(thinHtml).toContain("no rate pull");
+    expect(thinHtml).toContain("No appetite rows.");
+    expect(thinHtml).not.toContain("no rate pull");
     expect(thinHtml).not.toContain("data-ff-life-appetite-cards");
 
     const aged = predictLifeAppetite({

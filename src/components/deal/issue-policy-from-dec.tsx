@@ -268,9 +268,7 @@ export function IssuePolicyFromDec({
               <p className="truncate text-sm text-navy" data-ff-mint-dec-filename="">
                 {fileName}
               </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">PDF or a photo of the issued policy page.</p>
-            )}
+            ) : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>

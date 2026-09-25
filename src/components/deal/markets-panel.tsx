@@ -131,13 +131,6 @@ export function MarketsPanel({
           <p className="text-sm text-muted-foreground" data-ff-deal-markets-stats="">
             0 in appetite · 0 stretch · 0 skip · 0 appointed
           </p>
-          <p className="text-sm text-muted-foreground">
-            {outsideOverride
-              ? "Empty Markets is expected — this product was quoted outside FitFirst. Use Quotes → upload Issued declaration to mint."
-              : sheetHasValues
-              ? "No carriers matched this sheet. Load a shop list or add carriers below."
-              : "No carriers on this deal yet. Load a shop list or add carriers below, then request quotes — or confirm the sheet to unlock shopping."}
-          </p>
           <div className="flex flex-wrap items-center gap-2">
             <LoadShopListButton dealId={dealId} dealLine={dealLine} />
           </div>
@@ -247,7 +240,6 @@ export function MarketsPanel({
           <Button type="submit" size="sm" variant="outline" disabled={stretch.length === 0 || !unlocked}>
             {stretchLabel}
           </Button>
-          <span className="text-helper text-muted-foreground">Manual second pass. Does not replace in-appetite stubs.</span>
         </form>
         <PaidApiWall />
       </div>

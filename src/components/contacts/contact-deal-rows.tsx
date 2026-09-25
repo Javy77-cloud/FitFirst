@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { RecordLink } from "@/components/record-links";
+import { displayDealTitle } from "@/lib/deals/deal-title";
 import { formatMoney } from "@/lib/domain";
 
 type DealRow = {
@@ -28,7 +29,7 @@ function Row({ deal }: { deal: DealRow }) {
         >
           {open ? "▾" : "▸"}
         </button>
-        <RecordLink href={`/deals/${deal.id}`}>{deal.title}</RecordLink>
+        <RecordLink href={`/deals/${deal.id}`}>{displayDealTitle({ title: deal.title })}</RecordLink>
         <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase text-muted-foreground">
           {deal.pipelineStage}
         </span>

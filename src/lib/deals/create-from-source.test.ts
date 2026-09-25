@@ -42,7 +42,7 @@ describe("copyDealDetailValues", () => {
 });
 
 describe("titleForCopiedDeal", () => {
-  it("keeps First Last / LOB and never appends (copy)", () => {
+  it("keeps the client name and never appends (copy) or a product", () => {
     expect(
       titleForCopiedDeal({
         title: "Elena Ruiz / Homeowners (copy)",
@@ -50,7 +50,7 @@ describe("titleForCopiedDeal", () => {
         firstName: "Elena",
         lastName: "Ruiz",
       }),
-    ).toBe("Elena Ruiz / Homeowners");
+    ).toBe("Elena Ruiz");
   });
 
   it("rebuilds from contact when title is thin", () => {
@@ -60,6 +60,6 @@ describe("titleForCopiedDeal", () => {
         lineOfBusiness: "AUTO",
         contact: { firstName: "Javy", lastName: "Garcia" },
       }),
-    ).toBe("Javy Garcia / Auto");
+    ).toBe("Javy Garcia");
   });
 });

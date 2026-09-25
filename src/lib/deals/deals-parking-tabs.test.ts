@@ -27,6 +27,8 @@ describe("Won-Lost + Archived parking tabs", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/subnav=/);
     expect(page).toMatch(/DealLineSwitcher/);
+    expect(page).toMatch(/layout="rail"/);
+    expect(page).toMatch(/data-ff-deal-products-column/);
     // Products no longer sit inside the top-left heading stack with Pipeline.
     const headingSlice = page.slice(
       page.indexOf("data-ff-deal-top-left"),

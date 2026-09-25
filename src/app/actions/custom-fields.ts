@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
 import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { db } from "@/lib/db";
-import { contacts, deals, quoteSheets, risks } from "@/lib/db/schema";
+import { accounts, contacts, deals, leads, quoteSheets, risks } from "@/lib/db/schema";
 import { parseProductInstanceToken, storageLineForInstance } from "@/lib/deals/product-instances";
 import {
   addressFromInsuredFields,
@@ -82,7 +82,7 @@ import { flashAction, flashSettings } from "@/lib/flash-action";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { resolveDealProduct, sheetProductForQuotingForm } from "@/lib/deals/deal-line";
 import { isPcPackageLine, mergeShopLinesKeepExisting } from "@/lib/deals/package-lines";
-import { formatDealPersonName, formatDealTitle } from "@/lib/deals/deal-title";
+import { buildDealTitle, formatDealPersonName } from "@/lib/deals/deal-title";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { parseDobToIso } from "@/lib/contacts/dob-sync";
@@ -527,29 +527,30 @@ export async function applySystemDealValues(dealId: string, system: Record<strin
   const existingFamily = pipelineFamilyFromDeal({ lineOfBusiness: existing.lineOfBusiness });
   const family = allowLifeHealthFamily(requestedFamily, existingFamily, settings);
 
-  const nextLine =
-    form?.lob ||
-    (rawSubtype
-      ? family === "life"
-        ? "LIFE"
-        : family === "health"
-          ? "HEALTH"
-          : existing.lineOfBusiness
-      : existing.lineOfBusiness);
-
-  // Always recompute title from THIS deal's applicant/insured fields + LOB.
-  // Omit contact/lead so a linked lead name cannot freeze or overwrite the title.
+  // Client name only. A linked contact wins over the applicant fields.
   // leadId / contactId are intentionally not touched.
-  const title = formatDealTitle({
-    firstName: firstName || undefined,
-    lastName: lastName || undefined,
-    primaryNamedInsured: named,
-    accountName: !firstName && !lastName ? named : undefined,
-    existingTitle: existing.title,
-    line: nextLine,
-    quotingForm: form?.id ?? (rawSubtype || undefined),
-    policySubType: form?.label ?? (rawSubtype || undefined),
-  });
+  const [contact] = existing.contactId
+    ? await db
+        .select({ firstName: contacts.firstName, lastName: contacts.lastName })
+        .from(contacts)
+        .where(eq(contacts.id, existing.contactId))
+    : [];
+  const [account] = existing.accountId
+    ? await db.select({ name: accounts.name }).from(accounts).where(eq(accounts.id, existing.accountId))
+    : [];
+  const [lead] = existing.leadId
+    ? await db
+        .select({ firstName: leads.firstName, lastName: leads.lastName })
+        .from(leads)
+        .where(eq(leads.id, existing.leadId))
+    : [];
+  const title =
+    buildDealTitle({
+      contact,
+      account,
+      primaryNamedInsured: named,
+      lead,
+    }) || existing.title;
 
   const lifeHealthLine =
     family === "life" ? "life" : family === "health" ? "health" : null;

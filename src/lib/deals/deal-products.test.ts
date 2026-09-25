@@ -187,10 +187,12 @@ describe("create + detail wiring", () => {
   it("grouped picker is on create; chips + shared/product details are on the deal", () => {
     const picker = readFileSync("src/components/deals/product-picker.tsx", "utf8");
     expect(picker).toMatch(/data-ff-product-picker/);
-    expect(picker).toMatch(/Personal/);
-    expect(picker).toMatch(/Commercial/);
-    expect(picker).toMatch(/Life/);
-    expect(picker).toMatch(/Health/);
+    expect(picker).toMatch(/group\.label/);
+    expect(picker).not.toMatch(/Mix Personal/);
+    expect(readFileSync("src/lib/deals/deal-products.ts", "utf8")).toMatch(/Personal/);
+    expect(readFileSync("src/lib/deals/deal-products.ts", "utf8")).toMatch(/Commercial/);
+    expect(readFileSync("src/lib/deals/deal-products.ts", "utf8")).toMatch(/Life/);
+    expect(readFileSync("src/lib/deals/deal-products.ts", "utf8")).toMatch(/Health/);
     expect(picker).toMatch(/shopProducts/);
 
     const dialog = readFileSync("src/components/deals/add-new-deal-dialog.tsx", "utf8");

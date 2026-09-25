@@ -177,7 +177,12 @@ export async function DealsTable({
               shopFlow: deal.shopFlow,
               fallbackNote: stored.notes || stored.new_field || deal.notes,
             });
-            const displayTitle = visibleDealTitle(deal);
+            const displayTitle = visibleDealTitle({
+              ...deal,
+              contact,
+              lead,
+              account,
+            });
             const nextDue =
               nextByDeal.get(deal.id) ??
               nextDealActionAt({ updatedAt: deal.updatedAt })?.toISOString() ??

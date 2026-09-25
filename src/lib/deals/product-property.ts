@@ -257,6 +257,226 @@ export function addressFromRiskRow(
   };
 }
 
+/**
+ * Street for one product tab, computed at render.
+ * Own risk first. A null product_key row is only the first property product
+ * (callers pass that row as ownRisk). Then this form's address1 or sidecar.
+ * Never property_address, property_oneliner, the deal-level prefill, or another tab.
+ */
+export function insuredAddressForProductTab(input: {
+  instanceKey: string;
+  ownsSheet: boolean;
+  sheetValues?: SheetValues;
+  ownRisk?: { address1?: string | null; city?: string | null } | null;
+}): { street: string; city: string } {
+  const riskStreet = String(input.ownRisk?.address1 ?? "").replace(/\s+/g, " ").trim();
+  if (riskStreet) {
+    return {
+      street: riskStreet,
+      city: String(input.ownRisk?.city ?? "").replace(/\s+/g, " ").trim(),
+    };
+  }
+  if (!input.sheetValues) return { street: "", city: "" };
+  if (input.ownsSheet) {
+    return {
+      street: cellValue(input.sheetValues, "address1"),
+      city: cellValue(input.sheetValues, "city"),
+    };
+  }
+  return {
+    street: cellValue(input.sheetValues, sidecarField(input.instanceKey, "address1")),
+    city: cellValue(input.sheetValues, sidecarField(input.instanceKey, "city")),
+  };
+}
+
+export type ProductTabHeaderAddress = {
+  address1: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
+const EMPTY_TAB_HEADER_ADDRESS: ProductTabHeaderAddress = {
+  address1: "",
+  city: "",
+  state: "",
+  zip: "",
+};
+
+function headerPart(value: string | null | undefined): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function tabHeaderFromRisk(risk: {
+  address1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+} | null | undefined): ProductTabHeaderAddress {
+  return {
+    address1: headerPart(risk?.address1),
+    city: headerPart(risk?.city),
+    state: headerPart(risk?.state),
+    zip: headerPart(risk?.zip),
+  };
+}
+
+function tabHeaderField(
+  values: SheetValues,
+  ownsSheet: boolean,
+  instanceKey: string,
+  field: string,
+): string {
+  if (!values) return "";
+  const key = ownsSheet ? field : sidecarField(instanceKey, field);
+  return cellValue(values, key);
+}
+
+function tabHeaderLocation(
+  values: SheetValues,
+  ownsSheet: boolean,
+  instanceKey: string,
+  streetKey: string,
+  cityKey: string,
+  stateKey: string,
+  zipKey: string,
+): ProductTabHeaderAddress {
+  return {
+    address1: tabHeaderField(values, ownsSheet, instanceKey, streetKey),
+    city: tabHeaderField(values, ownsSheet, instanceKey, cityKey),
+    state: tabHeaderField(values, ownsSheet, instanceKey, stateKey),
+    zip: tabHeaderField(values, ownsSheet, instanceKey, zipKey),
+  };
+}
+
+function tabHeaderHasStreet(parts: ProductTabHeaderAddress): boolean {
+  return Boolean(parts.address1);
+}
+
+/** A one-line mailing already includes city. Don't print that city again. */
+function tabHeaderMailingLine(parts: ProductTabHeaderAddress): ProductTabHeaderAddress {
+  if (parts.city && parts.address1.toLowerCase().includes(parts.city.toLowerCase())) {
+    return { address1: parts.address1, city: "", state: "", zip: "" };
+  }
+  return parts;
+}
+
+/**
+ * Header insured + mailing for the active product tab.
+ * Insured uses the same source as the tab label: this tab's risk, then this
+ * form's address1 / premises / garaging. Mailing is this form's mailing_address.
+ * Never property_address, property_oneliner, deal custom fields, or the contact.
+ */
+export function headerAddressesForProductTab(input: {
+  instanceKey: string;
+  ownsSheet: boolean;
+  sheetValues?: SheetValues;
+  ownRisk?: {
+    address1?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+  } | null;
+}): { insured: ProductTabHeaderAddress; mailing: ProductTabHeaderAddress } {
+  const values = input.sheetValues;
+  const fromRisk = tabHeaderFromRisk(input.ownRisk);
+  const fromAddress1 = tabHeaderLocation(values, input.ownsSheet, input.instanceKey, "address1", "city", "state", "zip");
+  const fromPremises = tabHeaderLocation(
+    values,
+    input.ownsSheet,
+    input.instanceKey,
+    "premises_address",
+    "premises_city",
+    "premises_state",
+    "premises_zip",
+  );
+  const premises =
+    tabHeaderHasStreet(fromPremises) &&
+    !fromPremises.city &&
+    !fromPremises.state &&
+    !fromPremises.zip &&
+    !tabHeaderHasStreet(fromAddress1)
+      ? { ...fromPremises, city: fromAddress1.city, state: fromAddress1.state, zip: fromAddress1.zip }
+      : fromPremises;
+  const fromGarage = tabHeaderLocation(
+    values,
+    input.ownsSheet,
+    input.instanceKey,
+    "garaging_address",
+    "garaging_city",
+    "garaging_state",
+    "garaging_zip",
+  );
+
+  let mailing = tabHeaderLocation(
+    values,
+    input.ownsSheet,
+    input.instanceKey,
+    "mailing_address",
+    "mailing_city",
+    "mailing_state",
+    "mailing_zip",
+  );
+  const premisesSame = /^(yes|true|1)$/i.test(
+    tabHeaderField(values, input.ownsSheet, input.instanceKey, "premises_same_as_business"),
+  );
+  if (premisesSame && tabHeaderHasStreet(mailing) && !mailing.city && !mailing.state && !mailing.zip) {
+    mailing = {
+      address1: mailing.address1,
+      city: tabHeaderField(values, input.ownsSheet, input.instanceKey, "city"),
+      state: tabHeaderField(values, input.ownsSheet, input.instanceKey, "state"),
+      zip: tabHeaderField(values, input.ownsSheet, input.instanceKey, "zip"),
+    };
+  }
+
+  let insured = tabHeaderHasStreet(fromRisk)
+    ? fromRisk
+    : tabHeaderHasStreet(fromAddress1)
+      ? fromAddress1
+      : tabHeaderHasStreet(premises)
+        ? premises
+        : tabHeaderHasStreet(fromGarage)
+          ? fromGarage
+          : { ...EMPTY_TAB_HEADER_ADDRESS };
+
+  if (!tabHeaderHasStreet(insured) && tabHeaderHasStreet(mailing) && premisesSame) {
+    insured = { ...mailing };
+  }
+  if (!tabHeaderHasStreet(insured) && input.ownsSheet && values) {
+    const applicant = cellValue(values, "applicant_address");
+    if (applicant) insured = { address1: applicant, city: "", state: "", zip: "" };
+  }
+
+  return { insured, mailing: tabHeaderMailingLine(mailing) };
+}
+
+/**
+ * The unscoped risk (product_key null) belongs to the first property tab,
+ * otherwise the first auto tab, otherwise the first tab. Later tabs do not share it.
+ */
+export function headerRiskOwnerKey(
+  instances: readonly Pick<ProductInstance, "key" | "productId">[],
+): string | null {
+  return legacyPropertyOwnerKey(instances) ?? legacyAutoOwnerKey(instances) ?? instances[0]?.key ?? null;
+}
+
+/**
+ * Match a risk to one product tab. A keyed row wins. An unscoped row
+ * (product_key null) belongs only to legacyOwnerKey — the first property product.
+ */
+export function tabRiskForInstance<T extends { productKey?: string | null }>(
+  rows: readonly T[],
+  instanceKey: string,
+  legacyOwnerKey: string | null,
+): T | null {
+  const keyed = rows.find((row) => String(row.productKey ?? "").trim() === instanceKey);
+  if (keyed) return keyed;
+  if (legacyOwnerKey && instanceKey === legacyOwnerKey) {
+    return rows.find((row) => !String(row.productKey ?? "").trim()) ?? null;
+  }
+  return null;
+}
+
 export function riskBelongsToInstance(input: {
   productKey: string | null | undefined;
   instanceKey: string;

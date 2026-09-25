@@ -428,6 +428,33 @@ describe("per-product stages", () => {
       "HO3:Quote sent",
       "DP3:Quote review",
     ]);
+    const sharedHome = listProductStageChips({
+      shopProducts: ["homeowners", "landlord", "homeowners~88uvyj"],
+      quotingForm: "HO3",
+      sheets: [
+        {
+          line: "home",
+          values: {
+            address1: { value: "10358 NW 30th TER" },
+            property_address: { value: "10358 NW 30th TER, Doral, FL 33172" },
+          },
+        },
+        {
+          line: "home~landlord",
+          values: { property_address: { value: "10358 NW 30th TER, Doral, FL 33172" } },
+        },
+        {
+          line: "home~homeowners~88uvyj",
+          values: { address1: { value: "16021 Northwest 79th Court" } },
+        },
+      ],
+      risks: [{ productKey: null, address1: "8944 Adriatico Lane", city: "Kissimmee" }],
+    });
+    expect(sharedHome.map((chip) => chip.label)).toEqual([
+      "HO3 8944 Adriatico",
+      "DP3",
+      "HO3 16021 Northwest 79th",
+    ]);
     const heather = listProductStageChips({
       shopProducts: ["homeowners", "auto", "flood"],
       quotingForm: "HO3",

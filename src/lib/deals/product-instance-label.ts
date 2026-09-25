@@ -240,8 +240,7 @@ export function vehiclesFromSheetValues(
 export function addressFactsFromSheetValues(
   values: Record<string, QuoteSheetFieldValue | undefined> | null | undefined,
 ): { address: string; city: string } {
-  const address =
-    cell(values, "address1") || cell(values, "property_address") || cell(values, "premises_address");
+  const address = cell(values, "address1") || cell(values, "premises_address");
   const city = cell(values, "city") || cell(values, "premises_city");
   return { address, city };
 }

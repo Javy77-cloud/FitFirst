@@ -56,7 +56,7 @@ describe("lead → deal convert copy", () => {
 
   it("copies every lead field that has a home on the deal / risk / sheet", () => {
     const copy = convertFieldCopy(elena, "HO", "FL");
-    expect(copy.title).toBe("Elena Ruiz / Homeowners");
+    expect(copy.title).toBe("Elena Ruiz");
     expect(copy.primaryNamedInsured).toBe("Elena M Ruiz");
     expect(copy.dealState).toBe("FL");
     expect(copy.pipelineSlug).toBe("p-c");
@@ -91,7 +91,7 @@ describe("lead → deal convert copy", () => {
       null,
       { insurance_type: "Auto", insurance_subtype: "Auto" },
     );
-    expect(copy.title).toBe("Elena Ruiz / Auto");
+    expect(copy.title).toBe("Elena Ruiz");
     expect(copy.quotingForm).toBe("PA");
     expect(copy.quotingLine).toBe("auto");
     expect(copy.shopLines).toEqual(["auto"]);
@@ -110,7 +110,7 @@ describe("lead → deal convert copy", () => {
       null,
       { insurance_type: "Life", insurance_subtype: "Term Life" },
     );
-    expect(copy.title).toBe("Elena Ruiz / Term Life");
+    expect(copy.title).toBe("Elena Ruiz");
     expect(copy.quotingForm).toBe("Term Life");
     expect(copy.quotingLine).toBe("life");
     expect(copy.shopLines).toEqual(["life"]);

@@ -50,7 +50,7 @@ import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices"
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
-import { formatDealTitle, splitPersonName } from "@/lib/deals/deal-title";
+import { buildDealTitle, formatDealTitle, splitPersonName } from "@/lib/deals/deal-title";
 import { coverageLinesValueForDeal, isCommercialSheetLine } from "@/lib/quote-sheet/commercial-risk-profile";
 import { isUuid } from "@/lib/ids";
 import { defaultStageColor } from "@/lib/desk/status-colors";
@@ -654,15 +654,15 @@ export async function createDeal(formData: FormData) {
       leadId: sourceDeal?.leadId || lead.id,
       contactId: pickedContact?.id ?? sourceDeal?.contactId ?? null,
       accountId: pickedAccount?.id ?? sourceDeal?.accountId ?? null,
-      title: formatDealTitle({
-        firstName,
-        lastName: pickedAccount && !pickedContact && !businessName ? "" : lastName,
-        accountName: businessName || (pickedAccount && !pickedContact ? pickedAccount.name : null),
-        primaryNamedInsured,
-        line,
-        quotingForm,
-        policySubType,
-      }),
+      title:
+        buildDealTitle({
+          contact: pickedContact,
+          account: pickedAccount,
+          accountName: businessName,
+          primaryNamedInsured:
+            primaryNamedInsured || [firstName, lastName].filter(Boolean).join(" ").trim() || null,
+          lead,
+        }) || "Untitled deal",
       ...NEW_DEAL_PIPELINE_STAGE,
       shopFlow: seedNewDealShopFlow({
         shopProducts: shopProducts.length ? shopProducts : null,
@@ -852,7 +852,7 @@ export async function createDealFromDecDrop(formData: FormData) {
       tenantId: DEFAULT_TENANT_ID,
       leadId: lead.id,
       ownerId: lead.ownerId,
-      title: formatDealTitle({ firstName, lastName, line }),
+      title: formatDealTitle({ firstName, lastName, lead, line }) || "Untitled deal",
       ...NEW_DEAL_PIPELINE_STAGE,
       shopFlow: seedNewDealShopFlow({
         shopLines: shopLinesFromLine(line),

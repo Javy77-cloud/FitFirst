@@ -82,6 +82,25 @@ describe("deal shop flow + product chrome", () => {
     );
     expect(gloriaStale).toContain("Quote review");
     expect(gloriaStale).not.toContain("Quote sent");
+    const rail = renderToString(
+      createElement(DealLineSwitcher, {
+        dealId: "deal-gloria",
+        products: ["homeowners", "landlord", "homeowners~new"],
+        active: "homeowners",
+        tab: "quotes",
+        labels: {
+          homeowners: "HO3 8944 Adriatico",
+          landlord: "DP3 10358 Northwest 30th",
+          "homeowners~new": "HO3 16021 Northwest 79th",
+        },
+        layout: "rail",
+      }),
+    );
+    expect(rail).toMatch(/data-ff-deal-products-rail/);
+    expect(rail.indexOf("HO3 16021 Northwest 79th")).toBeLessThan(rail.indexOf("DP3 10358 Northwest 30th"));
+    expect(rail.indexOf("DP3 10358 Northwest 30th")).toBeLessThan(rail.indexOf("HO3 8944 Adriatico"));
+    expect(rail.indexOf("HO3 8944 Adriatico")).toBeLessThan(rail.indexOf("Add / change products"));
+    expect(rail).not.toMatch(/truncate|line-clamp|ellipsis/);
   });
 
   it("picker is grouped tiles, not a wall of unlabeled checkboxes", () => {

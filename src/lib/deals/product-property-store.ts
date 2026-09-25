@@ -4,6 +4,7 @@ import { risks, type Risk } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   autoVehicleRiskKey,
+  tabRiskForInstance,
   type AutoVehicleFacts,
   type PropertyAddress,
 } from "@/lib/deals/product-property";
@@ -106,12 +107,7 @@ export function riskForInstance(
   instanceKey: string,
   legacyOwnerKey: string | null,
 ): ScopedRisk | null {
-  const keyed = rows.find((row) => (row.productKey ?? "").trim() === instanceKey);
-  if (keyed) return keyed;
-  if (legacyOwnerKey && instanceKey === legacyOwnerKey) {
-    return rows.find((row) => !String(row.productKey ?? "").trim()) ?? null;
-  }
-  return null;
+  return tabRiskForInstance(rows, instanceKey, legacyOwnerKey);
 }
 
 async function insertProductRisk(input: {

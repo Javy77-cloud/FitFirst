@@ -1,5 +1,4 @@
 import {
-  LIFE_UW_MATRIX_COVERAGE_NOTE,
   lifeOutcomeLabel,
   type LifeAppetiteOutcome,
   type LifeAppetitePrediction,
@@ -22,7 +21,6 @@ export function LifeAppetiteHelper({
   selectedLabels,
   tobaccoStatus,
   predictions,
-  coverageNote = LIFE_UW_MATRIX_COVERAGE_NOTE,
   build,
   ageYears = null,
   thin = false,
@@ -70,10 +68,6 @@ export function LifeAppetiteHelper({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-navy">Life MATRIX appetite</h3>
-          <p className="mt-1 text-xs text-muted-foreground" data-ff-life-appetite-note="">
-            {coverageNote} Appetite only — no rate pull.
-            {requested ? ` Showing ${requested} products only.` : ""}
-          </p>
         </div>
         {empty ? null : (
           <p className="text-xs text-muted-foreground" data-ff-life-appetite-stats="">
@@ -98,11 +92,7 @@ export function LifeAppetiteHelper({
       </p>
       {empty ? (
         <p className="text-sm text-muted-foreground" data-ff-life-appetite-empty="">
-          {thin
-            ? "Need age, build, or conditions to score Life MATRIX appetite. This tab stays empty instead of inventing In appetite."
-            : requested
-              ? `No MATRIX products match ${requested}.`
-              : "Need age, build, or conditions to score Life MATRIX appetite. This tab stays empty instead of inventing In appetite."}
+          {requested ? `No MATRIX products match ${requested}.` : "No appetite rows."}
         </p>
       ) : (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" data-ff-life-appetite-cards="">
@@ -140,14 +130,13 @@ export function LifeAppetiteHelper({
 
 export function HealthMarketsEmpty({ usingHealthSherpa = false }: { usingHealthSherpa?: boolean }) {
   return (
-    <section className="ff-card space-y-2 p-4" data-ff-health-markets="" data-ff-health-markets-empty="">
+    <section
+      className="ff-card space-y-2 p-4"
+      data-ff-health-markets=""
+      data-ff-health-markets-empty=""
+      data-ff-health-markets-healthsherpa={usingHealthSherpa ? "1" : "0"}
+    >
       <h3 className="text-sm font-semibold text-navy">Health Markets</h3>
-      <p className="text-sm text-muted-foreground">
-        Appetite only — no rate pull. There is no Health UW matrix loaded, so this tab stays empty.
-        {usingHealthSherpa
-          ? " Using HealthSherpa: quote in HealthSherpa, not this Markets tab. Dental / Vision / Short-term stay manual."
-          : null}
-      </p>
     </section>
   );
 }

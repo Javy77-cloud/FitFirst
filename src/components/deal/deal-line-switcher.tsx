@@ -51,6 +51,7 @@ export function DealLineSwitcher({
   formLabels = {},
   labels = {},
   labelFacts,
+  layout = "row",
 }: {
   dealId: string;
   products: readonly string[];
@@ -74,29 +75,31 @@ export function DealLineSwitcher({
       }
     >
   >;
+  /** `row` is the horizontal chip strip. `rail` is the full-width column above Quick Communication. */
+  layout?: "row" | "rail";
 }) {
   if (!products.length) return null;
-  return (
-    <div className="mt-1.5 space-y-1" data-ff-deal-product-chip-row="">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Products
-        </p>
-        <DealPackageLinesForm
-          dealId={dealId}
-          selected={products}
-          tab={tab}
-          activeLine={active}
-          labelFacts={labelFacts}
-        />
-      </div>
+  const rail = layout === "rail";
+  // Stored order is oldest-first. The rail shows the newest product directly under the title.
+  const ordered = rail ? [...products].reverse() : [...products];
+  const picker = (
+    <DealPackageLinesForm
+      dealId={dealId}
+      selected={products}
+      tab={tab}
+      activeLine={active}
+      labelFacts={labelFacts}
+      expand={rail ? "up" : "down"}
+    />
+  );
+  const chips = (
       <nav
         aria-label="Deal products"
-        className="flex flex-wrap items-stretch gap-1"
+        className={rail ? "flex w-full flex-col gap-1" : "flex flex-wrap items-stretch gap-1"}
         data-ff-deal-line-switcher=""
         data-ff-deal-product-chips=""
       >
-        {products.map((product) => {
+        {ordered.map((product) => {
           const selected = product === active;
           const stat = progress[product];
           const gap = quoteGaps[product];
@@ -126,7 +129,8 @@ export function DealLineSwitcher({
               href={dealProductSwitcherHref({ dealId, product, tab })}
               scroll={false}
               className={cn(
-                "relative min-w-[4.5rem] overflow-hidden rounded border px-2 py-1 text-[11px] font-semibold transition-colors",
+                "relative overflow-hidden rounded border px-2 py-1 text-[11px] font-semibold transition-colors",
+                rail ? "block w-full min-w-0 text-left" : "min-w-[4.5rem]",
                 selected
                   ? cn(theme.chipOn, "shadow-sm ring-2 ring-navy/25")
                   : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/40",
@@ -144,7 +148,7 @@ export function DealLineSwitcher({
               data-active={selected ? "true" : "false"}
               aria-current={selected ? "page" : undefined}
             >
-              <span className="flex items-center gap-1">
+              <span className={cn("flex items-center gap-1", rail && "w-full flex-wrap")}>
                 {quotesMissing ? (
                   <span
                     className="inline-flex size-2.5 items-center justify-center rounded-full bg-fit-flag text-[8px] text-white"
@@ -164,7 +168,7 @@ export function DealLineSwitcher({
                 ) : (
                   <span className={cn("inline-block size-1 rounded-full", theme.bar)} aria-hidden />
                 )}
-                {label}
+                <span className={cn(rail && "min-w-0 flex-1 whitespace-normal break-words")}>{label}</span>
                 {stageLabel ? (
                   <span
                     className={cn(
@@ -208,6 +212,23 @@ export function DealLineSwitcher({
           );
         })}
       </nav>
+  );
+  if (rail) {
+    return (
+      <div className="flex w-full flex-col gap-1" data-ff-deal-product-chip-row="" data-ff-deal-products-rail="">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Products</p>
+        {chips}
+        {picker}
+      </div>
+    );
+  }
+  return (
+    <div className="mt-1.5 space-y-1" data-ff-deal-product-chip-row="">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Products</p>
+        {picker}
+      </div>
+      {chips}
     </div>
   );
 }

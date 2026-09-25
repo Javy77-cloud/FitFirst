@@ -19,7 +19,6 @@ import {
   MASTER_FILL_BUSY_COPY,
   MASTER_FILL_BUSY_TITLE,
   MASTER_FILL_DOC_CLIENT_TIMEOUT_MS,
-  MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_SKIP_NO_DOCS,
   MASTER_FILL_STEP_DEAL,
   MASTER_FILL_STEP_PROPERTY,
@@ -329,13 +328,8 @@ export function MasterSheetFillButton({
               {done ? summary : status}
             </DialogDescription>
           </DialogHeader>
-          {done ? (
-            <p className="text-xs text-muted-foreground" data-ff-master-fill-review="">
-              {MASTER_FILL_REVIEW_NUDGE}
-            </p>
-          ) : (
+          {done ? null : (
             <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">{line === "auto" ? "Deal → Docs → VIN (NHTSA). Empty cells only." : "Deal → Property → Docs. Empty cells only."}</p>
               {busy ? (
                 <WaitHold
                   title={masterFillBusyTitle(status) || MASTER_FILL_BUSY_TITLE}
