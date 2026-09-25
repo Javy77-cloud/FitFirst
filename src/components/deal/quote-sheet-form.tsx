@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Contact, Document, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
+import { sheetFieldCell } from "@/lib/quote-sheet/sheet-live";
 import { dwellingRiskFieldLabel, isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { inspectionSectionDefaultOpen } from "@/lib/quote-sheet/home-inspections";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
@@ -154,7 +155,7 @@ export function QuoteSheetForm({
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 print:break-inside-avoid">
             {group.fields.map((field) => {
-              const cell = sheet.values[field.key] ?? {
+              const cell = sheetFieldCell(sheet.values, field.key) ?? {
                 value: "",
                 status: "missing" as const,
                 source: "blank" as const,

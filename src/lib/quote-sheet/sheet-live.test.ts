@@ -16,6 +16,7 @@ import {
   mergeLiveWithServerValues,
   sheetControlValue,
   sheetDisplayValue,
+  sheetFieldCell,
 } from "@/lib/quote-sheet/sheet-live";
 
 function cell(value: string): QuoteSheetFieldValue {
@@ -37,6 +38,29 @@ describe("sheet live rehydrate after Fill", () => {
     expect(sheetControlValue("opening_protection", "", "Hurricane Protection")).toBe(
       "Hurricane Protection",
     );
+  });
+
+  it("maps year_built and construction onto the Risk Profile controls", () => {
+    const gloria = {
+      year_built: { value: "2000", status: "check" as const, source: "extracted" as const },
+      construction: { value: "masonry", status: "check" as const, source: "extracted" as const },
+      occupancy: { value: "Owner", status: "check" as const, source: "extracted" as const },
+      construction_type: { value: "", status: "missing" as const, source: "blank" as const },
+    };
+    expect(sheetFieldCell(gloria, "year_built")?.value).toBe("2000");
+    expect(sheetFieldCell(gloria, "construction")?.value).toBe("masonry");
+    expect(sheetControlValue("construction", "", sheetFieldCell(gloria, "construction")?.value)).toBe(
+      "Masonry",
+    );
+    expect(sheetControlValue("year_built", "", sheetFieldCell(gloria, "year_built")?.value)).toBe("2000");
+
+    const aliasOnly = {
+      year_of_construction: { value: "24", status: "check" as const, source: "extracted" as const },
+      construction_type: { value: "Masonry", status: "check" as const, source: "extracted" as const },
+    };
+    expect(sheetFieldCell(aliasOnly, "year_built")?.value).toBe("24");
+    expect(sheetFieldCell(aliasOnly, "construction")?.value).toBe("Masonry");
+    expect(sheetControlValue("construction", "", "masonry")).toBe("Masonry");
   });
 
   it("adopts filled server cells into a blank mount and keeps a typed override", () => {

@@ -12,6 +12,11 @@ import {
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { displayDealTitle } from "@/lib/deals/deal-title";
 import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
+import {
+  DWELLING_EXTRACT_FIELD_KEYS,
+  overviewDwellingSheet,
+} from "@/lib/policy/dwelling-facts";
+import { selectPolicyQuoteSheet } from "@/lib/policy/policy-quote-sheet";
 import { isUuid } from "@/lib/ids";
 import { partyPolicyGlance } from "@/lib/book-lists/party-stats";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
@@ -1488,10 +1493,34 @@ export async function getPolicyWorkspace(id: string) {
         .from(quoteSheets)
         .where(and(eq(quoteSheets.tenantId, tenant()), eq(quoteSheets.dealId, row.policy.dealId)))
     : [];
-  const quoteSheet =
-    sheetRows.find((row) => row.line === "home") ??
-    sheetRows[0] ??
-    null;
+  const quoteSheet = selectPolicyQuoteSheet(sheetRows, {
+    sourceProduct: row.policy.sourceProduct,
+    policyNumber: row.policy.policyNumber,
+    lineOfBusiness: row.policy.lineOfBusiness,
+  });
+  const dwellingDocIds = files.map((file) => file.id);
+  const dwellingExtractRows = dwellingDocIds.length
+    ? await db
+        .select({
+          fieldKey: extractedFields.fieldKey,
+          normalizedValue: extractedFields.normalizedValue,
+          rawValue: extractedFields.rawValue,
+          createdAt: extractedFields.createdAt,
+        })
+        .from(extractedFields)
+        .where(
+          and(
+            eq(extractedFields.tenantId, tenant()),
+            inArray(extractedFields.documentId, dwellingDocIds),
+            inArray(extractedFields.fieldKey, [...DWELLING_EXTRACT_FIELD_KEYS]),
+          ),
+        )
+    : [];
+  const overviewSheet = overviewDwellingSheet({
+    sheet: quoteSheet?.values ?? null,
+    protection: row.policy.propertyProtection,
+    extracted: dwellingExtractRows,
+  });
   const [terms, compareLogs, vehicleRows, work] = await Promise.all([
     db
       .select()
@@ -1513,6 +1542,7 @@ export async function getPolicyWorkspace(id: string) {
     risk: risk ?? null,
     location: location ?? null,
     quoteSheet,
+    overviewSheet,
     files,
     filingAttachments,
     fileVersions,

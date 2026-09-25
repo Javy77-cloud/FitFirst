@@ -1129,6 +1129,12 @@ export const policies = pgTable(
     /** Home/HO3/MHO wind mit, 4-point, roof/systems, alarms — snapshot at mint/DEC transfer. */
     propertyProtection: jsonb("property_protection").$type<{
       values?: Record<string, string>;
+      /** Year built, construction, and occupancy when the policy has no risk row. */
+      dwelling?: {
+        year_built?: string;
+        construction?: string;
+        occupancy?: string;
+      };
       updatedAt?: string | null;
       source?: "mint" | "dec_transfer" | "sheet" | "gemini" | "merge" | null;
     } | null>(),

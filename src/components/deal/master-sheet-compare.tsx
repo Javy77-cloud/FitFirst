@@ -77,6 +77,7 @@ import {
   mergeLiveWithServerValues,
   sheetControlValue,
   sheetDisplayValue,
+  sheetFieldCell,
   sheetValuesFingerprint,
   sheetValuesToLive,
 } from "@/lib/quote-sheet/sheet-live";
@@ -632,7 +633,7 @@ function SheetGroup({
       density={density}
       fields={visibleFields}
       renderField={(field) => {
-        const cell = values[field.key];
+        const cell = sheetFieldCell(values, field.key);
         const filled = Boolean(cell?.value.trim() && cell.status !== "missing");
         const sourceText = (cell ? sourceTag(cell) : null) || cell?.sourceLabel || "";
         return (
@@ -710,7 +711,7 @@ function SheetGroup({
           key={field.key}
           type="hidden"
           name={field.key}
-          value={sheetControlValue(field.key, liveValues[field.key], values[field.key]?.value)}
+          value={sheetControlValue(field.key, liveValues[field.key], sheetFieldCell(values, field.key)?.value)}
         />
       ))}
       {collapsible && groupVisible ? (

@@ -1,9 +1,38 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import {
+  displayConstructionType,
   normalizeOpeningProtection,
   normalizeRoofCovering,
   normalizeRoofDeckAttachment,
 } from "@/lib/quote-sheet/sheet-defaults";
+
+/**
+ * Risk Profile controls use the catalog key. Fill may have written an alias
+ * (`construction` vs `construction_type`, `year_built` vs `year_of_construction`).
+ * Prefer the catalog cell when it has a value; otherwise show the alias.
+ */
+export const SHEET_FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
+  year_built: ["year_built", "year_of_construction", "year_constructed", "yr_built", "construction_year"],
+  year_of_construction: ["year_of_construction", "year_built", "year_constructed", "yr_built"],
+  construction: ["construction", "construction_type", "type_of_construction", "const_type"],
+  construction_type: ["construction_type", "construction", "type_of_construction", "const_type"],
+  occupancy: ["occupancy"],
+};
+
+export function sheetFieldCell<T extends { value?: string | null }>(
+  values: Record<string, T | undefined> | null | undefined,
+  key: string,
+): T | undefined {
+  const keys = SHEET_FIELD_VALUE_KEYS[key] ?? [key];
+  let fallback: T | undefined;
+  for (const candidate of keys) {
+    const cell = values?.[candidate];
+    if (!cell) continue;
+    if (!fallback) fallback = cell;
+    if (String(cell.value ?? "").trim()) return cell;
+  }
+  return fallback ?? values?.[key];
+}
 
 export function sheetValuesToLive(
   values: Record<string, QuoteSheetFieldValue | undefined>,
@@ -31,6 +60,8 @@ const PICKLIST_NORMALIZERS: Record<string, (raw: string) => string> = {
   roof_deck: (raw) => normalizeRoofDeckAttachment(raw),
   roof_deck_attachment: (raw) => normalizeRoofDeckAttachment(raw),
   opening_protection: (raw) => normalizeOpeningProtection(raw),
+  construction: (raw) => displayConstructionType(raw),
+  construction_type: (raw) => displayConstructionType(raw),
 };
 
 /** Control value: non-empty live wins, otherwise the stored cell, then picklist letters map onto options. */
