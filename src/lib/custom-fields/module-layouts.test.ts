@@ -89,9 +89,10 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
     expect(source("src/app/policies/[id]/page.tsx")).toMatch(/<EditLayoutLink module="policies" \/>/);
     expect(source("src/app/accounts/[id]/page.tsx")).toMatch(/<EditLayoutLink module="businesses" \/>/);
     expect(source("src/app/carriers/[id]/page.tsx")).toMatch(/<EditLayoutLink module="carriers" \/>/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(
-      /toolbar=\{activeTab === "details" \? <EditLayoutLink module="deals" line=\{deal\.lineOfBusiness\} \/> : null\}/,
+    expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(
+      /<EditLayoutLink module="deals" line=\{line\} \/>/,
     );
+    expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/EditLayoutLink/);
 
     const settings = source("src/lib/settings/nav.ts");
     expect(settings).toMatch(/Field layouts/);

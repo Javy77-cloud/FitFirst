@@ -15,11 +15,15 @@ describe("sep7gi remove Edit Layout from list chrome", () => {
     expect(mass).not.toMatch(/edit-layout-link/);
   });
 
-  it("keeps Edit Layout on Deal Details tab only (not Documents/Markets/Quotes)", () => {
+  it("keeps Edit Layout inside the Deal Details Pipeline section (not the tab row)", () => {
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page).toMatch(
-      /toolbar=\{activeTab === "details" \? <EditLayoutLink module="deals" line=\{deal\.lineOfBusiness\} \/> : null\}/,
-    );
+    const panel = source("src/components/custom-fields/deal-details-panel.tsx");
+    expect(page).toMatch(/id === "details"[\s\S]*<DealDetailsPanel/);
+    expect(panel).toMatch(/data-ff-deal-section="pipeline"/);
+    expect(panel).toMatch(/data-ff-pipeline-edit-layout/);
+    expect(panel).toMatch(/<EditLayoutLink module="deals" line=\{line\} \/>/);
+    expect(page).not.toMatch(/toolbar=\{activeTab === "details"/);
+    expect(page).not.toMatch(/EditLayoutLink/);
   });
 
   it("keeps Columns / ⋯ list chrome placement", () => {

@@ -154,7 +154,6 @@ import {
   shoppingProgressForDeal,
 } from "@/lib/deals/rail-charts";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
-import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { loadModuleLayoutBundle, loadRecordValues } from "@/lib/custom-fields/store";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
@@ -834,7 +833,6 @@ export default async function DealPage({
           extraQuery={{ line: storageLine, product: activeInstance.key }}
           panelClassName="mt-0"
           tabSize="deal"
-          toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={activeLob} /> : null}
           heading={
             <div className="min-w-0 flex-1 space-y-1" data-ff-deal-top-left="">
               <div className="min-w-0">

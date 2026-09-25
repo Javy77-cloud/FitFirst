@@ -68,7 +68,7 @@ describe("deal detail final rebuild", () => {
     expect(page).not.toMatch(/data-ff-deal-identity/);
     expect(page).not.toMatch(/RelatedRecordNav/);
     expect(page).not.toMatch(/data-ff-deal-top-right/);
-    expect(page).toMatch(/toolbar=/);
+    expect(page).not.toMatch(/toolbar=/);
     expect(page).not.toMatch(/justify-end/);
     expect(page).not.toMatch(/StagePill/);
     expect(page).not.toMatch(/Source ·/);
@@ -265,7 +265,8 @@ describe("deal detail final rebuild", () => {
     expect(page).toMatch(/<DocumentsPanel/);
     expect(page).toMatch(/<MarketsPanel/);
     expect(page).toMatch(/<QuotesPanel/);
-    expect(page).toMatch(/EditLayoutLink/);
+    expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(/EditLayoutLink/);
+    expect(page).not.toMatch(/EditLayoutLink/);
     expect(page).toMatch(/QuickCommsBoard/);
   });
 
