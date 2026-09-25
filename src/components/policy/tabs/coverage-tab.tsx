@@ -47,10 +47,19 @@ function sourceFlag(source: ScheduleRow["source"]): string {
   return "—";
 }
 
+/** Shared starts for Limit, Deductible, and Premium across every coverage table. */
+const COVERAGE_SCHEDULE_COLS = ["26%", "24%", "16%", "14%"] as const;
+
 function CoverageScheduleTable({ rows }: { rows: ScheduleRow[] }) {
   return (
     <div className="mt-3 overflow-x-auto">
-      <table className="ff-table" data-ff-coverage-schedule="">
+      <table className="ff-table table-fixed" data-ff-coverage-schedule="">
+        <colgroup data-ff-coverage-cols="">
+          {COVERAGE_SCHEDULE_COLS.map((width) => (
+            <col key={width} style={{ width }} />
+          ))}
+          <col />
+        </colgroup>
         <thead>
           <tr>
             <th>Coverage</th>
@@ -265,8 +274,13 @@ export function PolicyCoverageTab({
           <>
             {schedule.length > 0 ? <CoverageScheduleTable rows={schedule} /> : null}
             {vehicleBlocks.map((block) => (
-              <div key={block.key} className="mt-4" data-ff-coverage-vehicle={block.key}>
-                <h3 className="text-sm font-semibold text-navy">{block.heading}</h3>
+              <div key={block.key} className="mt-5" data-ff-coverage-vehicle={block.key}>
+                <h3
+                  className="-mx-4 bg-navy px-4 py-2.5 text-base font-semibold text-white"
+                  data-ff-coverage-vehicle-heading=""
+                >
+                  {block.heading}
+                </h3>
                 <CoverageScheduleTable rows={block.rows} />
               </div>
             ))}

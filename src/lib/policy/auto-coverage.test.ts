@@ -252,6 +252,15 @@ describe("Veronica Boyle multi-vehicle coverage", () => {
     );
     expect(html).toContain("Vehicle: 2018 Honda Civic — VIN 2HGFC2F59JH123456");
     expect(html).toContain("Vehicle: 2016 Honda CR-V — VIN 2HKRM4H75GH123456");
+    expect(html.match(/data-ff-coverage-vehicle-heading=/g)?.length).toBe(2);
+    expect(html).toContain("bg-navy");
+    expect(html).toContain("text-white");
+    const colgroups = html.match(/data-ff-coverage-cols=""/g) ?? [];
+    expect(colgroups.length).toBeGreaterThanOrEqual(3);
+    expect(html.match(/style="width:26%"/g)?.length).toBe(colgroups.length);
+    expect(html.match(/style="width:24%"/g)?.length).toBe(colgroups.length);
+    expect(html.match(/style="width:16%"/g)?.length).toBe(colgroups.length);
+    expect(html.match(/style="width:14%"/g)?.length).toBe(colgroups.length);
     expect(html).not.toContain("Vehicle 2 comprehensive");
     expect(html).not.toContain("Vehicle 2 collision");
     const vehicleTwo = html.split('data-ff-coverage-vehicle="v2"')[1]?.split("data-ff-auto-coverage-extras")[0] ?? "";
