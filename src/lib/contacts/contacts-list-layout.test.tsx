@@ -34,9 +34,11 @@ describe("Contacts list header", () => {
     const row = css.match(/\.ff-book-kpi-flat \{[^}]*\}/)?.[0] ?? "";
     const chip = css.match(/\.ff-book-kpi-flat \.ff-book-kpi-item \{[^}]*\}/)?.[0] ?? "";
     expect(row).toMatch(/margin:\s*0\.35rem 0 1\.5rem/);
-    expect(row).toMatch(/gap:\s*1\.25rem/);
-    expect(row).toMatch(/grid-auto-flow:\s*column/);
-    expect(row).toMatch(/grid-auto-columns:\s*minmax\(7\.75rem,\s*1fr\)/);
+    expect(row).toMatch(/gap:\s*0\.7rem/);
+    expect(row).toMatch(/justify-content:\s*flex-start/);
+    expect(row).toMatch(/--ff-contacts-kpi-width:\s*9\.75rem/);
+    expect(row).not.toMatch(/1fr/);
+    expect(row).not.toMatch(/grid-auto-columns/);
     expect(row).toMatch(/background:\s*transparent/);
     expect(row).toMatch(/border:\s*0/);
     expect(row).toMatch(/box-shadow:\s*none/);
@@ -45,6 +47,10 @@ describe("Contacts list header", () => {
     expect(chip).toMatch(/align-items:\s*center/);
     expect(chip).toMatch(/justify-content:\s*center/);
     expect(chip).toMatch(/text-align:\s*center/);
+    expect(chip).toMatch(/width:\s*var\(--ff-contacts-kpi-width\)/);
+    expect(chip).toMatch(/flex:\s*0 0 var\(--ff-contacts-kpi-width\)/);
+    expect(chip).toMatch(/min-height:\s*5\.15rem/);
+    expect(chip).not.toMatch(/width:\s*100%/);
     expect(chip).not.toMatch(/background:\s*transparent/);
     expect(html).not.toContain("ff-book-kpi-item is-name");
     expect(html).not.toContain("<em>");

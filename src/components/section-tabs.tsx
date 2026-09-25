@@ -18,11 +18,11 @@ export type SectionTab = {
  * Server-rendered tabs.
  *
  * Deal layout (heading + corner + sidePanel):
- *   [ name / producer / phone / addresses ] [ momentum ]
+ *   [ name / producer / phone / addresses ] [ rail charts ]
  *   [ tabs + section under them           ] [ side panel ]
  *   The tab row and the panel share one surface, separated from the name block.
- *   Side panel keeps the 50px top; a negative margin cancels the extra tab gap
- *   so Quick Communication does not move.
+ *   Side panel keeps the 50px top so Quick Communications lines up with the
+ *   left panels on every tab. Charts sit in the corner above that panel.
  */
 export function SectionTabs({
   tabs,
@@ -152,7 +152,7 @@ export function SectionTabs({
           </div>
         </div>
         <div
-          className="flex items-start justify-end gap-2"
+          className="flex h-full w-full flex-col justify-end gap-2"
           style={{ gridColumn: 2, gridRow: 1 }}
           data-ff-deal-quotes-corner=""
         >

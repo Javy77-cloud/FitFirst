@@ -15,8 +15,7 @@ import { loadDealHealthSherpaEnrollment } from "@/lib/healthsherpa/sync";
 import { isUsingHealthSherpa } from "@/lib/healthsherpa/sheet";
 import { predictLifeAppetite } from "@/lib/life/appetite";
 import { resolveDealLifeProductType } from "@/lib/life/product-type";
-import { DealMotivation } from "@/components/deal/deal-motivation";
-import { DealQuoteCloseChart } from "@/components/deal/deal-quote-close-chart";
+import { DealRailCharts } from "@/components/deal/deal-rail-charts";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
@@ -149,7 +148,7 @@ import {
   sheetHasMarketFacts,
   shopListCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
-import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
+import { appetiteMixForActiveProduct, shoppingProgressForDeal } from "@/lib/deals/rail-charts";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { loadModuleLayoutBundle, loadRecordValues } from "@/lib/custom-fields/store";
@@ -227,13 +226,12 @@ export default async function DealPage({
   const dealCfValuesPromise = loadRecordValues(deal.id, "deals").catch(
     () => ({} as Record<string, string>),
   );
-  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment, dealPromises] =
+  const [comms, scripts, carrierRows, allQuoteLogs, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment, dealPromises] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
       listCarriers(),
       listQuoteLogs(),
-      loadDealMotivationStats(),
       loadModuleLayoutBundle("deals", deal.id, deal.lineOfBusiness).catch(() => null),
       loadDeskLineSettings().catch(() => null),
       deal.ownerId
@@ -730,6 +728,19 @@ export default async function DealPage({
           thin: true,
           requestedProductType: requestedLifeProductType,
         };
+  const shoppingRows = shoppingProgressForDeal(
+    productInstances.map((instance) => ({
+      key: instance.key,
+      label: instanceLabels.get(instance.key) ?? dealProductDef(instance.productId).label,
+      stage: productStageFor(productStages, instance.key, stageView.slug ?? deal.pipelineStage).stage,
+    })),
+  );
+  const appetiteMix = appetiteMixForActiveProduct({
+    matches: matches.map((row) => ({ carrierId: row.carrierId, band: row.band })),
+    manualIds,
+    shopListIds,
+    lifeOutcomes: sheetLine === "life" ? lifeAppetite.predictions.map((row) => row.outcome) : [],
+  });
 
   return (
     <AppShell
@@ -975,17 +986,12 @@ export default async function DealPage({
           }
           subnav={null}
           corner={
-            <div className="w-full" data-ff-deal-motivation-gap="">
-              <DealMotivation stats={motivation} />
-            </div>
+            <DealRailCharts progress={shoppingRows} mix={appetiteMix} />
           }
           banner={null}
           sidePanel={
             <div className="min-w-0 w-full space-y-3" data-ff-deal-rail-stack="">
               <div className="relative min-w-0 w-full max-w-full overflow-visible" data-ff-deal-quick-comms="">
-                <div data-ff-deal-quote-close-slot="">
-                  <DealQuoteCloseChart stats={motivation} />
-                </div>
                 <QuickCommsBoard
                   items={comms}
                   dealId={deal.id}
