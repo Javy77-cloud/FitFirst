@@ -76,7 +76,7 @@ describe("site-wide action confirmation toast", () => {
       /flashAction\(dest, "document-replaced"\)/,
     );
     expect(source("src/app/actions/deal-desk.ts")).toMatch(
-      /flashAction\(`\/deals\/\$\{dealId\}\?tab=markets`, "market-added"\)/,
+      /flashAction\(marketsStayHref\(dealId, formData\), "market-added"\)/,
     );
     expect(source("src/app/actions/record-edit.ts")).toMatch(
       /flashAction\(`\/deals\/\$\{id\}`, "deal-updated"\)/,

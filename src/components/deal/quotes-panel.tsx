@@ -6,6 +6,7 @@ import { QuotesBindableSignal } from "@/components/deal/quotes-bindable-signal";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
+import { fillStayHref } from "@/lib/documents/deal-docs-save";
 import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
 import { RecordManualQuote } from "@/components/deal/record-manual-quote";
 import { marketCarriersForManualQuote } from "@/lib/deals/manual-quote";
@@ -318,13 +319,13 @@ export function QuotesPanel({
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/deals/${dealId}?tab=markets${shopLine ? `&line=${shopLine}` : ""}`}
+              href={fillStayHref({ dealId, tab: "markets", line: shopLine, product })}
               className={cn(buttonVariants({ size: "sm", variant: "default" }))}
               data-ff-quotes-go-markets=""
             >
               Go to Markets
             </Link>
-            <LoadShopListButton dealId={dealId} dealLine={dealLine} />
+            <LoadShopListButton dealId={dealId} dealLine={dealLine} line={shopLine} product={product} />
             {product && !outsideOverride ? (
               <OutsideStageOverrideDialog
                 dealId={dealId}
@@ -339,6 +340,8 @@ export function QuotesPanel({
             carriers={carriers}
             alreadyIds={[]}
             dealLine={dealLine}
+            line={shopLine}
+            product={product}
           />
           {product &&
           outsideOverride &&

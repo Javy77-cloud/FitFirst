@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { resolveActiveProductInstance, resolveVisibleProductInstances } from "@/lib/deals/product-instances";
+import {
+  attemptLogMatchesInstance,
+  resolveActiveProductInstance,
+  resolveVisibleProductInstances,
+  tagAttemptWhy,
+} from "@/lib/deals/product-instances";
 import { fillStayHref } from "./deal-docs-save";
 
 const COPY = "homeowners~k7f3a2";
@@ -44,6 +49,43 @@ describe("fill stays on the product it started on", () => {
     const params = new URLSearchParams(landlord.slice(landlord.indexOf("?") + 1));
     expect(params.get("line")).toBe("home~landlord");
     expect(params.get("product")).toBe("landlord");
+  });
+
+  it("keeps Load my Home list on the second HO3", () => {
+    const copy = "homeowners~88uvyj";
+    const rows = resolveVisibleProductInstances({
+      shopProducts: ["homeowners", copy],
+      quotingForm: "HO3",
+    });
+    const href = fillStayHref({
+      dealId: "gloria",
+      tab: "markets",
+      line: `home~${copy}`,
+      product: copy,
+    });
+    const params = new URLSearchParams(href.slice(href.indexOf("?") + 1));
+    expect(params.get("tab")).toBe("markets");
+    expect(params.get("product")).toBe(copy);
+    const stayed = resolveActiveProductInstance({
+      lineParam: params.get("line"),
+      productParam: params.get("product"),
+      instances: rows,
+    });
+    expect(stayed.key).toBe(copy);
+
+    const why = tagAttemptWhy(
+      "[manual] [ff-markets] [ff-shop-list] Loaded from Javy Home shop list.",
+      copy,
+    );
+    expect(attemptLogMatchesInstance(why, copy)).toBe(true);
+    expect(attemptLogMatchesInstance(why, "homeowners")).toBe(false);
+
+    const button = readFileSync("src/components/deal/load-home-shop-list-button.tsx", "utf8");
+    expect(button).toMatch(/data\.set\("product", product\)/);
+    const desk = readFileSync("src/app/actions/deal-desk.ts", "utf8");
+    expect(desk).toMatch(/marketsStayHref\(dealId, formData\)/);
+    expect(desk).not.toMatch(/\/deals\/\$\{dealId\}\?tab=markets/);
+    expect(desk).toMatch(/tagAttemptWhy\(/);
   });
 
   it("wires Fill Risk Profile, property, and FEMA completion onto that href", () => {

@@ -5,7 +5,15 @@ import { loadJavyAutoShopListAction } from "@/app/actions/deal-desk";
 import { Button } from "@/components/ui/button";
 import { JAVY_AUTO_SHOP_CARRIER_IDS, JAVY_AUTO_SHOP_LABEL } from "@/lib/appetite/javy-auto-shop-list";
 
-export function LoadAutoShopListButton({ dealId }: { dealId: string }) {
+export function LoadAutoShopListButton({
+  dealId,
+  line,
+  product,
+}: {
+  dealId: string;
+  line?: string | null;
+  product?: string | null;
+}) {
   const [pending, startTransition] = useTransition();
   return (
     <Button
@@ -18,6 +26,8 @@ export function LoadAutoShopListButton({ dealId }: { dealId: string }) {
       onClick={() => {
         const data = new FormData();
         data.set("dealId", dealId);
+        if (line) data.set("line", line);
+        if (product) data.set("product", product);
         startTransition(async () => {
           await loadJavyAutoShopListAction(data);
         });

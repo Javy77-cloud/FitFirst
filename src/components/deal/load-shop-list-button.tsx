@@ -9,16 +9,20 @@ import { appointmentLine } from "@/lib/domain";
 export function LoadShopListButton({
   dealId,
   dealLine = "HO",
+  line,
+  product,
 }: {
   dealId: string;
   dealLine?: string;
+  line?: string | null;
+  product?: string | null;
 }) {
-  const line = appointmentLine(dealLine);
-  if (line === "AUTO") {
-    return <LoadAutoShopListButton dealId={dealId} />;
+  const appointment = appointmentLine(dealLine);
+  if (appointment === "AUTO") {
+    return <LoadAutoShopListButton dealId={dealId} line={line} product={product} />;
   }
-  if (line === "FLOOD") {
-    return <LoadFloodShopListButton dealId={dealId} />;
+  if (appointment === "FLOOD") {
+    return <LoadFloodShopListButton dealId={dealId} line={line} product={product} />;
   }
-  return <LoadHomeShopListButton dealId={dealId} />;
+  return <LoadHomeShopListButton dealId={dealId} line={line} product={product} />;
 }

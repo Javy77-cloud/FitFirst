@@ -33,6 +33,8 @@ function MarketCheckbox({
 
 export function MarketsSelectTable({
   dealId,
+  line,
+  product,
   title,
   rows,
   manualIds,
@@ -42,6 +44,8 @@ export function MarketsSelectTable({
   lead,
 }: {
   dealId: string;
+  line?: string | null;
+  product?: string | null;
   title: string;
   rows: CarrierMatch[];
   manualIds: Set<string>;
@@ -81,6 +85,8 @@ export function MarketsSelectTable({
     if (!confirmHardDelete(subject)) return;
     const data = new FormData();
     data.set("dealId", dealId);
+    if (line) data.set("line", line);
+    if (product) data.set("product", product);
     for (const id of rowSelected) data.append("carrierId", id);
     startTransition(async () => {
       await removeSelectedMarketsAction(data);
@@ -166,7 +172,15 @@ export function MarketsSelectTable({
   );
 }
 
-export function ClearDealMarketsButton({ dealId }: { dealId: string }) {
+export function ClearDealMarketsButton({
+  dealId,
+  line,
+  product,
+}: {
+  dealId: string;
+  line?: string | null;
+  product?: string | null;
+}) {
   const [pending, startTransition] = useTransition();
   return (
     <Button
@@ -179,6 +193,8 @@ export function ClearDealMarketsButton({ dealId }: { dealId: string }) {
         if (!confirmHardDelete("the whole Markets list on this deal")) return;
         const data = new FormData();
         data.set("dealId", dealId);
+        if (line) data.set("line", line);
+        if (product) data.set("product", product);
         startTransition(async () => {
           await clearDealMarketsAction(data);
         });

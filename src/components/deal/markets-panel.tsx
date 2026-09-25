@@ -132,13 +132,15 @@ export function MarketsPanel({
             0 in appetite · 0 stretch · 0 skip · 0 appointed
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <LoadShopListButton dealId={dealId} dealLine={dealLine} />
+            <LoadShopListButton dealId={dealId} dealLine={dealLine} line={shopLine} product={product} />
           </div>
           <ManualCarrierAdd
             dealId={dealId}
             carriers={carriers}
             alreadyIds={[]}
             dealLine={dealLine}
+            line={shopLine}
+            product={product}
           />
         </div>
       </div>
@@ -183,6 +185,8 @@ export function MarketsPanel({
       {appetite.length > 0 ? (
         <MarketsSelectTable
           dealId={dealId}
+          line={shopLine}
+          product={product}
           title={marketBucketLabel("appetite")}
           rows={appetite}
           manualIds={manual}
@@ -200,6 +204,8 @@ export function MarketsPanel({
       {stretch.length > 0 ? (
         <MarketsSelectTable
           dealId={dealId}
+          line={shopLine}
+          product={product}
           title={marketBucketLabel("stretch")}
           rows={stretch}
           manualIds={manual}
@@ -210,6 +216,8 @@ export function MarketsPanel({
       {skip.length > 0 ? (
         <MarketsSelectTable
           dealId={dealId}
+          line={shopLine}
+          product={product}
           title={marketBucketLabel("skip")}
           rows={skip}
           manualIds={manual}
@@ -219,14 +227,16 @@ export function MarketsPanel({
       ) : null}
       <div className="ff-card space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <LoadShopListButton dealId={dealId} dealLine={dealLine} />
-          <ClearDealMarketsButton dealId={dealId} />
+          <LoadShopListButton dealId={dealId} dealLine={dealLine} line={shopLine} product={product} />
+          <ClearDealMarketsButton dealId={dealId} line={shopLine} product={product} />
         </div>
         <ManualCarrierAdd
           dealId={dealId}
           carriers={carriers}
           alreadyIds={rows.map((row) => row.carrierId)}
           dealLine={dealLine}
+          line={shopLine}
+          product={product}
         />
         <form action={requestStretchQuotesAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="dealId" value={dealId} />
