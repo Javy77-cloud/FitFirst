@@ -525,7 +525,19 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
       ),
     ) ?? null;
   if (year) put(out, "yearBuilt", String(year));
-  put(out, "construction", rawCell(rows, "construction", "construction_type"));
+  put(
+    out,
+    "construction",
+    rawCell(
+      rows,
+      "construction",
+      "construction_type",
+      "type_of_construction",
+      "const_type",
+      "exterior_construction",
+      "building_construction",
+    ),
+  );
 
   const dwellingRaw = rawCell(rows, "dwelling_type", "townhouse_rowhouse", "townhouse");
   const dwellingYn = yesNo(dwellingRaw);

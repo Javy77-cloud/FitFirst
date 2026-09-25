@@ -24,6 +24,7 @@ import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { buildHomeOverviewInspections, type HomeInspectionDocument } from "@/lib/policy/home-overview-inspections";
 import { HomeInspectionSections } from "@/components/policy/home-inspection-sections";
+import { DecDocumentEye, type DeclarationDocumentLink } from "@/components/policy/dec-document-eye";
 import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { mailingAddressLine } from "@/lib/desk/policy-information";
 
@@ -51,6 +52,7 @@ export function PolicyOverviewTab({
   termView = null,
   renewalHandled = false,
   inspectionDocs = [],
+  declaration = null,
 }: {
   policy: {
     id: string;
@@ -133,6 +135,8 @@ export function PolicyOverviewTab({
   renewalHandled?: boolean;
   /** Deal-library wind mit / four-point files. Ids only — the PDF stays on the deal. */
   inspectionDocs?: HomeInspectionDocument[];
+  /** Policy declaration. The eye opens it in the document popup. */
+  declaration?: DeclarationDocumentLink | null;
 }) {
   const offBook = termView ? bandIsOffBook(termView.band) : isOffBookStatus(policy.status);
   const inForce = termView ? termView.countsAsInForce : isInForceStatus(policy.status);
@@ -267,6 +271,11 @@ export function PolicyOverviewTab({
 
       <LobOverviewSections
         readOnly={readOnly}
+        headingAside={
+          family === "homeowners" && declaration
+            ? { dwelling: <DecDocumentEye document={declaration} /> }
+            : undefined
+        }
         input={{
           policyId: policy.id,
           lineOfBusiness: policy.lineOfBusiness,

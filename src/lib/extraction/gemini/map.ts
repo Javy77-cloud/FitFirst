@@ -1,4 +1,5 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
+import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
 import { normalizeNamedInsured } from "@/lib/people/named-insured";
 import { isRepeatableSheetKey } from "@/lib/quote-sheet/repeatable-units";
@@ -21,6 +22,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   year_constructed: ["year_built"],
   construction_year: ["year_built"],
   yr_of_construction: ["year_built"],
+  yr_built: ["year_built"],
   stories: ["stories"],
   phone: ["phone"],
   email: ["email"],
@@ -41,7 +43,12 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   occupancy: ["occupancy"],
   usage: ["usage"],
   entity_type: ["entity_type"],
+  construction: ["construction"],
   construction_type: ["construction"],
+  type_of_construction: ["construction"],
+  const_type: ["construction"],
+  exterior_construction: ["construction"],
+  building_construction: ["construction"],
   coverage_a: ["coverage_a"],
   ordinance_law: ["ordinance_or_law"],
   ordinance_or_law: ["ordinance_or_law"],
@@ -656,6 +663,13 @@ const AUTO_ISSUED_IDENTITY_KEYS = new Set([
 /** Photo reads of a printed policy number often land just under 0.8. 0.5 stays blank. */
 const AUTO_ISSUED_IDENTITY_FLOOR = 0.6;
 
+/** Year of Construction "24" is stored as 2024. Other fields stay as printed. */
+function printedYearValue(fieldKey: string, value: string): string {
+  if (fieldKey !== "year_built" && fieldKey !== "roof_year") return value;
+  const year = parsePropertyYear(value);
+  return year == null ? value : String(year);
+}
+
 function printedEnough(fieldKey: string, confidence: number, shopLine?: string | null): boolean {
   if (confidence >= CONFIDENCE_THRESHOLD) return true;
   const line = (shopLine ?? "").trim().toLowerCase();
@@ -754,7 +768,7 @@ export function mapGeminiJsonToFields(
           normalizeOirLetterCode(fieldKey, payload.value),
         );
         existing.rawValue = payload.value;
-        existing.normalizedValue = letterValue;
+        existing.normalizedValue = printedYearValue(fieldKey, letterValue);
         existing.confidence = payload.confidence;
         existing.flagged = false;
         existing.source = "labeled";
@@ -771,7 +785,7 @@ export function mapGeminiJsonToFields(
         fieldKey,
         label: labelForKey(fieldKey),
         rawValue: payload.value,
-        normalizedValue: above ? letterValue : "",
+        normalizedValue: above ? printedYearValue(fieldKey, letterValue) : "",
         confidence: payload.confidence,
         flagged: !above,
         source: above ? "labeled" : "uncertain",

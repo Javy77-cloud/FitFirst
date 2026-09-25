@@ -12,11 +12,14 @@ export function LobOverviewSections({
   input,
   readOnly = false,
   insertAfter,
+  headingAside,
 }: {
   input: LobOverviewInput;
   readOnly?: boolean;
   /** Rendered immediately after the matching section card (home inspections follow Dwelling). */
   insertAfter?: Partial<Record<string, ReactNode>>;
+  /** Control in the section heading (declaration eye on Dwelling). */
+  headingAside?: Partial<Record<string, ReactNode>>;
 }) {
   const family = resolveLobOverviewFamily(input);
   if (family === "other" || family === "auto") return null;
@@ -34,7 +37,10 @@ export function LobOverviewSections({
       {sections.map((section) => (
         <Fragment key={section.id}>
           <section className="ff-card space-y-3 p-4" data-ff-lob-section={section.id}>
-            <h2 className="text-base font-semibold text-navy">{section.title}</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold text-navy">{section.title}</h2>
+              {headingAside?.[section.id] ?? null}
+            </div>
             <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
               {section.fields.map((row) => (
                 <div key={row.key} data-ff-lob-field={row.key} data-empty={row.empty ? "true" : "false"}>

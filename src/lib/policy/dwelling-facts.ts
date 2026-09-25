@@ -18,16 +18,28 @@ function cell(
   return "";
 }
 
-export function parsePropertyYear(raw: string | number | null | undefined): number | null {
+export function parsePropertyYear(
+  raw: string | number | null | undefined,
+  nowYear = new Date().getUTCFullYear(),
+): number | null {
   if (raw == null || raw === "") return null;
   const text = String(raw).trim();
   const digits = text.replace(/[^\d]/g, "");
   if (!digits) return null;
-  const asYear = Number(digits.length >= 4 ? digits.slice(0, 4) : digits);
-  if (Number.isFinite(asYear) && asYear >= 1800 && asYear <= 2100) return asYear;
+  if (digits.length >= 4) {
+    const asYear = Number(digits.slice(0, 4));
+    if (Number.isFinite(asYear) && asYear >= 1800 && asYear <= 2100) return asYear;
+  }
   const age = Number(digits);
   if (Number.isFinite(age) && age >= 0 && age <= 200 && /\bage\b|\byrs?\b|\byears?\b/i.test(text)) {
-    return new Date().getUTCFullYear() - age;
+    return nowYear - age;
+  }
+  // Printed Year of Construction "24" / "'24" is 2024. A future two-digit year is the 1900s.
+  if (digits.length === 2) {
+    const yy = Number(digits);
+    const contemporary = 2000 + yy;
+    const year = contemporary > nowYear + 1 ? 1900 + yy : contemporary;
+    if (year >= 1800 && year <= 2100) return year;
   }
   return null;
 }

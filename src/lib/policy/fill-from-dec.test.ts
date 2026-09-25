@@ -12,6 +12,7 @@ import {
   buildPolicyFillAuditInsert,
   classifyFillFields,
   countFillOverwrites,
+  fillFamilyForPolicy,
   fillOverwriteWarning,
   formatDecDeductible,
   groupAppliedFill,
@@ -487,6 +488,37 @@ describe("fillPolicyFromDec field map", () => {
     expect(patch.coverageLimits.dwelling_type).toBe("Single Family");
     expect(patch.coverageLimits.months_occupied).toBe("9 to 12 Months");
     expect(patch.coverageLimits.type_of_residence).toBe("Owner Occupied");
+  });
+
+  it("writes a two-digit Year of Construction and Construction onto HO3, DP, and MHO", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        Construction: { value: "Masonry", confidence: 0.96 },
+        "Year of Construction": { value: "24", confidence: 0.96 },
+      },
+      "dec",
+      "home",
+    );
+    const byKey = Object.fromEntries(mapped.fields.map((field) => [field.fieldKey, field.normalizedValue]));
+    expect(byKey.construction).toBe("Masonry");
+    expect(byKey.year_built).toBe("2024");
+
+    for (const lineOfBusiness of ["HO3", "DP3", "MHO"]) {
+      expect(fillFamilyForPolicy({ lineOfBusiness })).toBe("homeowners");
+      const proposed = proposeFillFromDec({
+        family: "homeowners",
+        rows: rows({
+          form: lineOfBusiness,
+          construction: "Masonry",
+          year_of_construction: "'24",
+        }),
+      });
+      expect(proposed.yearBuilt).toBe("2024");
+      expect(proposed.construction).toBe("Masonry");
+      const patch = groupAppliedFill(proposed, Object.keys(proposed));
+      expect(patch.risk.yearBuilt).toBe(2024);
+      expect(patch.risk.construction).toBe("Masonry");
+    }
   });
 
   it("fills occupancy from type of residence when the occupancy line is omitted", () => {

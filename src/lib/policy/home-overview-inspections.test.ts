@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { DecDocumentEye } from "@/components/policy/dec-document-eye";
 import { HomeInspectionSections } from "@/components/policy/home-inspection-sections";
 import {
   NOT_FROM_INSPECTION_NOTE,
@@ -174,5 +175,20 @@ describe("home overview inspections", () => {
     expect(sections).toMatch(/defaultOpen=\{false\}/);
     const page = source("src/app/policies/[id]/page.tsx");
     expect(page).toMatch(/listDealInspectionDocuments/);
+    expect(page).toMatch(/pickPolicyDecDocument/);
+    expect(source("src/components/policy/tabs/overview-tab.tsx")).toMatch(/DecDocumentEye/);
+    expect(source("src/components/policy/dec-document-eye.tsx")).toMatch(/DocumentViewButton/);
+    expect(source("src/components/policy/dec-document-eye.tsx")).not.toMatch(/target="_blank"|window\.open/);
+
+    const eye = renderToString(
+      createElement(DecDocumentEye, {
+        document: { id: "dec-1", filename: "george-dec.pdf", mimeType: "application/pdf" },
+      }),
+    );
+    expect(eye).toContain('data-ff-home-dec-eye="dec-1"');
+    expect(eye).toContain("data-ff-document-view");
+    expect(eye).toContain("View declaration");
+    expect(eye).not.toContain('target="_blank"');
+    expect(eye).not.toContain("storagePath");
   });
 });
