@@ -655,7 +655,14 @@ describe("fillPolicyFromDec wiring", () => {
     expect(button).toMatch(/data-ff-fill-policy-from-dec-working/);
     expect(button).toMatch(/title="Working"/);
     expect(button).toMatch(/DialogFooter/);
-    const cancelAt = button.indexOf("\n                Cancel\n");
+    const closeFn = button.slice(button.indexOf("function close"), button.indexOf("function openModal"));
+    expect(closeFn).toMatch(/pending \|\| collecting/);
+    expect(closeFn).not.toMatch(/requestId/);
+    expect(button).toMatch(/disablePointerDismissal=\{showWorking\}/);
+    expect(button).toMatch(/showCloseButton=\{!showWorking\}/);
+    expect(button).toMatch(/eventDetails\.cancel\(\)/);
+    expect(button).toMatch(/\{showWorking \? null : \(/);
+    const cancelAt = button.indexOf("\n                  Cancel\n");
     const confirmAt = button.indexOf("data-ff-fill-policy-from-dec-confirm");
     expect(cancelAt).toBeGreaterThan(-1);
     expect(cancelAt).toBeLessThan(confirmAt);

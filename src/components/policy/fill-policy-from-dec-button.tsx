@@ -39,9 +39,7 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
   const [preview, setPreview] = useState<(FillMeta & { overwriteCount: number }) | null>(null);
 
   function close() {
-    if (pending) return;
-    requestId.current += 1;
-    setCollecting(false);
+    if (pending || collecting) return;
     setOpen(false);
   }
 
@@ -161,13 +159,18 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
       </Button>
       <Dialog
         open={open}
-        onOpenChange={(next) => {
+        disablePointerDismissal={showWorking}
+        onOpenChange={(next, eventDetails) => {
+          if (!next && (pending || collecting)) {
+            eventDetails.cancel();
+            return;
+          }
           if (!next) close();
         }}
       >
         <DialogContent
           className="sm:max-w-md"
-          showCloseButton={!pending}
+          showCloseButton={!showWorking}
           data-ff-fill-policy-from-dec-modal=""
           aria-busy={showWorking}
         >
@@ -226,9 +229,11 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
               </>
             ) : null}
             <DialogFooter>
-              <Button type="button" size="sm" variant="outline" disabled={pending} onClick={close}>
-                Cancel
-              </Button>
+              {showWorking ? null : (
+                <Button type="button" size="sm" variant="outline" onClick={close}>
+                  Cancel
+                </Button>
+              )}
               <Button
                 type="submit"
                 size="sm"
