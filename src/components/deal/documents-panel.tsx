@@ -169,7 +169,7 @@ export function DocumentsPanel({
             />
             <div className="mt-2 flex justify-end">
               <Link
-                href={libraryHref({ library: "shared", dealId })}
+                href={libraryHref({ library: "shared" })}
                 className="text-xs font-semibold text-primary hover:underline"
                 data-ff-deal-library-link=""
                 data-ff-deal-library-count={libraryDocs.length}

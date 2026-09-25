@@ -24,9 +24,7 @@ describe("document libraries", () => {
     expect(libraryHref({ library: "forms", folderId: "forms-acord" })).toBe(
       "/documents?library=forms&folder=forms-acord",
     );
-    expect(libraryHref({ library: "shared", dealId: "deal-gloria" })).toBe(
-      "/documents?library=shared&deal=deal-gloria",
-    );
+    expect(libraryHref({ library: "shared" })).toBe("/documents?library=shared");
   });
 
   it("builds a nested tree for one library", () => {

@@ -108,7 +108,7 @@ describe("deal detail final rebuild", () => {
     expect(docs).toMatch(/data-ff-document-upload/);
     expect(docs).not.toMatch(/max-w-3xl/);
     expect(docs).toMatch(/Deal Document Library/);
-    expect(docs).toMatch(/libraryHref\(\{ library: "shared", dealId \}\)/);
+    expect(docs).toMatch(/libraryHref\(\{ library: "shared" \}\)/);
     expect(docs).not.toMatch(/href="\/documents"/);
     expect(docs).not.toMatch(/LinkDealDocToProduct/);
     expect(docs).not.toMatch(/data-ff-link-deal-doc/);
