@@ -1,4 +1,5 @@
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { policyProductDisplayLabel } from "@/lib/policy/eo";
 import { sourceLabel } from "@/lib/crm/sources";
 import { formatSilenceCue } from "@/lib/deals/card-glance";
 import type { LineOfBusiness } from "@/lib/domain";
@@ -75,7 +76,7 @@ export function leadPolicyFormLabel(
   if (!values) return "";
   for (const key of LEAD_POLICY_FORM_KEYS) {
     const value = String(values[key] ?? "").trim();
-    if (value) return value;
+    if (value) return policyProductDisplayLabel(value);
   }
   return "";
 }
@@ -89,7 +90,7 @@ export function leadLobLabel(
   const desired = String(insuranceTypeDesired ?? values?.insurance_type_desired ?? "").trim();
   if (desired) {
     const known = LINE_LABELS[desired as LineOfBusiness];
-    return known ?? desired;
+    return policyProductDisplayLabel(known ?? desired);
   }
   const pipeline = String(values?.pipeline ?? values?.insurance_type ?? "").trim();
   return pipeline;
@@ -102,9 +103,9 @@ export function leadLineLabel(input: {
   cadence?: string | null;
 }): string {
   const form = (input.policyForm ?? "").trim();
-  if (form) return form;
+  if (form) return policyProductDisplayLabel(form);
   const lob = (input.lob ?? "").trim();
-  if (lob) return lob;
+  if (lob) return policyProductDisplayLabel(lob);
   return leadCadenceLabel(input.cadence);
 }
 

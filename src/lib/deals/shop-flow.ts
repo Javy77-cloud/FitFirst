@@ -232,6 +232,9 @@ export function inferShopLineFromQuoteNotes(notes: string | null | undefined): S
   // Line tokens first — never treat multi-line carrier names (Progressive, Geico) as Auto.
   if (FLOOD_PRODUCT_NOTE.test(blob)) return "flood";
   if (/\bworkers(?:\s+|-)?comp|\bwc\b/.test(blob)) return "workers_comp";
+  if (/\berrors\s*(?:&|and)\s*omissions|\be\s*&\s*o\b|\be&o\b/.test(blob)) {
+    return "general_liability";
+  }
   if (/\bgeneral liability|\bgl\b/.test(blob) && !FLOOD_PRODUCT_NOTE.test(blob)) {
     return "general_liability";
   }

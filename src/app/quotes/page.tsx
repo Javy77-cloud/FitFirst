@@ -7,6 +7,7 @@ import { listEnabledMacrosFor } from "@/lib/db/developer-hub-queries";
 import { listQuoteTrackingShops } from "@/lib/db/queries";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { DEAL_STAGES, LINES } from "@/lib/domain";
+import { commercialLineMenuOptions, matchesCommercialLineChoice } from "@/lib/policy/eo";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +28,8 @@ export default async function QuotesBoardPage({
     listEnabledMacrosFor("quotes"),
   ]);
   const shops = all.filter(
-    (shop) => matchesField(shop.dealStage, filter.stage) && matchesField(shop.line, filter.line),
+    (shop) =>
+      matchesField(shop.dealStage, filter.stage) && matchesCommercialLineChoice(filter.line, shop.line),
   );
 
   return (
@@ -63,7 +65,7 @@ export default async function QuotesBoardPage({
             label: "Line",
             options: uniqueOptions(
               all.map((shop) => shop.line),
-              LINES.map((value) => ({ value, label: value })),
+              commercialLineMenuOptions(LINES, (value) => value),
             ),
           },
         ]}

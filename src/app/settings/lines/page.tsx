@@ -26,6 +26,7 @@ import {
   type AgencyLobRecord,
 } from "@/lib/desk/agency-lobs";
 import type { LineSubfilterOption } from "@/lib/desk/line-settings";
+import { productMenuTitle } from "@/lib/policy/eo";
 
 export const dynamic = "force-dynamic";
 
@@ -260,6 +261,7 @@ function MasterLobList({
                         name="label"
                         required
                         defaultValue={row.label}
+                        title={productMenuTitle(row.label) ?? productMenuTitle(row.productId)}
                         className="mt-1 h-8"
                       />
                     </div>
@@ -301,7 +303,12 @@ function MasterLobList({
                   </form>
                 ) : (
                   <div className="min-w-0">
-                    <span className="font-medium text-navy">{row.label}</span>
+                    <span
+                      className="font-medium text-navy"
+                      title={productMenuTitle(row.label) ?? productMenuTitle(row.productId)}
+                    >
+                      {row.label}
+                    </span>
                     <span className="ml-2 text-helper text-muted-foreground">
                       {row.lobCode} · {row.family}
                       {row.active ? "" : " · hidden"}

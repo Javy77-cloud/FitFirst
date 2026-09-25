@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createCarrierPopup } from "@/app/actions/carriers-ops";
 import { LINES } from "@/lib/domain";
+import { commercialLineMenuOptions } from "@/lib/policy/eo";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -204,13 +205,14 @@ export function AddCarrierDialog() {
             <div>
               <Label className="text-xs">Written lines</Label>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {LINES.map((line) => {
-                  const on = lines.includes(line);
+                {commercialLineMenuOptions(LINES, (line) => line).map((line) => {
+                  const on = lines.includes(line.value);
                   return (
                     <button
-                      key={line}
+                      key={line.value}
                       type="button"
-                      onClick={() => toggleLine(line)}
+                      title={line.title}
+                      onClick={() => toggleLine(line.value)}
                       className={cn(
                         "rounded-full border px-2.5 py-0.5 text-xs font-medium",
                         on
@@ -218,7 +220,7 @@ export function AddCarrierDialog() {
                           : "border-border bg-card text-muted-foreground",
                       )}
                     >
-                      {line}
+                      {line.label}
                     </button>
                   );
                 })}

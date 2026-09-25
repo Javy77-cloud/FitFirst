@@ -7,6 +7,7 @@ import {
   SELLING_AGENCIES,
 } from "@/lib/domain";
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { commercialLineMenuOptions } from "@/lib/policy/eo";
 import { RECORD_SOURCES } from "@/lib/crm/sources";
 import type { ListColumn } from "@/lib/list-columns";
 import type { CrmListModule } from "@/lib/lists/selection-actions";
@@ -175,7 +176,7 @@ export function massUpdateSellingAgencyOptions(): MassUpdateOption[] {
 }
 
 export function massUpdateLineOptions(): MassUpdateOption[] {
-  return LINES.map((line) => ({ value: line, label: LINE_LABELS[line] ?? line }));
+  return commercialLineMenuOptions(LINES, (line) => LINE_LABELS[line as keyof typeof LINE_LABELS] ?? line);
 }
 
 /** Normalize legacy mass-update field ids onto list column ids. */

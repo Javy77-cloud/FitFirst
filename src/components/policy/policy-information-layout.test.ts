@@ -3,6 +3,7 @@ import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { PolicyInformationCard } from "@/components/policy/policy-information";
+import { LobOverviewSections } from "@/components/policy/lob-overview-sections";
 import {
   POLICY_INFO_TRIAL_POLICY_ID,
   policyInformationLayoutName,
@@ -83,7 +84,7 @@ function expectedLabels(
 }
 
 function renderCard(
-  policy: typeof basePolicy,
+  policy: typeof basePolicy & { formType?: string | null; policyType?: string | null },
   options?: { mailing?: typeof ownerMailing | null },
 ): string {
   return renderToStaticMarkup(
@@ -151,6 +152,38 @@ describe("Policy Information card grid order", () => {
     expect(labels.indexOf("Mailing address (owner)")).toBe(labels.indexOf("Insured location") + 1);
     expect(labels.indexOf("Billing")).toBe(labels.indexOf("Producer") + 4);
     expect(labels.indexOf("Premium")).toBe(labels.indexOf("Effective date") + 4);
+  });
+
+  it("renders an Errors & Omissions policy as E&O without an unknown-type hole", () => {
+    const html = renderCard({
+      ...basePolicy,
+      id: "eo-1",
+      policyNumber: "NXTH4RCXPW-00-PL",
+      lineOfBusiness: "GL",
+      insuranceType: "P&C",
+      policySubType: "Errors & Omissions",
+      formType: "Errors & Omissions",
+    });
+    expect(html).toContain("E&amp;O");
+    expect(html).not.toContain("Errors &amp; Omissions");
+    expect(html).not.toMatch(/unknown type/i);
+    const overview = renderToStaticMarkup(
+      createElement(LobOverviewSections, {
+        input: {
+          policyId: "eo-1",
+          lineOfBusiness: "GL",
+          formType: "Errors & Omissions",
+          policySubType: "Errors & Omissions",
+          coverageLimits: { eachOccurrence: "1000000", deductible: "2500" },
+        },
+      }),
+    );
+    expect(overview).toContain("E&amp;O");
+    expect(overview).toContain("Limits");
+    expect(overview).toContain("Deductible");
+    expect(overview).not.toContain("Payroll");
+    expect(overview).not.toContain("Class codes");
+    expect(overview).not.toMatch(/unknown type/i);
   });
 
   it("renders a non-DP P&C policy with no placeholder gap before the dates", () => {

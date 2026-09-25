@@ -20,6 +20,7 @@ import {
   SEND_FIELD_SHEET_HINT,
 } from "@/lib/quote-sheet/toolbar";
 import { visibleShopLines, type DeskLineSettings } from "@/lib/desk/line-settings";
+import { ERRORS_OMISSIONS_LONG, ERRORS_OMISSIONS_SHORT } from "@/lib/policy/eo";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
@@ -95,8 +96,7 @@ export function QuoteSheetPanel({
               </Link>
             );
           })}
-          {addable.length > 0 ? (
-            <form action={addShopLine} className="ml-2 flex flex-wrap items-center gap-1">
+          <form action={addShopLine} className="ml-2 flex flex-wrap items-center gap-1">
               <input type="hidden" name="dealId" value={dealId} />
               <label className="sr-only" htmlFor="add-shop-line">
                 Add another line
@@ -105,19 +105,21 @@ export function QuoteSheetPanel({
                 id="add-shop-line"
                 name="line"
                 className="h-8 rounded-md border border-input bg-card px-2 text-xs"
-                defaultValue={addable[0]}
+                defaultValue={addable[0] ?? "eo"}
               >
                 {addable.map((item) => (
                   <option key={item} value={item}>
                     {SHOP_LINE_LABELS[item]}
                   </option>
                 ))}
+                <option value="eo" title={ERRORS_OMISSIONS_LONG}>
+                  {ERRORS_OMISSIONS_SHORT}
+                </option>
               </select>
               <Button type="submit" size="sm" variant="outline">
                 Add line
               </Button>
             </form>
-          ) : null}
         </nav>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">

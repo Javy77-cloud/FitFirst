@@ -78,6 +78,14 @@ export function classifyCoverageLine(lineOfBusiness: string): CoverageLine {
   if (raw === "FLOOD" || raw === "NFIP") return "FLOOD";
   if (raw === "UMBRELLA" || raw === "PUM" || raw === "CUM") return "UMBRELLA";
   if (raw === "GL" || raw === "CGL" || raw === "GENERAL LIABILITY") return "GL";
+  if (
+    raw === "EO" ||
+    raw === "E&O" ||
+    raw === "E & O" ||
+    (raw.includes("ERRORS") && raw.includes("OMISSION"))
+  ) {
+    return "GL";
+  }
   if (raw === "BOP") return "BOP";
   if (raw === "WC" || raw === "WORKERS COMP" || raw === "WORKERS_COMP") return "WC";
   if (raw === "LIFE") return "LIFE";

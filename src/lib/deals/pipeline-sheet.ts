@@ -3,6 +3,7 @@ import { RECORD_SOURCES } from "@/lib/crm/sources";
 import type { CustomFieldDef, CustomFieldType } from "@/lib/custom-fields/types";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { LINES } from "@/lib/domain";
+import { commercialLineMenuOptions } from "@/lib/policy/eo";
 import { dealsHref, type PipelineViewId } from "@/lib/wire/pipeline";
 
 export type PipelineSheetMode = "list" | "grid";
@@ -95,7 +96,7 @@ export function nativePicklistOptions(
   users: readonly NamedRecord[] = [],
 ): Array<{ value: string; label: string }> {
   if (columnId === "line") {
-    return LINES.map((line) => ({ value: line, label: LINE_LABELS[line] ?? line }));
+    return commercialLineMenuOptions(LINES, (line) => LINE_LABELS[line as keyof typeof LINE_LABELS] ?? line);
   }
   if (columnId === "source") {
     return RECORD_SOURCES.map((row) => ({ value: row.value, label: row.label }));

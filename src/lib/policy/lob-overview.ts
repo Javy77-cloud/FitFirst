@@ -5,6 +5,13 @@
 
 import { appointmentLine } from "@/lib/domain-ams";
 import { formatDay, formatMoney } from "@/lib/domain";
+import {
+  ERRORS_OMISSIONS_SHORT,
+  isErrorsOmissionsProduct,
+  liabilityDeductible,
+  liabilityLimitText,
+  liabilityRetroDate,
+} from "@/lib/policy/eo";
 
 export type LobOverviewFamily =
   | "auto"
@@ -38,6 +45,7 @@ export function resolveLobOverviewFamily(input: {
   policyType?: string | null;
   insuranceType?: string | null;
   policySubType?: string | null;
+  formType?: string | null;
 }): LobOverviewFamily {
   const line = appointmentLine(input.lineOfBusiness ?? "");
   const blob = [
@@ -45,6 +53,7 @@ export function resolveLobOverviewFamily(input: {
     input.policyType,
     input.insuranceType,
     input.policySubType,
+    input.formType,
   ]
     .map((part) => (part ?? "").toLowerCase())
     .join(" ");
@@ -58,6 +67,9 @@ export function resolveLobOverviewFamily(input: {
   if (line === "WC" || /\bworkers?.?comp|wc\b/.test(blob)) return "wc";
   if (line === "BOP" || /\bbop\b/.test(blob)) return "bop";
   if (line === "GL" || /\bgeneral.?liab|\bgl\b/.test(blob)) return "gl";
+  if (isErrorsOmissionsProduct(input.formType, input.policySubType, input.policyType, input.lineOfBusiness)) {
+    return "gl";
+  }
   return "other";
 }
 
@@ -285,6 +297,27 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
   }
 
   if (family === "gl") {
+    const eo = isErrorsOmissionsProduct(input.formType, input.policySubType, input.policyType);
+    if (eo) {
+      const retro = liabilityRetroDate(input.coverageLimits);
+      return [
+        {
+          id: "gl",
+          title: ERRORS_OMISSIONS_SHORT,
+          fields: [
+            field("limits", "Limits", liabilityLimitText(input.coverageLimits), {
+              hint: "Liability limits not keyed yet.",
+            }),
+            field("deductible", "Deductible", liabilityDeductible(input.coverageLimits), {
+              hint: "Deductible not on file.",
+            }),
+            ...(retro
+              ? [field("retroDate", "Retro date", retro)]
+              : []),
+          ],
+        },
+      ];
+    }
     return [
       {
         id: "gl",

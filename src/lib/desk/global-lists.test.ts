@@ -5,6 +5,14 @@ describe("global lists", () => {
   it("seeds Zoho-style policy types, sub-types, and terms", () => {
     const rows = defaultGlobalLists();
     expect(rows.some((row) => row.listKey === "policy_sub_type" && row.label === "HO3")).toBe(true);
+    expect(
+      rows.some(
+        (row) =>
+          row.listKey === "policy_sub_type" &&
+          row.label === "Errors & Omissions" &&
+          row.slug === "errors-and-omissions",
+      ),
+    ).toBe(true);
     expect(rows.some((row) => row.listKey === "policy_sub_type" && row.label === "Term Life")).toBe(true);
     expect(rows.some((row) => row.listKey === "policy_term" && row.family === "P&C" && row.label === "12 Months")).toBe(
       true,

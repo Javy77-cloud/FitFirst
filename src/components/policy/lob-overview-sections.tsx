@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ERRORS_OMISSIONS_SHORT, isErrorsOmissionsProduct } from "@/lib/policy/eo";
 import {
   buildLobOverviewSections,
   lobOverviewFamilyLabel,
@@ -16,11 +17,14 @@ export function LobOverviewSections({
   const family = resolveLobOverviewFamily(input);
   if (family === "other") return null;
   const sections = buildLobOverviewSections(input);
+  const familyLabel = isErrorsOmissionsProduct(input.formType, input.policySubType, input.policyType)
+    ? ERRORS_OMISSIONS_SHORT
+    : lobOverviewFamilyLabel(family);
 
   return (
     <div className="space-y-4" data-ff-policy-lob-overview={family}>
       <p className="text-sm text-muted-foreground" data-ff-policy-lob-family="">
-        Line template · {lobOverviewFamilyLabel(family)}
+        Line template · {familyLabel}
         {readOnly ? " · read-only for agents" : ""}
       </p>
       {sections.map((section) => (

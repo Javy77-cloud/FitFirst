@@ -80,6 +80,14 @@ export function classifyDeclaredCoverageType(raw: string | null | undefined): Co
   if (upper.includes("BUSINESS OWNERS") || /\bBOP\b/.test(upper)) return "BOP";
   if (upper.includes("GENERAL LIABILITY") || upper === "CGL") return "GL";
   if (
+    (upper.includes("ERRORS") && upper.includes("OMISSION")) ||
+    upper === "E&O" ||
+    upper === "E & O" ||
+    upper === "EO"
+  ) {
+    return "GL";
+  }
+  if (
     upper.includes("LIFE") ||
     upper.includes("IUL") ||
     upper.includes("FINAL EXPENSE") ||

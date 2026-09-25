@@ -166,6 +166,13 @@ const PRODUCT_FIELDS: Record<DealProductId, { label: string; fields: CustomField
       field("sqft", "Square footage", "number"),
     ],
   },
+  eo: {
+    label: "E&O",
+    fields: [
+      field("limits", "Limits"),
+      field("deductible", "Deductible"),
+    ],
+  },
   workers_comp: {
     label: "Workers' comp",
     fields: [

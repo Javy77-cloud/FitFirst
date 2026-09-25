@@ -202,6 +202,9 @@ describe("account card glance", () => {
       new Date("2026-09-21T12:00:00.000Z"),
     );
     expect(card.title).toBe("Pat Hale");
+    expect(card.facts?.some((fact) => fact.label === "unknown" || /unknown type/i.test(fact.label))).toBe(
+      false,
+    );
     expect(card.facts?.map((fact) => fact.label)).toEqual([
       "Heritage",
       "HO3",
@@ -216,6 +219,29 @@ describe("account card glance", () => {
       "1 open claim",
       "Annual",
     ]);
+  });
+
+  it("renders an Errors & Omissions policy as E&O", () => {
+    const card = presentPolicyCard(
+      {
+        id: "eo-1",
+        policyNumber: "NXTH4RCXPW-00-PL",
+        displayName: "Northstar",
+        status: "active",
+        lineOfBusiness: "GL",
+        formType: "Errors & Omissions",
+        policySubType: "Errors & Omissions",
+        expirationDate: "2027-01-01T00:00:00.000Z",
+        partyName: "Northstar",
+        carrierName: "Next",
+      },
+      { openClaims: 0, pendingEndorsements: 0, missingDocs: 0 },
+      new Date("2026-09-21T12:00:00.000Z"),
+    );
+    const labels = card.facts?.map((fact) => fact.label) ?? [];
+    expect(labels).toContain("E&O");
+    expect(labels).not.toContain("Errors & Omissions");
+    expect(labels.some((label) => /unknown/i.test(label))).toBe(false);
   });
 
   it("lines carrier posture and last use up as separate columns", () => {

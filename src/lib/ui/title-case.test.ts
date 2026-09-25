@@ -23,6 +23,7 @@ describe("titleCaseLabel", () => {
   });
 
   it("keeps short ALLCAPS tokens", () => {
+    expect(titleCaseLabel("E&O")).toBe("E&O");
     expect(titleCaseLabel("Queue SMS")).toBe("Queue SMS");
     expect(titleCaseLabel("Log MVR")).toBe("Log MVR");
   });

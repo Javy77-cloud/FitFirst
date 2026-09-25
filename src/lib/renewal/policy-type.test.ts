@@ -8,5 +8,15 @@ describe("renewal policy type", () => {
     expect(renewalPolicyTypeLabel({ lineOfBusiness: "LIFE", insuranceType: "Term" })).toBe("Life · Term");
     expect(renewalPolicyTypeLabel({ lineOfBusiness: "" })).toBe("Line open");
     expect(renewalPolicyTypeLabel({ lineOfBusiness: "HO" })).not.toBe("Policy");
+    expect(
+      renewalPolicyTypeLabel({
+        lineOfBusiness: "GL",
+        formType: "Errors & Omissions",
+        policySubType: "Errors & Omissions",
+      }),
+    ).toBe("E&O");
+    expect(
+      renewalPolicyTypeLabel({ lineOfBusiness: "GL", policySubType: "General Liability" }),
+    ).toBe("Commercial · General Liability");
   });
 });

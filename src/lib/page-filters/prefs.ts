@@ -1,4 +1,5 @@
 import type { FilterField } from "@/lib/saved-filters";
+import { policyProductDisplayLabel, productMenuTitle } from "@/lib/policy/eo";
 import { titleCaseLabel } from "@/lib/ui/title-case";
 import { defaultPageFilters } from "./defaults";
 import { pageFilterFields } from "./fields";
@@ -111,7 +112,12 @@ export function mergeLiveOptions(
       const value = raw?.trim();
       if (!value || seen.has(value.toLowerCase())) continue;
       seen.add(value.toLowerCase());
-      options.push({ value, label: titleCaseLabel(value.replaceAll("_", " ")), color: null });
+      options.push({
+        value,
+        label: policyProductDisplayLabel(titleCaseLabel(value.replaceAll("_", " "))),
+        title: productMenuTitle(value),
+        color: null,
+      });
     }
     return { ...filter, options };
   });
@@ -142,7 +148,11 @@ export function filterFieldsFromPageFilters(filters: PageFilter[] | null | undef
   return enabledPageFilters(filters).map((row) => ({
     key: row.fieldKey,
     label: row.label,
-    options: (row.options ?? []).map((option) => ({ value: option.value, label: option.label })),
+    options: (row.options ?? []).map((option) => ({
+      value: option.value,
+      label: option.label,
+      title: option.title,
+    })),
   }));
 }
 
@@ -164,6 +174,7 @@ export function applyPageFilterPrefsToFields(
     const prefOptions = (pref.options ?? []).map((option) => ({
       value: option.value,
       label: option.label,
+      title: option.title,
     }));
     if (live) {
       const liveOptions = live.options ?? [];

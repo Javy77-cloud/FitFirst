@@ -109,6 +109,7 @@ export function inferShopLine(text: string, filename: string, docType: string): 
   }
   if (/\bflood\b/.test(blob) && !/homeowners|coverage a|wind mit/.test(blob)) return "flood";
   if (/\bworkers['’]? ?comp|work comp\b/.test(blob)) return "workers_comp";
+  if (/errors\s*(?:&|and)\s*omissions|\be&o\b/.test(blob)) return "general_liability";
   if (/general liability/.test(blob)) return "general_liability";
   return "home";
 }

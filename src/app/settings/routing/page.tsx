@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { ROUTING_LINE_LABEL, ROUTING_LINES } from "@/lib/leads/auto-route";
+import { productMenuTitle } from "@/lib/policy/eo";
 import { loadRoutingContext } from "@/lib/leads/apply-routing";
 import { listDeskAgents, listTerritories } from "@/lib/org/queries";
 
@@ -168,7 +169,7 @@ export default async function LeadRoutingSettingsPage({
             >
               <option value="">Any line</option>
               {ROUTING_LINES.map((line) => (
-                <option key={line} value={line}>
+                <option key={line} value={line} title={productMenuTitle(ROUTING_LINE_LABEL[line])}>
                   {ROUTING_LINE_LABEL[line]}
                 </option>
               ))}

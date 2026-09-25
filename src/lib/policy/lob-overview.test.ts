@@ -15,6 +15,13 @@ describe("LOB overview templates", () => {
     expect(resolveLobOverviewFamily({ lineOfBusiness: "WC" })).toBe("wc");
     expect(resolveLobOverviewFamily({ lineOfBusiness: "GL" })).toBe("gl");
     expect(resolveLobOverviewFamily({ lineOfBusiness: "BOP" })).toBe("bop");
+    expect(
+      resolveLobOverviewFamily({
+        lineOfBusiness: "GL",
+        formType: "Errors & Omissions",
+        policySubType: "Errors & Omissions",
+      }),
+    ).toBe("gl");
   });
 
   it("homeowners shows dwelling, roof, mortgagee pointer", () => {

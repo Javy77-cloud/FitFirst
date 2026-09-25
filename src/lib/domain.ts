@@ -392,6 +392,7 @@ export const QUOTING_FORMS = [
   { id: "BOAT", label: "Boat/Watercraft", shopLine: "rec_rv" as ShopLine, lob: "RV" },
   { id: "UMBRELLA", label: "Umbrella", shopLine: "umbrella" as ShopLine, lob: "UMBRELLA" },
   { id: "GL", label: "General liability", shopLine: "general_liability" as ShopLine, lob: "GL" },
+  { id: "EO", label: "E&O", shopLine: "general_liability" as ShopLine, lob: "GL" },
   { id: "WC", label: "Workers comp", shopLine: "workers_comp" as ShopLine, lob: "WC" },
   { id: "BOP", label: "BOP", shopLine: "bop" as ShopLine, lob: "BOP" },
   { id: "CA", label: "Commercial Auto", shopLine: "auto" as ShopLine, lob: "AUTO" },

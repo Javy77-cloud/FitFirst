@@ -1,6 +1,7 @@
 import { BUSINESS_INDUSTRY_OPTIONS } from "@/lib/businesses/entity-industry";
 import { sourceFilterOptions } from "@/lib/crm/sources";
 import { CLIENT_STATUSES, LINES } from "@/lib/domain";
+import { commercialLineMenuOptions, ERRORS_OMISSIONS_LONG } from "@/lib/policy/eo";
 import { titleCaseLabel } from "@/lib/ui/title-case";
 import type { PageFilter, PageFilterModule, PageFilterOption } from "./types";
 
@@ -75,7 +76,10 @@ const POLICIES_DEFAULTS: PageFilter[] = [
     "policies-line",
     "Policy Type",
     "line",
-    LINES.map((value) => option(value, value)),
+    commercialLineMenuOptions(LINES, (value) => value).map((row) => ({
+      ...option(row.value, row.label),
+      title: row.title,
+    })),
   ),
   filter("policies-written", "Written", "written", [
     option("this_month", "This Month"),
@@ -98,6 +102,7 @@ const CARRIER_LOB: PageFilterOption[] = [
   option("LIFE", "Life"),
   option("BOP", "BOP"),
   option("GL", "GL"),
+  { ...option("EO", "E&O"), title: ERRORS_OMISSIONS_LONG },
   option("WC", "WC"),
   option("RV", "RV"),
   option("UMBRELLA", "Umbrella"),

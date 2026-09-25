@@ -9,6 +9,7 @@ import { GLOBAL_LIST_KEYS, type GlobalListKey } from "@/lib/desk/global-lists";
 import { currentDeskSession } from "@/lib/auth/session";
 import { STATUS_COLOR_KEYS } from "@/lib/desk/status-colors";
 import { syncDealSellingAgencyFromGlobalLists } from "@/lib/custom-fields/sync-deal-selling-agency";
+import { canonicalStoredListLabel } from "@/lib/policy/eo";
 import { listMutationError, listMutationOk, type ListMutationResult } from "@/lib/settings/list-editor";
 
 function str(form: FormData, key: string) {
@@ -56,7 +57,7 @@ async function syncIfSellingAgency(listKey: string | null | undefined) {
 export async function addGlobalListItem(formData: FormData): Promise<ListMutationResult> {
   if (!(await requireAdmin())) return listMutationError("List edits are Admin only.");
   const listKey = str(formData, "listKey");
-  const label = str(formData, "label");
+  const label = canonicalStoredListLabel(listKey, str(formData, "label"));
   if (!label || !isListKey(listKey)) return listMutationError("Add a value first.");
   const family = str(formData, "family") || null;
   const slug = `${slugify(label)}-${Date.now().toString(36)}`;
@@ -92,8 +93,14 @@ export async function updateGlobalListItemColor(formData: FormData): Promise<Lis
 export async function updateGlobalListItem(formData: FormData): Promise<ListMutationResult> {
   if (!(await requireAdmin())) return listMutationError("List edits are Admin only.");
   const id = str(formData, "id");
-  const label = str(formData, "label");
-  if (!id || !label) return listMutationError("Name the list item first.");
+  const rawLabel = str(formData, "label");
+  if (!id || !rawLabel) return listMutationError("Name the list item first.");
+  const [existing] = await db
+    .select({ listKey: globalLists.listKey })
+    .from(globalLists)
+    .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)))
+    .limit(1);
+  const label = canonicalStoredListLabel(existing?.listKey ?? "", rawLabel);
   const familyRaw = formData.get("family");
   const family = familyRaw === null ? undefined : str(formData, "family") || null;
   const [row] = await db
@@ -126,7 +133,7 @@ export async function saveGlobalList(formData: FormData): Promise<ListMutationRe
 
   for (let i = 0; i < count; i++) {
     const id = ids[i]?.trim() ?? "";
-    const label = labels[i]?.trim() ?? "";
+    const label = canonicalStoredListLabel(listKey, labels[i]?.trim() ?? "");
     const color = colorsAligned ? colorFrom(colors[i] ?? "") : undefined;
     const family = families[i]?.trim() || null;
     if (id && label) {

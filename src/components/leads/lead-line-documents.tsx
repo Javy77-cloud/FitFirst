@@ -7,6 +7,7 @@ import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
 import { fileViewHref } from "@/lib/files/urls";
+import { productMenuTitle } from "@/lib/policy/eo";
 import {
   FORM_TAG_PREFIX,
   desiredDocFormId,
@@ -88,7 +89,7 @@ export function LeadLineDocuments({
             >
               <option value="">Choose a line</option>
               {leftover.map((key) => (
-                <option key={key} value={key}>
+                <option key={key} value={key} title={productMenuTitle(labelForDocCardKey(key))}>
                   {labelForDocCardKey(key)}
                 </option>
               ))}

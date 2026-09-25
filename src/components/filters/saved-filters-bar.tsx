@@ -119,7 +119,7 @@ export function SavedFiltersBar({
           >
             <option value="">None</option>
             {field.options.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option key={option.value} value={option.value} title={option.title}>
                 {option.label}
               </option>
             ))}

@@ -243,6 +243,7 @@ const STACK_PRODUCT_NAMES: Record<string, string> = {
   rv: "RV",
   boat: "Boat",
   umbrella: "Umbrella",
+  eo: "E&O",
   life: "Term Life",
   life_term: "Term Life",
   term_life: "Term Life",

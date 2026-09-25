@@ -1,4 +1,5 @@
 import { dealSearchHaystack, matchesDealNameSearch } from "@/lib/deals/deal-title";
+import { matchesCommercialLineChoice } from "@/lib/policy/eo";
 import { accountDisplayName } from "./bind";
 import { formatPersonName } from "./display";
 
@@ -178,6 +179,8 @@ export function matchesDealFilters(
     title: string;
     pipelineStage: string;
     lineOfBusiness: string;
+    quotingForm?: string | null;
+    policySubType?: string | null;
     state: string;
     insured: string;
     firstName?: string | null;
@@ -190,7 +193,13 @@ export function matchesDealFilters(
   filter: DealListFilter,
 ): boolean {
   if (filter.stage && filter.stage !== "all" && input.pipelineStage !== filter.stage) return false;
-  if (filter.line && filter.line !== "all" && input.lineOfBusiness !== filter.line) return false;
+  if (
+    filter.line &&
+    filter.line !== "all" &&
+    !matchesCommercialLineChoice(filter.line, input.lineOfBusiness, input.quotingForm, input.policySubType)
+  ) {
+    return false;
+  }
   if (filter.state?.trim() && input.state.toUpperCase() !== filter.state.trim().toUpperCase()) {
     return false;
   }

@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SELLING_AGENCIES } from "@/lib/domain";
+import {
+  menuOptionValue,
+  policyProductDisplayLabel,
+  productMenuTitle,
+  withCurrentProductOption,
+} from "@/lib/policy/eo";
 import { policyRecordName } from "@/lib/desk/policy-name";
 import {
   INSURANCE_FAMILIES,
@@ -37,8 +43,7 @@ export type PolicyFormLists = {
 const selectClass = "mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm";
 
 function withCurrent(options: readonly string[], current: string): string[] {
-  if (current && !options.includes(current)) return [current, ...options];
-  return [...options];
+  return withCurrentProductOption(options, current);
 }
 
 export function PolicyRecordForm({
@@ -204,7 +209,7 @@ export function PolicyRecordForm({
         <Label className="text-xs">Policy type</Label>
         <select
           name="policyType"
-          value={type}
+          value={menuOptionValue(typeOptions, type)}
           onChange={(e) => {
             setType(e.target.value);
             const nextSubs = subTypesForFamily(family, e.target.value);
@@ -214,8 +219,8 @@ export function PolicyRecordForm({
         >
           <option value="">—</option>
           {typeOptions.map((value) => (
-            <option key={value} value={value}>
-              {value}
+            <option key={value} value={value} title={productMenuTitle(value)}>
+              {policyProductDisplayLabel(value)}
             </option>
           ))}
         </select>
@@ -224,14 +229,14 @@ export function PolicyRecordForm({
         <Label className="text-xs">Sub-policy type</Label>
         <select
           name="policySubType"
-          value={subType}
+          value={menuOptionValue(subOptions, subType)}
           onChange={(e) => setSubType(e.target.value)}
           className={selectClass}
         >
           <option value="">—</option>
           {subOptions.map((value) => (
-            <option key={value} value={value}>
-              {value}
+            <option key={value} value={value} title={productMenuTitle(value)}>
+              {policyProductDisplayLabel(value)}
             </option>
           ))}
         </select>

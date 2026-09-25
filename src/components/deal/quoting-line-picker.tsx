@@ -133,7 +133,7 @@ export function QuotingLinePicker({
           >
             <option value="">None</option>
             {subtypes.map((form) => (
-              <option key={form.id} value={form.id}>
+              <option key={form.id} value={form.id} title={form.title}>
                 {form.label}
               </option>
             ))}

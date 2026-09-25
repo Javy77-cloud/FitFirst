@@ -50,5 +50,6 @@ export function productChipLabel(input: {
     return form;
   }
   if (input.product === "flood") return "Flood";
+  if (input.product === "eo") return "E&O";
   return form || def.label;
 }

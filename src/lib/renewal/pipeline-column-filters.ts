@@ -15,6 +15,13 @@ import {
   type PageFilter,
 } from "@/lib/page-filters";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
+import {
+  commercialLineMenuOptions,
+  matchesCommercialLineChoice,
+  matchesProductChoice,
+  policyProductDisplayLabel,
+  productMenuTitle,
+} from "@/lib/policy/eo";
 
 /** URL keys for Renewals pipeline column filters (q counted separately). */
 export const RENEWAL_PIPELINE_FILTER_KEYS = [
@@ -63,9 +70,14 @@ export function matchesRenewalPipelineColumnFilters(
   filter: RenewalPipelineColumnFilter,
 ): boolean {
   if (filter.stage && !matchesField(card.stage, filter.stage)) return false;
-  if (filter.line && !matchesField(card.lineOfBusiness, filter.line)) return false;
+  if (
+    filter.line &&
+    !matchesCommercialLineChoice(filter.line, card.lineOfBusiness, card.policySubType, card.insuranceType)
+  ) {
+    return false;
+  }
   if (filter.carrier && !matchesField(card.carrierName, filter.carrier)) return false;
-  if (filter.subType && !matchesField(card.policySubType, filter.subType)) return false;
+  if (filter.subType && !matchesProductChoice(card.policySubType, filter.subType)) return false;
   if (!matchesRenewalDaysBand(card.daysUntil, filter.daysBand)) return false;
   return true;
 }
@@ -90,7 +102,7 @@ export function buildRenewalPipelineFilterFields(
     value,
     label: RENEWAL_QUEUE_STAGE_LABELS[value],
   }));
-  const lineExtras = LINES.map((value) => ({ value, label: value }));
+  const lineExtras = commercialLineMenuOptions(LINES, (value) => value);
 
   const fields: FilterField[] = [
     {
@@ -122,7 +134,11 @@ export function buildRenewalPipelineFilterFields(
     {
       key: "subType",
       label: "Policy subtype",
-      options: uniqueOptions(cards.map((card) => card.policySubType)),
+      options: uniqueOptions(cards.map((card) => card.policySubType)).map((option) => ({
+        ...option,
+        label: policyProductDisplayLabel(option.label),
+        title: productMenuTitle(option.value) ?? productMenuTitle(option.label),
+      })),
     },
     {
       key: "daysBand",

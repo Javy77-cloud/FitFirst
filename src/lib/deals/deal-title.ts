@@ -1,4 +1,5 @@
 import { LOB_TO_SHOP_LINE, QUOTING_FORMS, SHOP_LINE_LABELS } from "@/lib/domain";
+import { ERRORS_OMISSIONS_SHORT, isErrorsOmissionsProduct } from "@/lib/policy/eo";
 import {
   dealFamilyFromHints,
   inferDealProducts,
@@ -23,6 +24,7 @@ export const DEAL_TITLE_LOB_WORDS: Record<string, string> = {
   HEALTH: "Health",
   RV: "RV",
   WC: "Workers Comp",
+  EO: "E&O",
 };
 
 /** Sheet product ids / generic words that are not cascade form labels. */
@@ -40,6 +42,7 @@ export function dealTitleFormWord(
 ): string | null {
   const value = (raw ?? "").trim();
   if (!value) return null;
+  if (isErrorsOmissionsProduct(value)) return ERRORS_OMISSIONS_SHORT;
   if (NON_FORM_TITLE_WORDS.test(value)) return null;
   if ((family === "life" || family === "health") && PC_TITLE_FORM_LEFTOVER.test(value)) {
     return null;
@@ -81,7 +84,7 @@ function escapeRegExp(value: string) {
 }
 
 /** Include retired title words so strip/parse still works on older deals. */
-const LEGACY_TITLE_LOB_WORDS = ["Home", "Workers' Comp"] as const;
+const LEGACY_TITLE_LOB_WORDS = ["Home", "Workers' Comp", "E&O", "Errors & Omissions"] as const;
 
 function allDealTitleLobWords() {
   return [

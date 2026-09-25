@@ -71,6 +71,7 @@ export const COMMERCIAL_RISK_PROFILE_REUSED_KEYS = [
 export const COMMERCIAL_COVERAGE_OPTIONS = [
   "Workers' Comp",
   "General Liability",
+  "E&O",
   "BOP",
   "Commercial Property",
   "Commercial Auto",
@@ -99,6 +100,7 @@ export const COMMERCIAL_AUTO_USE_OPTIONS = ["Service", "Delivery", "Sales", "Com
 const PRODUCT_TO_COVERAGE: Partial<Record<DealProductId, CommercialCoverageLine>> = {
   workers_comp: "Workers' Comp",
   gl: "General Liability",
+  eo: "E&O",
   bop: "BOP",
   commercial_auto: "Commercial Auto",
 };
@@ -130,7 +132,7 @@ function yn(key: string, label: string, group: string, extra?: Partial<QuoteFiel
 }
 
 /** Lean Commercial Risk Profile — shared WC / GL / BOP catalog with coverage-chip cascades. */
-export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
+const COMMERCIAL_RISK_PROFILE_FIELD_BASE: QuoteFieldDef[] = [
   {
     key: COMMERCIAL_COVERAGE_KEY,
     label: "Coverage lines",
@@ -491,6 +493,33 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
   },
   yn("open_claims_lawsuits", "Open claims / lawsuits", "Claims"),
 ];
+
+function eoCoverageCopy(field: QuoteFieldDef): QuoteFieldDef {
+  const visible = field.visibleWhen;
+  const visibleWhen =
+    visible?.field === COMMERCIAL_COVERAGE_KEY
+      ? whenCoverage("E&O")
+      : visible?.field
+        ? { ...visible, field: `eo_${visible.field}` }
+        : whenCoverage("E&O");
+  return {
+    ...field,
+    key: `eo_${field.key}`,
+    group: "E&O",
+    visibleWhen,
+  };
+}
+
+/** GL underwriting questions, copied for the E&O coverage chip. GL fields stay on General Liability. */
+export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = (() => {
+  const copies = COMMERCIAL_RISK_PROFILE_FIELD_BASE.filter((field) => field.group === "General Liability").map(
+    eoCoverageCopy,
+  );
+  const insertAt = COMMERCIAL_RISK_PROFILE_FIELD_BASE.findIndex((field) => field.group === "BOP");
+  const next = [...COMMERCIAL_RISK_PROFILE_FIELD_BASE];
+  next.splice(insertAt === -1 ? next.length : insertAt, 0, ...copies);
+  return next;
+})();
 
 export function coverageLinesFromProducts(
   selected: readonly string[] | null | undefined,
