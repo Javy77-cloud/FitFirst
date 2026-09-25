@@ -8,6 +8,7 @@ import { TodayActivityCorner } from "@/components/desk/today-activity-corner";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsDesk } from "@/components/renewals/renewals-desk";
 import { requireSignedIn } from "@/lib/auth/guards";
+import { sessionSeesAgencyBook } from "@/lib/auth/session";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import { getPipelineBoard, listBoundPendingDeals, listDeals, listUsers, type DealListFilter } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -153,7 +154,7 @@ export default async function DealsPage({
     return cue ? { ...canon, inboxCue: cue.why, inboxHref: cue.href } : canon;
   });
   scheduleDealColdChaseNotices(presented);
-  const canSeeTeam = session.isAdmin;
+  const canSeeTeam = sessionSeesAgencyBook(session);
   const viewScope = resolveDealScope({ scope, canSeeTeam, view });
   const mineFilter = {
     viewerId: session.userId,
