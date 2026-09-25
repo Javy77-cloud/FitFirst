@@ -910,7 +910,11 @@ describe("fillPolicyFromDec wiring", () => {
     expect(button).toMatch(/WaitHold/);
     expect(button).toMatch(/ProcessingLabel/);
     expect(button).toMatch(/data-ff-fill-policy-from-dec-working/);
-    expect(button).toMatch(/title="Working"/);
+    expect(button).toMatch(/title="Processing your document…"/);
+    expect(button).toMatch(/<ProcessingLabel>Working<\/ProcessingLabel>/);
+    expect(button).not.toMatch(/title="Working"/);
+    expect(button).not.toMatch(/file change/i);
+    expect(button).not.toMatch(/overwriteCount\} fields|replaces \$\{/);
     expect(button).toMatch(/DialogFooter/);
     const closeFn = button.slice(button.indexOf("function close"), button.indexOf("function openModal"));
     expect(closeFn).toMatch(/pending \|\| collecting/);
@@ -923,7 +927,8 @@ describe("fillPolicyFromDec wiring", () => {
     const confirmAt = button.indexOf("data-ff-fill-policy-from-dec-confirm");
     expect(cancelAt).toBeGreaterThan(-1);
     expect(cancelAt).toBeLessThan(confirmAt);
-    const working = renderToString(createElement(WaitHold, { title: "Working" }));
+    const working = renderToString(createElement(WaitHold, { title: "Processing your document…" }));
+    expect(working).toContain("Processing your document…");
     expect(working).toContain('data-ff-wait-hold-spinner=""');
     expect(working).toContain("animate-spin");
     expect(working).toContain("ff-wait-hold-bar");
