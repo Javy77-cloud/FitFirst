@@ -1,4 +1,9 @@
-import { bucketForMatch, type MarketBucket } from "@/lib/deals/manual-markets";
+import {
+  bucketForMatch,
+  shopListCarrierIdsFromLogs,
+  SHOP_LIST_MARKET_MARKER,
+  type MarketBucket,
+} from "@/lib/deals/manual-markets";
 import {
   canonicalizeProductStage,
   PRODUCT_STAGE_LABELS,
@@ -55,8 +60,30 @@ function lifeOutcomeBucket(outcome: string): MarketBucket | null {
   return null;
 }
 
+/** Older shop-list loads omit `[ff-shop-list]` but still say they came from the list. */
+const LEGACY_SHOP_LIST_WHY = /Loaded from Javy (?:Home|Auto|Flood) shop list/i;
+
 /**
- * Active-product appetite mix. Uses the same buckets as Markets.
+ * Shop-list carriers for the rail mix. Includes the current marker and legacy
+ * "Loaded from Javy … shop list" rows that were stored as manual adds.
+ */
+export function chartShopListCarrierIds(
+  logs: { carrierId: string; why?: string | null }[],
+): string[] {
+  const ids = new Set(shopListCarrierIdsFromLogs(logs));
+  for (const log of logs) {
+    const why = log.why ?? "";
+    if (why.includes(SHOP_LIST_MARKET_MARKER) || LEGACY_SHOP_LIST_WHY.test(why)) {
+      ids.add(log.carrierId);
+    }
+  }
+  return [...ids];
+}
+
+/**
+ * Active-product appetite mix from matcher bands.
+ * A true manual add (not a shop list) stays In appetite.
+ * Shop-list rows keep the structured band. A shop-list carrier with no rule is omitted.
  * Life predictions fill the mix only when the sheet produced no carrier matches.
  */
 export function appetiteMixForActiveProduct(input: {
@@ -80,7 +107,7 @@ export function appetiteMixForActiveProduct(input: {
       counts[bucket] += 1;
     }
     for (const id of manual) {
-      if (matchedIds.has(id)) continue;
+      if (matchedIds.has(id) || shopList.has(id)) continue;
       counts[bucketForMatch("red", true, false)] += 1;
     }
   } else {

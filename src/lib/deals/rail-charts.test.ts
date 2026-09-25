@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DealRailCharts } from "@/components/deal/deal-rail-charts";
-import { appetiteMixForActiveProduct, shoppingProgressForDeal } from "./rail-charts";
+import { appetiteMixForActiveProduct, chartShopListCarrierIds, shoppingProgressForDeal } from "./rail-charts";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -44,6 +44,27 @@ describe("deal rail charts", () => {
     expect(life.total).toBe(3);
   });
 
+  it("keeps structured bands for shop-list loads and does not invent appetite", () => {
+    const logs = [
+      { carrierId: "vyrd", why: "[manual] [ff-markets] Loaded from Javy Home shop list." },
+      { carrierId: "hoc", why: "[manual] [ff-markets] Loaded from Javy Home shop list." },
+      { carrierId: "edison", why: "[manual] [ff-markets] Loaded from Javy Home shop list." },
+      { carrierId: "added", why: "[manual] [ff-markets] Added by agent" },
+    ];
+    expect(chartShopListCarrierIds(logs).sort()).toEqual(["edison", "hoc", "vyrd"]);
+    const mix = appetiteMixForActiveProduct({
+      matches: [
+        { carrierId: "green", band: "green" },
+        { carrierId: "vyrd", band: "yellow" },
+        { carrierId: "hoc", band: "red" },
+      ],
+      manualIds: ["vyrd", "hoc", "edison", "added"],
+      shopListIds: chartShopListCarrierIds(logs),
+    });
+    expect(mix.slices.map((slice) => slice.count)).toEqual([2, 1, 1]);
+    expect(mix.total).toBe(4);
+  });
+
   it("renders only shopping progress and appetite mix", () => {
     const html = renderToStaticMarkup(
       createElement(DealRailCharts, {
@@ -58,6 +79,9 @@ describe("deal rail charts", () => {
     );
     expect(html).toMatch(/data-ff-deal-shopping-progress/);
     expect(html).toMatch(/data-ff-deal-appetite-mix/);
+    expect(html.indexOf("data-ff-deal-appetite-mix")).toBeLessThan(
+      html.indexOf("data-ff-deal-shopping-progress"),
+    );
     expect(html).toContain("Shopping progress");
     expect(html).toContain("Markets appetite mix");
     expect(html).toContain("In appetite");
