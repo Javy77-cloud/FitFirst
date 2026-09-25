@@ -10,23 +10,14 @@ function source(file: string) {
   return readFileSync(file, "utf8");
 }
 
-describe("Property & protection section wiring", () => {
-  it("is collapsed by default and always mounts for homeowners (incl. empty)", () => {
-    const section = source("src/components/policy/property-protection-section.tsx");
-    expect(section).toMatch(/Property & protection/);
-    expect(section).toMatch(/defaultOpen=\{false\}/);
-    expect(section).toMatch(/data-ff="policy-property-protection"/);
-    expect(section).toMatch(/\$\{filled\} on file/);
-    expect(section).toMatch(/Fills at mint from Risk Profile \/ DEC\./);
-    expect(section).not.toMatch(/if \(!groups\.length\) return null/);
-
+describe("Property protection snapshot", () => {
+  it("stays on the policy record and is no longer dumped open on Overview", () => {
     const overview = source("src/components/policy/tabs/overview-tab.tsx");
-    expect(overview).toMatch(/PropertyProtectionSection/);
-    expect(overview).toMatch(/family === "homeowners"/);
     expect(overview).toMatch(/parsePropertyProtectionSnapshot\(policy\.propertyProtection\)/);
-  });
+    expect(overview).toMatch(/HomeInspectionSections/);
+    expect(overview).not.toMatch(/PropertyProtectionSection/);
+    expect(overview).not.toMatch(/Property & protection/);
 
-  it("mint copies sheet + Gemini property details into policies.propertyProtection", () => {
     const mint = source("src/app/actions/policy-mint.ts");
     expect(mint).toMatch(/buildPropertyProtectionSnapshot/);
     expect(mint).toMatch(/def\.shopLine === "home"/);
@@ -37,19 +28,13 @@ describe("Property & protection section wiring", () => {
     expect(schema).toMatch(/propertyProtection: jsonb\("property_protection"\)/);
   });
 
-  it("shows empty shell (0 on file) and groups when data exists", () => {
+  it("still groups stored wind, four-point, and protection values", () => {
     expect(propertyProtectionHasData({ values: {} })).toBe(false);
     expect(propertyProtectionFilledCount({ values: {} })).toBe(0);
     expect(buildPropertyProtectionDisplay({ values: {} })).toEqual([]);
     const groups = buildPropertyProtectionDisplay({
       values: { roof_year: "2020", electrical_year: "2010", smoke_detectors: "Yes" },
     });
-    expect(groups.length).toBeGreaterThan(0);
-    expect(groups.some((g) => g.id === "wind")).toBe(true);
-    expect(groups.some((g) => g.id === "four_point")).toBe(true);
-    expect(groups.some((g) => g.id === "protection")).toBe(true);
-    expect(propertyProtectionFilledCount({
-      values: { roof_year: "2020", electrical_year: "2010", smoke_detectors: "Yes" },
-    })).toBe(3);
+    expect(groups.map((group) => group.id)).toEqual(["wind", "four_point", "protection"]);
   });
 });
