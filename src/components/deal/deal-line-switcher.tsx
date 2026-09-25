@@ -94,8 +94,8 @@ export function DealLineSwitcher({
   );
   const chips = (
       <nav
-        aria-label="Deal products"
-        className={rail ? "flex w-full flex-col gap-1" : "flex flex-wrap items-stretch gap-1"}
+        aria-label={rail ? "Policy form" : "Deal products"}
+        className={rail ? "flex w-full flex-col gap-2" : "flex flex-wrap items-stretch gap-1"}
         data-ff-deal-line-switcher=""
         data-ff-deal-product-chips=""
       >
@@ -129,11 +129,17 @@ export function DealLineSwitcher({
               href={dealProductSwitcherHref({ dealId, product, tab })}
               scroll={false}
               className={cn(
-                "relative overflow-hidden rounded border px-2 py-1 text-[11px] font-semibold transition-colors",
-                rail ? "block w-full min-w-0 text-left" : "min-w-[4.5rem]",
-                selected
-                  ? cn(theme.chipOn, "shadow-sm ring-2 ring-navy/25")
-                  : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/40",
+                "relative overflow-hidden text-[11px] font-semibold transition-colors",
+                rail
+                  ? "block w-full min-w-0 rounded-md border px-2.5 py-1.5 text-left shadow-sm active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d4c5c]"
+                  : "min-w-[4.5rem] rounded border px-2 py-1",
+                rail
+                  ? selected
+                    ? "border-[#3d4c5c] bg-[#3d4c5c] text-white hover:bg-[#33404e]"
+                    : "border-[var(--ff-row-line)] bg-white text-[var(--ff-ink)] hover:border-[#b7aa96] hover:bg-[var(--ff-wash)] active:bg-[#ebe4d8]"
+                  : selected
+                    ? cn(theme.chipOn, "shadow-sm ring-2 ring-navy/25")
+                    : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/40",
                 quotesMissing && !selected && "border-fit-flag/50",
               )}
               data-ff-deal-line-chip={def.shopLine}
@@ -148,7 +154,7 @@ export function DealLineSwitcher({
               data-active={selected ? "true" : "false"}
               aria-current={selected ? "page" : undefined}
             >
-              <span className={cn("flex items-center gap-1", rail && "w-full flex-wrap")}>
+              <span className={cn("flex items-start gap-2", rail ? "w-full flex-nowrap" : "items-center gap-1")}>
                 {quotesMissing ? (
                   <span
                     className="inline-flex size-2.5 items-center justify-center rounded-full bg-fit-flag text-[8px] text-white"
@@ -165,6 +171,14 @@ export function DealLineSwitcher({
                   >
                     ✓
                   </span>
+                ) : rail ? (
+                  <span
+                    className={cn(
+                      "mt-1 inline-block size-1.5 shrink-0 rounded-full",
+                      selected ? "bg-white/80" : "bg-[#8b8175]",
+                    )}
+                    aria-hidden
+                  />
                 ) : (
                   <span className={cn("inline-block size-1 rounded-full", theme.bar)} aria-hidden />
                 )}
@@ -172,8 +186,9 @@ export function DealLineSwitcher({
                 {stageLabel ? (
                   <span
                     className={cn(
-                      "text-[9px] font-medium",
-                      selected ? "text-white/85" : "text-muted-foreground",
+                      "shrink-0 font-medium",
+                      rail ? "text-[11px]" : "text-[9px]",
+                      selected ? "text-white/90" : rail ? "text-[#5c5348]" : "text-muted-foreground",
                     )}
                     data-ff-product-stage-label=""
                   >
@@ -202,12 +217,14 @@ export function DealLineSwitcher({
                   </span>
                 ) : null}
               </span>
+              {rail ? null : (
               <span
                 className={cn("absolute inset-x-0 bottom-0 h-0.5", selected ? "bg-navy/30" : "bg-black/5")}
                 aria-hidden
               >
                 <span className={cn("block h-full", theme.bar)} style={{ width: `${pct}%` }} />
               </span>
+              )}
             </Link>
           );
         })}
@@ -215,8 +232,8 @@ export function DealLineSwitcher({
   );
   if (rail) {
     return (
-      <div className="flex w-full flex-col gap-1" data-ff-deal-product-chip-row="" data-ff-deal-products-rail="">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Products</p>
+      <div className="flex w-full flex-col gap-2" data-ff-deal-product-chip-row="" data-ff-deal-products-rail="">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Policy form</p>
         {chips}
         {picker}
       </div>

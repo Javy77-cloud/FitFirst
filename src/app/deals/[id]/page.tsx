@@ -50,11 +50,7 @@ import { loadRecordContext } from "@/lib/record-context";
 import { quotingFormById, quotingUnlockedForLine } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
 import { quotingFormIsManufacturedHome } from "@/lib/quote-sheet/home-address-fill";
-import {
-  DWELLING_INSURED_ADDRESS_LABEL,
-  DWELLING_MAILING_ADDRESS_LABEL,
-  isDwellingFireProduct,
-} from "@/lib/deals/dwelling-addresses";
+import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import {
   logBelongsToLine,
   quotingFormFromSheet,
@@ -357,16 +353,18 @@ export default async function DealPage({
   const activePropertyRisk = isPropertyCoveringProduct(activeProduct)
     ? riskForInstance(propertyRiskRows, activeInstance.key, legacyPropertyKey)
     : null;
+  const headerDwellingFire = isDwellingFireProduct(
+    dealProductDef(activeProduct).quotingForm,
+    activeProduct,
+  );
   const headerAddresses = headerAddressesForProductTab({
     instanceKey: activeInstance.key,
     ownsSheet: activeOwnsPropertySheet,
     sheetValues: activeSheet.values,
     ownRisk: riskForInstance(propertyRiskRows, activeInstance.key, headerRiskOwnerKey(productInstances)),
+    dwellingFire: headerDwellingFire,
+    dealStored: dealValues,
   });
-  const headerDwellingFire = isDwellingFireProduct(
-    dealProductDef(activeProduct).quotingForm,
-    activeProduct,
-  );
   const activePropertyAddress = isPropertyCoveringProduct(activeProduct)
     ? resolveProductPropertyAddress({
         instanceKey: activeInstance.key,
@@ -832,8 +830,6 @@ export default async function DealPage({
                 dob={dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth}
                 insuredAddress={headerAddresses.insured}
                 mailingAddress={headerAddresses.mailing}
-                insuredLabel={headerDwellingFire ? DWELLING_INSURED_ADDRESS_LABEL : undefined}
-                mailingLabel={headerDwellingFire ? DWELLING_MAILING_ADDRESS_LABEL : undefined}
                 stage={displayProductStage({
                   stage: activeProductState.stage,
                   selectedQuoteIds: activeProductState.selectedQuoteIds,
@@ -891,7 +887,7 @@ export default async function DealPage({
               <div className="relative min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
                 {dealProducts.length ? (
                   <div
-                    className="absolute inset-x-0 bottom-full z-20 w-full"
+                    className="absolute inset-x-0 z-20 w-full"
                     data-ff-deal-products-column=""
                   >
                     <DealLineSwitcher

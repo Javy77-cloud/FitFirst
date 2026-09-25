@@ -588,4 +588,81 @@ describe("header addresses follow the active product tab", () => {
     expect(second.insured.address1).toBe("9 Pine St");
     expect(second.insured.address1).not.toBe(first.insured.address1);
   });
+
+  it("Gloria DP3 reads Deal Details mailing and strips role tags", () => {
+    const dp3 = headerAddressesForProductTab({
+      instanceKey: "landlord",
+      ownsSheet: true,
+      dwellingFire: true,
+      sheetValues: {
+        address1: { value: "10358 NW 30th TER (rental property)" },
+        city: { value: "Doral" },
+        state: { value: "FL" },
+        zip: { value: "33172" },
+        mailing_address: { value: "10358 NW 30th TER" },
+        mailing_city: { value: "Doral" },
+        mailing_state: { value: "FL" },
+        mailing_zip: { value: "33172" },
+      },
+      ownRisk: {
+        address1: "16021 NW 79th CT",
+        city: "Miami",
+        state: "FL",
+        zip: "33016",
+      },
+      dealStored: {
+        contact_mailing_address: "16021 NW 79th CT (owner)",
+        contact_mailing_city: "Miami",
+        contact_mailing_state: "FL",
+        contact_mailing_zip: "33016",
+      },
+    });
+    expect(dp3.insured).toEqual({
+      address1: "10358 NW 30th TER",
+      city: "Doral",
+      state: "FL",
+      zip: "33172",
+    });
+    expect(dp3.insured.address1).not.toMatch(/rental/i);
+    expect(dp3.mailing).toEqual({
+      address1: "16021 NW 79th CT",
+      city: "Miami",
+      state: "FL",
+      zip: "33016",
+    });
+    expect(dp3.mailing.address1).not.toMatch(/owner/i);
+    expect(dp3.mailing.address1).not.toBe(dp3.insured.address1);
+  });
+
+  it("keeps an HO3 sheet mailing when Deal Details mailing is shared", () => {
+    const ho3 = headerAddressesForProductTab({
+      instanceKey: "homeowners",
+      ownsSheet: true,
+      dwellingFire: false,
+      sheetValues: homeSheet,
+      ownRisk: tabRiskForInstance(risks, "homeowners", headerRiskOwnerKey(instances)),
+      dealStored: {
+        contact_mailing_address: "9 Other St",
+        contact_mailing_city: "Tampa",
+        contact_mailing_state: "FL",
+        contact_mailing_zip: "33602",
+      },
+    });
+    expect(ho3.insured.address1).toBe("8944 Adriatico Lane");
+    expect(ho3.mailing.address1).toBe("PO Box 12");
+    expect(ho3.mailing.address1).not.toBe("9 Other St");
+  });
+
+  it("keeps the DP3 sheet mailing when Deal Details mailing is blank", () => {
+    const dp3 = headerAddressesForProductTab({
+      instanceKey: "landlord",
+      ownsSheet: true,
+      dwellingFire: true,
+      sheetValues: landlordSheet,
+      ownRisk: tabRiskForInstance(risks, "landlord", headerRiskOwnerKey(instances)),
+      dealStored: { contact_mailing_address: "  " },
+    });
+    expect(dp3.insured.address1).toBe("10358 Northwest 30th Ter");
+    expect(dp3.mailing.address1).toBe("412 Harbor Isle Dr");
+  });
 });

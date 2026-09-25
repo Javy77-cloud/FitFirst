@@ -71,6 +71,7 @@ describe("manual quote entry", () => {
       }),
     );
     expect(html).toMatch(/0 quote rows/);
+    expect(html.indexOf("0 quote rows")).toBeLessThan(html.indexOf("data-ff-record-manual-quote"));
     expect(html).toMatch(/data-ff-record-manual-quote/);
     expect(html).toMatch(/data-ff-record-manual-quote-premium/);
     expect(html).toMatch(/Travelers/);
@@ -99,6 +100,18 @@ describe("manual quote entry", () => {
     expect(body).toMatch(/\.insert\(quotes\)/);
     expect(body).not.toMatch(/\.delete\(/);
     expect(body).not.toMatch(/db:wipe|wipe-crm|delete from/i);
+  });
+
+  it("places Record manual quote after the quotes list", () => {
+    const panel = source("src/components/deal/quotes-panel.tsx");
+    const branch = panel.indexOf("if (sorted.length === 0)");
+    const emptyReturn = panel.indexOf("return (", branch);
+    const filledReturn = panel.indexOf("return (", emptyReturn + 8);
+    const empty = panel.slice(emptyReturn, filledReturn);
+    const filled = panel.slice(filledReturn);
+    expect(empty.indexOf("ff-card")).toBeLessThan(empty.indexOf("{manualQuoteForm}"));
+    expect(filled.indexOf("data-ff-quotes-current")).toBeLessThan(filled.indexOf("{manualQuoteForm}"));
+    expect(empty.indexOf("{noticeAnchor}")).toBeLessThan(empty.indexOf("ff-card"));
   });
 
   it("fills the same-line quote and leaves other rows alone", () => {

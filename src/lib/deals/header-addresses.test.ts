@@ -7,12 +7,14 @@ import {
   INSURED_ADDRESS_LABEL,
   MAILING_ADDRESS_LABEL,
   SAME_AS_INSURED_VALUE,
+  formatHeaderAddress,
   formatHeaderDob,
   headerAddressesEqual,
   mailingHeaderValue,
   normalizeHeaderAddress,
   resolveDealHeaderAddresses,
   shouldShowMailingAddress,
+  stripHeaderRoleTag,
   uniqueDisplayPhones,
 } from "./header-addresses";
 
@@ -297,6 +299,54 @@ describe("DealPackageShell address display", () => {
     expect(page).toMatch(/DealHeaderStage/);
     expect(page).toMatch(/stageControl=/);
     expect(page).toMatch(/uniqueDisplayPhones/);
+    expect(page).toMatch(/dwellingFire: headerDwellingFire/);
+    expect(page).toMatch(/dealStored: dealValues/);
+    expect(page).not.toMatch(/DWELLING_INSURED_ADDRESS_LABEL/);
+    expect(page).not.toMatch(/DWELLING_MAILING_ADDRESS_LABEL/);
+  });
+
+  it("strips rental and owner role tags from header labels and address values", () => {
+    expect(stripHeaderRoleTag("10358 NW 30th TER (rental property)")).toBe("10358 NW 30th TER");
+    expect(stripHeaderRoleTag("16021 NW 79th CT (owner)")).toBe("16021 NW 79th CT");
+    expect(formatHeaderAddress({
+      address1: "10358 NW 30th TER (rental property)",
+      city: "Doral",
+      state: "FL",
+      zip: "33172",
+    })).toBe("10358 NW 30th TER · Doral, FL · 33172");
+    expect(
+      headerAddressesEqual(
+        { address1: "10358 NW 30th TER (rental property)", city: "Doral", state: "FL", zip: "33172" },
+        { address1: "10358 NW 30th TER", city: "Doral", state: "FL", zip: "33172" },
+      ),
+    ).toBe(true);
+    const html = renderToString(
+      createElement(DealPackageShell, {
+        name: "Gloria Martinez",
+        phones: ["786-555-0100"],
+        insuredAddress: {
+          address1: "10358 NW 30th TER (rental property)",
+          city: "Doral",
+          state: "FL",
+          zip: "33172",
+        },
+        mailingAddress: {
+          address1: "16021 NW 79th CT (owner)",
+          city: "Miami",
+          state: "FL",
+          zip: "33016",
+        },
+        insuredLabel: "Insured address (rental property)",
+        mailingLabel: "Mailing address (owner)",
+      }),
+    );
+    expect(html).toContain("Insured address");
+    expect(html).toContain("Mailing address");
+    expect(html).not.toContain("rental property");
+    expect(html).not.toContain("(owner)");
+    expect(html).toContain("10358 NW 30th TER");
+    expect(html).toContain("16021 NW 79th CT");
+    expect(html).not.toContain(SAME_AS_INSURED_VALUE);
   });
 
   it("keeps a stable 4-column header: name/stage, phones/owner, dob/activity, addresses", () => {

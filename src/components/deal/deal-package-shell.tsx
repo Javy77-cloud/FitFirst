@@ -6,6 +6,7 @@ import {
   formatHeaderDob,
   mailingHeaderValue,
   shouldShowMailingAddress,
+  stripHeaderRoleTag,
   uniqueDisplayPhones,
   type HeaderAddressParts,
 } from "@/lib/deals/header-addresses";
@@ -61,8 +62,8 @@ export function DealPackageShell({
       { label: "Activity", value: activity?.trim() || "—", key: "activity" },
     ],
     [
-      { label: insuredLabel, value: insuredLine, key: "insured" },
-      { label: mailingLabel, value: mailingLine, key: "mailing" },
+      { label: stripHeaderRoleTag(insuredLabel), value: insuredLine, key: "insured" },
+      { label: stripHeaderRoleTag(mailingLabel), value: mailingLine, key: "mailing" },
     ],
   ];
   return (
