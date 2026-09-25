@@ -85,8 +85,9 @@ describe("site-wide action confirmation toast", () => {
       /flashAction\(quotesRequestedHref\(dealId, extras\), "quotes-requested"\)/,
     );
     expect(source("src/app/actions/lifecycle.ts")).toMatch(
-      /withFlash\(\s*`\/deals\/\$\{dealId\}\?tab=documents&line=\$\{line\}&notice=filled`,\s*toastForFillCounts\(/,
+      /fillStayHref\(\{ dealId, line, product, notice: "filled" \}\)/,
     );
+    expect(source("src/app/actions/lifecycle.ts")).toMatch(/toastForFillCounts\(/);
     expect(source("src/lib/flash-action.ts")).toMatch(/export function flashAction/);
     expect(source("src/lib/flash-action.ts")).toMatch(/export function flashStay/);
     expect(source("src/lib/flash-action.ts")).toMatch(/export async function flashSettings/);

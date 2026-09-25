@@ -386,7 +386,12 @@ export function MasterSheetCompare({
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
             <MasterSheetAddressLinks values={values} />
-            <MasterSheetFillButton dealId={dealId} line={line} />
+            <MasterSheetFillButton
+              dealId={dealId}
+              line={line}
+              storageLine={storageLine}
+              product={productId}
+            />
             {line === "health" ? (
               <HealthSherpaHandoff
                 dealId={dealId}
@@ -507,7 +512,7 @@ export function MasterSheetCompare({
                     kind,
                     checked,
                     dealId,
-                    line,
+                    line: storageLine || line,
                     uploads: inspectionUploads,
                     liveValues,
                     stored: values,
@@ -773,7 +778,7 @@ async function onInspectionToggle({
   kind: "wind" | "four";
   checked: boolean;
   dealId: string;
-  line: ShopLine;
+  line: string;
   uploads?: InspectionUploadIds;
   liveValues: Record<string, string>;
   stored: Record<string, QuoteSheetFieldValue>;

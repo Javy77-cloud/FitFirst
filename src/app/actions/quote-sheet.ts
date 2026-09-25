@@ -4,6 +4,7 @@ import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { fillStayHref } from "@/lib/documents/deal-docs-save";
 import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import {
@@ -1146,10 +1147,11 @@ export async function runDecodeVin(input: {
 > {
   const dealId = String(input.dealId ?? "").trim();
   const lineRaw = String(input.line ?? "auto").trim() || "auto";
+  const opened = parseStorageLine(lineRaw);
   if (!dealId) return { ok: false, error: "Missing deal" };
-  if (!parseStorageLine(lineRaw)) return { ok: false, error: "Unknown line" };
-  if (lineRaw !== "auto") return { ok: false, error: "VIN decode is Auto-only." };
-  const result = await runFillFromVinDecode(dealId, lineRaw, {
+  if (!opened) return { ok: false, error: "Unknown line" };
+  if (opened.shopLine !== "auto") return { ok: false, error: "VIN decode is Auto-only." };
+  const result = await runFillFromVinDecode(dealId, opened.storageLine, {
     formVins: input.formVins,
     prefetched: input.prefetched,
   });
@@ -1172,7 +1174,8 @@ export async function fillFromPropertyRecords(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line") || "home";
   if (!parseStorageLine(lineRaw)) throw new Error("Unknown line");
-  const dest = `/deals/${dealId}?tab=documents&line=${lineRaw}`;
+  const product = str(formData, "product") || str(formData, "productInstance");
+  const dest = fillStayHref({ dealId, line: lineRaw, product });
   const result = await runFillFromPropertyRecords(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
   if (result.status === "needs_key") {
@@ -1269,9 +1272,9 @@ export async function fillMasterSheetStep(input: {
   step: MasterFillStepId;
 }): Promise<MasterFillStepResult> {
   const step = input.step;
+  const shopLine = parseStorageLine(String(input.line ?? ""))?.shopLine ?? "home";
   const stepLabel =
-    masterFillStepsForLine(String(input.line ?? "home")).find((row) => row.id === step)?.label ??
-    step;
+    masterFillStepsForLine(shopLine).find((row) => row.id === step)?.label ?? step;
   try {
     return await withDeadline(
       fillMasterSheetStepInner(input),
@@ -1310,7 +1313,9 @@ async function fillMasterSheetStepInner(input: {
   const dealId = String(input.dealId ?? "").trim();
   const lineRaw = String(input.line ?? "home").trim() || "home";
   if (!dealId) throw new Error("Missing deal");
-  if (!parseStorageLine(lineRaw)) throw new Error("Unknown line");
+  const opened = parseStorageLine(lineRaw);
+  if (!opened) throw new Error("Unknown line");
+  const shopLine = opened.shopLine;
   const step = input.step;
 
   if (step === "deal") {
@@ -1327,7 +1332,7 @@ async function fillMasterSheetStepInner(input: {
 
   if (step === "property") {
     // Auto Fill-by-LOB: never Home property / county PA / FEMA on Auto.
-    if (lineRaw === "auto") {
+    if (shopLine === "auto") {
       return {
         step,
         filledCount: 0,
@@ -1376,7 +1381,7 @@ async function fillMasterSheetStepInner(input: {
   }
 
   if (step === "vin") {
-    if (lineRaw !== "auto") {
+    if (shopLine !== "auto") {
       return { step, filledCount: 0, skippedCount: 0, note: "VIN decode is Auto-only — skipped" };
     }
     const vin = await runFillFromVinDecode(dealId, lineRaw);
@@ -1536,15 +1541,17 @@ export async function fillQuoteSheet(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line") || "home";
   if (!parseStorageLine(lineRaw)) throw new Error("Unknown line");
+  const product = str(formData, "product") || str(formData, "productInstance");
+  const dest = fillStayHref({ dealId, line: lineRaw, product });
   const geminiKey = await loadGeminiApiKey();
   if (!geminiKeyReady(geminiKey)) {
-    flashAction(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "gemini-needs-key", "error");
+    flashAction(dest, "gemini-needs-key", "error");
   }
   const counts = await runFillDealSheets(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
-  // Stay on Documents after Fill — Markets only after Confirm & request quotes.
+  // Stay on Documents and this product — Markets only after Confirm & request quotes.
   flashAction(
-    `/deals/${dealId}?tab=documents&line=${lineRaw}`,
+    dest,
     toastForFillCounts({
       filledCount: counts.filledKeys.length,
       skippedCount: counts.skippedKeys.length,

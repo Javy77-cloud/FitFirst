@@ -26,6 +26,29 @@ export function dealDocumentsTabHref(
   return `/deals/${dealId}?${query.toString()}`;
 }
 
+/**
+ * After Fill Risk Profile (property records, FEMA, docs), stay on the product
+ * the agent started from. A bare shop line such as `home` must not be aliased
+ * to the first homeowners chip — that jumps a second HO3 onto its sibling.
+ */
+export function fillStayHref(input: {
+  dealId: string;
+  line?: string | null;
+  product?: string | null;
+  tab?: string | null;
+  notice?: string | null;
+}): string {
+  const query = new URLSearchParams();
+  query.set("tab", String(input.tab ?? "").trim() || "documents");
+  const line = String(input.line ?? "").trim();
+  if (line) query.set("line", line);
+  const product = String(input.product ?? "").trim() || parseStorageLine(line)?.instanceKey || "";
+  if (product) query.set("product", product);
+  const notice = String(input.notice ?? "").trim();
+  if (notice) query.set("notice", notice);
+  return `/deals/${input.dealId}?${query.toString()}`;
+}
+
 export type WorksheetSourceDoc = {
   slot?: string | null;
   docType?: string | null;
