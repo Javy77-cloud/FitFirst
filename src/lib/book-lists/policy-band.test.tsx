@@ -299,5 +299,8 @@ describe("policies board banding", () => {
     expect(css).toMatch(
       /\.ff-book-board \.ff-band-open \{[^}]*padding:\s*0\.12rem 1rem;[^}]*white-space:\s*nowrap/,
     );
+    expect(css).toMatch(/\.ff-policy-band-renew-corner\s*\{[^}]*margin-left:\s*auto/);
+    expect(css).not.toMatch(/\.ff-renewal-agreed-badge\s*\{[^}]*position:\s*absolute/);
+    expect(css).not.toMatch(/\.ff-book-card\.is-renewal-agreed\s*\{[^}]*padding-top:\s*1\.85rem/);
   });
 });

@@ -4585,18 +4585,10 @@ tr[data-ff-activity-selected="true"] {
 .ff-book-card {
   align-items: flex-start;
 }
-/* Corner chip on every band. Sits above the name row so a 16rem column stays readable. */
-.ff-book-card.is-renewal-agreed {
-  position: relative;
-  /* Reserved strip so the corner chip stays off the name and the Open action. */
-  padding-top: 1.85rem;
-}
+/* Renewal agreed sits on the renew-in row, beside the countdown, clear of Open. */
 .ff-renewal-agreed-badge {
-  position: absolute;
-  top: 0.28rem;
-  right: 0.4rem;
-  z-index: 1;
-  max-width: calc(100% - 0.8rem);
+  flex: 0 0 auto;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5699,10 +5691,80 @@ tr[data-ff-activity-selected="true"] {
   flex: 0 0 auto;
   white-space: nowrap;
 }
+/* Name on the first row. Renew-in line spans the card so date and premium sit at its right. */
+.ff-policy-band-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.6rem;
+  row-gap: 0.2rem;
+  align-items: center;
+}
+.ff-policy-band-card:has(> .ff-policy-band-leading) {
+  grid-template-columns: auto auto minmax(0, 1fr);
+}
+.ff-policy-band-card > .ff-policy-band-leading {
+  grid-column: 1;
+  grid-row: 1;
+}
+.ff-policy-band-card > .ff-stack-glyph {
+  grid-row: 1;
+}
+.ff-policy-band-card > .ff-policy-band-top {
+  grid-column: 2;
+  grid-row: 1;
+}
+.ff-policy-band-card:has(> .ff-policy-band-leading) > .ff-stack-glyph {
+  grid-column: 2;
+}
+.ff-policy-band-card:has(> .ff-policy-band-leading) > .ff-policy-band-top {
+  grid-column: 3;
+}
+.ff-policy-band-card > .ff-policy-band-renew,
+.ff-policy-band-card > .ff-inbox-cue,
+.ff-policy-band-card > :not(.ff-policy-band-leading):not(.ff-stack-glyph):not(.ff-policy-band-top):not(.ff-policy-band-renew) {
+  grid-column: 1 / -1;
+}
+/* Name row: form stays with the name, Open stays at the right of that row. */
+.ff-policy-band-top {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+.ff-policy-band-top > .ff-book-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* Renew-in row: countdown and Renewal agreed on the left, date and premium at the right. */
+.ff-policy-band-renew {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.ff-policy-band-renew-lead {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ff-policy-band-renew-corner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  margin-left: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 /* Short wide pill so Open stays on the name row beside the form. */
 .ff-book-board .ff-band-open {
-  align-self: flex-start;
-  margin-top: 0.12rem;
+  align-self: center;
+  flex: 0 0 auto;
+  margin-top: 0;
+  margin-left: auto;
   padding: 0.12rem 1rem;
   line-height: 1.15;
   white-space: nowrap;

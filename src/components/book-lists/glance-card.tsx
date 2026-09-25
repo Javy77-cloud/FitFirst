@@ -223,6 +223,39 @@ function policyBandForm(card: BookGlanceCard): string {
   return form;
 }
 
+const BAND_PREMIUM = /^\$[\d,]+(?:\.\d{2})?$/;
+
+/**
+ * Renew-in row on a policy band.
+ * Left: the renew-in line (date pulled off). Right: that date and the premium.
+ */
+function policyBandRenewLine(card: BookGlanceCard): { lead: string; date: string; premium: string } {
+  if (!card.why || isEmptyDash(card.why)) return { lead: "", date: "", premium: "" };
+  const parts = card.why
+    .split(" · ")
+    .map((part) => part.trim())
+    .filter((part) => part && !isEmptyDash(part));
+  const premiumPart = parts.find((part) => BAND_PREMIUM.test(part)) ?? "";
+  let date = "";
+  const lead = parts
+    .filter((part) => part !== premiumPart)
+    .map((part) => {
+      const renew = /^Renews in (\d+)d,\s+(.+)$/i.exec(part);
+      if (!renew) return part;
+      date = renew[2].trim();
+      return `Renews in ${renew[1]}d`;
+    })
+    .filter(Boolean)
+    .join(" · ");
+  if (!date) {
+    const fromFact = /^Expires\s+(.+)$/i.exec(policyFact(card, "expires"));
+    if (fromFact && !lead.includes(fromFact[1].trim())) date = fromFact[1].trim();
+  }
+  const premiumFact = policyFact(card, "premium");
+  const premium = premiumPart || (BAND_PREMIUM.test(premiumFact) ? premiumFact : "");
+  return { lead, date, premium };
+}
+
 const POLICY_STACK_TOP = ["form", "carrier", "status", "premium"] as const;
 const POLICY_STACK_BOTTOM = ["number", "expires", "renews", "billing"] as const;
 
@@ -697,35 +730,52 @@ function BandCard({
   tip: string;
 }) {
   const renewalAgreed = showRenewalAgreedCorner(card);
+  const renew = policyBandRenewLine(card);
+  const showRenewRow = Boolean(renew.lead || renew.date || renew.premium || renewalAgreed);
   return (
     <article
-      className={cn("ff-stack-card ff-book-card", `ff-heat-${card.heat}`, renewalAgreed && "is-renewal-agreed")}
+      className={cn(
+        "ff-stack-card ff-book-card ff-policy-band-card",
+        `ff-heat-${card.heat}`,
+        renewalAgreed && "is-renewal-agreed",
+      )}
       data-ff-book-card={card.id}
       data-hay={card.hay}
       data-ff-book-surface={card.surface}
       data-ff-heat={card.heat}
       data-ff-book-column={card.column}
     >
-      {renewalAgreed ? (
-        <span className="ff-renewal-agreed-badge" data-ff-renewal-agreed="">
-          {RENEWAL_AGREED_LABEL}
-        </span>
-      ) : null}
-      {leading}
+      {leading ? <span className="ff-policy-band-leading">{leading}</span> : null}
       <RiskGlyph heat={card.heat} tip={tip} />
-      <div className="ff-stack-card-body min-w-0 flex-1">
+      <div className="ff-policy-band-top">
         <NameLink card={card} form={policyBandForm(card)} />
-        {card.why && !isEmptyDash(card.why) ? (
-          <p className="ff-book-why" data-ff-book-why="" title={card.why}>
-            {card.why}
-          </p>
-        ) : null}
-        <InboxCue card={card} />
-        {extra}
+        <Link href={card.primaryAction.href} className="ff-stack-action ff-band-open" data-ff-book-action="">
+          {card.primaryAction.label}
+        </Link>
       </div>
-      <Link href={card.primaryAction.href} className="ff-stack-action ff-band-open" data-ff-book-action="">
-        {card.primaryAction.label}
-      </Link>
+      {showRenewRow ? (
+        <div
+          className="ff-book-why ff-policy-band-renew"
+          data-ff-book-why=""
+          data-ff-policy-band-renew=""
+          title={card.why || undefined}
+        >
+          {renew.lead ? <span className="ff-policy-band-renew-lead">{renew.lead}</span> : null}
+          {renewalAgreed ? (
+            <span className="ff-renewal-agreed-badge" data-ff-renewal-agreed="">
+              {RENEWAL_AGREED_LABEL}
+            </span>
+          ) : null}
+          {renew.date || renew.premium ? (
+            <span className="ff-policy-band-renew-corner">
+              {renew.date ? <span data-ff-policy-band-date="">{renew.date}</span> : null}
+              {renew.premium ? <span data-ff-policy-band-premium="">{renew.premium}</span> : null}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      <InboxCue card={card} />
+      {extra}
     </article>
   );
 }
