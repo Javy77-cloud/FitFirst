@@ -3,11 +3,10 @@
  * This never scans sibling products.
  */
 import { and, eq } from "drizzle-orm";
-import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { documents, policies, policyTerms } from "@/lib/db/schema";
-import { tagsWithTermRole, termRoleFromTags } from "@/lib/documents/document-labels";
+import { policies, policyTerms } from "@/lib/db/schema";
+import { promoteArrivingCurrentDec, tagDocumentTermRoleOnly } from "@/lib/policy/promote-current-dec";
 import {
   planIssuedTermWrite,
   type BookPolicyRef,
@@ -55,31 +54,18 @@ export async function applyIssuedTermPlan(plan: IssuedTermPlan): Promise<IssuedT
     });
   }
 
-  if (plan.documentId && plan.documentRole) {
-    const docs = await db
-      .select({ id: documents.id, tags: documents.tags, policyId: documents.policyId })
-      .from(documents)
-      .where(
-        and(
-          eq(documents.tenantId, DEFAULT_TENANT_ID),
-          eq(documents.policyId, plan.policyId),
-          notHiddenDocument(),
-        ),
-      );
-    for (const doc of docs) {
-      const currentRole = termRoleFromTags(doc.tags);
-      if (doc.id === plan.documentId) {
-        await db
-          .update(documents)
-          .set({ tags: tagsWithTermRole(doc.tags, plan.documentRole) })
-          .where(eq(documents.id, doc.id));
-      } else if (plan.documentRole === "current" && currentRole === "current") {
-        await db
-          .update(documents)
-          .set({ tags: tagsWithTermRole(doc.tags, "prior") })
-          .where(eq(documents.id, doc.id));
-      }
-    }
+  if (plan.documentId && plan.documentRole === "current") {
+    await promoteArrivingCurrentDec({
+      policyId: plan.policyId,
+      documentId: plan.documentId,
+      advanceTerm: false,
+    });
+  } else if (plan.documentId && (plan.documentRole === "renewal" || plan.documentRole === "prior")) {
+    await tagDocumentTermRoleOnly({
+      documentId: plan.documentId,
+      policyId: plan.policyId,
+      role: plan.documentRole,
+    });
   }
 
   return plan;

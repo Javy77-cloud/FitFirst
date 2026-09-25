@@ -7,6 +7,7 @@ import type { CustomFieldDef } from "./types";
 import { replaceEin, replaceLicense } from "@/lib/pii/write";
 import { formatPhoneStandard } from "@/lib/phone/format";
 import { normalizeTags } from "@/lib/tags/module-tags";
+import { applyOffBookEffects, shouldApplyOffBookEffects } from "@/lib/policy/offbook-effects";
 
 function str(values: Record<string, string>, ...keys: Array<string | null | undefined>) {
   for (const key of keys) {
@@ -254,17 +255,21 @@ export async function applyModuleSystemValues(
     if (!existing) return;
     const effective = asDate(str(values, "effective_date", "effectiveDate"));
     const expiration = asDate(str(values, "expiration_date", "expirationDate"));
+    const nextStatus = keep(str(values, "status"), existing.status) as string;
     await db
       .update(policies)
       .set({
         policyNumber: keep(str(values, "policy_number", "policyNumber"), existing.policyNumber) as string,
-        status: keep(str(values, "status"), existing.status) as string,
+        status: nextStatus,
         premium: keep(str(values, "premium"), existing.premium) as typeof existing.premium,
         effectiveDate: effective ?? existing.effectiveDate,
         expirationDate: expiration ?? existing.expirationDate,
         updatedAt: new Date(),
       })
       .where(eq(policies.id, recordId));
+    if (shouldApplyOffBookEffects(nextStatus)) {
+      await applyOffBookEffects(recordId);
+    }
     return;
   }
   if (module === "carriers") {

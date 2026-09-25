@@ -66,7 +66,7 @@ describe("policies board banding", () => {
   it("sends a non-payment cancellation with a future expiration to Lapsed", () => {
     // Filed cancellation stores status cancelled (non-pay is the reason).
     // Mid-term non-pay stores status lapsed, which the card already prints as Lapsed.
-    for (const status of ["cancelled", "lapsed", "canceled", "non_renewed"]) {
+    for (const status of ["cancelled", "lapsed", "canceled", "non_renewed", "expired"]) {
       const { resolved, card } = boardCard({
         status,
         effective: "2026-08-01",

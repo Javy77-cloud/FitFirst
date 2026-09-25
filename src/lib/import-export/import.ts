@@ -16,6 +16,7 @@ import {
   users,
 } from "@/lib/db/schema";
 import { isUuid } from "@/lib/ids";
+import { applyOffBookEffects, shouldApplyOffBookEffects } from "@/lib/policy/offbook-effects";
 import { newDeskToken, tokenExpiresAt, usernameFromEmail } from "@/lib/people/tokens";
 import { flagsForStatus } from "@/lib/people/status";
 import { buildDealTitle, clientNameFromStoredTitle } from "@/lib/deals/deal-title";
@@ -702,15 +703,22 @@ async function applyPolicy(item: PreviewRow, lookups: ImportLookups, actor: JobA
     ownerId: ownerFrom(lookups, cell(values, "owner_email"), actor),
     updatedAt: new Date(),
   };
+  let policyId = existing?.id ?? null;
   if (existing) {
     await db.update(policies).set(payload).where(and(eq(policies.tenantId, tenant()), eq(policies.id, existing.id)));
-    return;
+  } else {
+    const [created] = await db
+      .insert(policies)
+      .values({ tenantId: tenant(), ...payload })
+      .returning();
+    if (created) {
+      lookups.policies.push(created);
+      policyId = created.id;
+    }
   }
-  const [created] = await db
-    .insert(policies)
-    .values({ tenantId: tenant(), ...payload })
-    .returning();
-  if (created) lookups.policies.push(created);
+  if (policyId && shouldApplyOffBookEffects(payload.status)) {
+    await applyOffBookEffects(policyId);
+  }
 }
 
 async function applyCarrier(item: PreviewRow) {

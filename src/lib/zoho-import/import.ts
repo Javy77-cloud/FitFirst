@@ -32,6 +32,7 @@ import type {
   UnmatchedField,
   ZohoModule,
 } from "./types";
+import { applyOffBookEffects, shouldApplyOffBookEffects } from "@/lib/policy/offbook-effects";
 import { normalizeCarrierName, zohoIdOf } from "./values";
 
 function uuidFromZoho(kind: string, key: string): string {
@@ -558,6 +559,9 @@ export async function importZohoFolder(dir = defaultImportDir(), tenantId = DEFA
       } else {
         await db.insert(policies).values({ id, tenantId, ...values });
         policyCounts.created += 1;
+      }
+      if (shouldApplyOffBookEffects(mapped.status)) {
+        await applyOffBookEffects(id);
       }
       policyByZoho.set(zohoId, id);
     }

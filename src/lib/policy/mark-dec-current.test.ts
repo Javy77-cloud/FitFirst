@@ -31,14 +31,15 @@ describe("current declaration wiring", () => {
   it("sets current on issue and API attach with no toast, and notices after a manual fill", () => {
     const fill = readFileSync("src/app/actions/policy-fill-from-dec.ts", "utf8");
     const onIssue = fill.slice(fill.indexOf("export async function fillPolicyFromDecOnIssue"));
-    expect(onIssue.indexOf("markPolicyDecAsCurrent")).toBeGreaterThan(-1);
-    expect(onIssue.indexOf("markPolicyDecAsCurrent")).toBeLessThan(onIssue.indexOf("fillPolicyFromDec({"));
+    expect(onIssue.indexOf("promoteArrivingCurrentDec")).toBeGreaterThan(-1);
+    expect(onIssue.indexOf("promoteArrivingCurrentDec")).toBeLessThan(onIssue.indexOf("fillPolicyFromDec({"));
     expect(onIssue).not.toMatch(/flashAction/);
     expect(fill).toMatch(/source === "manual"/);
-    expect(fill).toMatch(/markPolicyDecAsCurrent/);
+    expect(fill).toMatch(/promoteArrivingCurrentDec/);
 
     const declaration = readFileSync("src/app/actions/declaration.ts", "utf8");
     expect(declaration).toMatch(/tagsWithTermRole\(\["dec", "mint", "source:carrier"\], "current"\)/);
+    expect(declaration).toMatch(/promoteSoleDealPolicyDeclaration/);
     expect(declaration).not.toMatch(/flashAction/);
 
     const button = readFileSync("src/components/policy/fill-policy-from-dec-button.tsx", "utf8");
@@ -56,6 +57,6 @@ describe("current declaration wiring", () => {
     expect(apply).toMatch(/return unresolvedAdvanceResult\(input\.trigger, resolved\.reason\)/);
     expect(apply).toMatch(/error: "Policy not found\."/);
     const inline = readFileSync("src/app/actions/documents.ts", "utf8");
-    expect(inline).toMatch(/if \(!advanced\.ok\) \{\s*return \{ ok: false, error: advanced\.error \}/);
+    expect(inline).toMatch(/if \(!promoted\.ok\) \{\s*return \{ ok: false, error: promoted\.error \}/);
   });
 });

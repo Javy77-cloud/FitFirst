@@ -13,6 +13,7 @@ import { documents, risks } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import { tagsWithTermRole } from "@/lib/documents/document-labels";
+import { promoteSoleDealPolicyDeclaration } from "@/lib/policy/promote-current-dec";
 import {
   declarationRetagPatch,
   isDeclarationDocType,
@@ -121,6 +122,7 @@ export async function receiveCarrierDeclaration(input: {
     tags: tagsWithTermRole(["dec", "mint", "source:carrier"], "current"),
   });
   if (!doc) return { ok: false as const, reason: "need_dec" as const, promptCreatePolicy: false };
+  const linked = await promoteSoleDealPolicyDeclaration({ dealId, documentId: doc.id });
   const carrierName = input.carrierName?.trim() || (await resolveDeclarationCarrierName(dealId, product));
   const prompt = await maybeQueueCreatePolicyPrompt({
     dealId,
@@ -134,6 +136,7 @@ export async function receiveCarrierDeclaration(input: {
     binding: true,
   });
   revalidatePath(`/deals/${dealId}`);
+  if (linked.policyId) revalidatePath(`/policies/${linked.policyId}`);
   return {
     ok: true as const,
     documentId: doc.id,

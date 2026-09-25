@@ -23,6 +23,10 @@ import {
   DOMENIC_IORI_DEC_DOCUMENT_ID,
   DOMENIC_IORI_POLICY_ID,
 } from "@/lib/policy/dec-prompt";
+import {
+  arrivingDeclarationBecomesCurrent,
+  promoteArrivingCurrentDec,
+} from "@/lib/policy/promote-current-dec";
 import { SERVICING_TASK_KINDS } from "@/lib/domain-ams";
 
 export type PolicyAttachResult = {
@@ -143,6 +147,13 @@ export async function attachPolicyFiles(formData: FormData): Promise<PolicyAttac
         slot: "policy_file",
       });
       await applyPolicyExpiresAt(doc.id, expiresAt);
+      if (arrivingDeclarationBecomesCurrent(docType)) {
+        await promoteArrivingCurrentDec({
+          policyId,
+          documentId: doc.id,
+          advanceTerm: false,
+        });
+      }
       count += 1;
     } catch (error) {
       lastError = messageFromUploadError(error, filename);
@@ -240,6 +251,13 @@ export async function savePolicyDocumentFromBlob(formData: FormData): Promise<Po
       slot: "policy_file",
     });
     await applyPolicyExpiresAt(doc.id, expiresAt);
+    if (arrivingDeclarationBecomesCurrent(docType)) {
+      await promoteArrivingCurrentDec({
+        policyId,
+        documentId: doc.id,
+        advanceTerm: false,
+      });
+    }
     revalidatePolicyAttach(policyId, dealId || policy.dealId);
     return { ok: true, count: 1 };
   } catch (error) {

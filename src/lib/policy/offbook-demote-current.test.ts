@@ -73,21 +73,24 @@ describe("planOffBookTermDemotions", () => {
 });
 
 describe("off-book demote wiring", () => {
-  it("hooks record edit, inline status, mass update, and filePolicyChange", () => {
+  it("demotes through the shared off-book handler on status transitions", () => {
     const helper = source("src/lib/policy/offbook-demote-current.ts");
     expect(helper).toMatch(/export async function demoteCurrentOnOffBookStatus/);
     expect(helper).toMatch(/term_role:prior|tagsWithTermRole\(doc\.tags, "prior"\)/);
     expect(helper).not.toMatch(/\.delete\(documents\)/);
 
+    const effects = source("src/lib/policy/offbook-effects.ts");
+    expect(effects).toMatch(/demoteCurrentOnOffBookStatusMany/);
+
     const record = source("src/app/actions/policy-record.ts");
-    expect(record).toMatch(/demoteCurrentOnOffBookStatus/);
-    expect(record).toMatch(/shouldDemoteCurrentForStatus/);
+    expect(record).toMatch(/applyOffBookEffects\(/);
+    expect(record).toMatch(/shouldApplyOffBookEffects/);
 
     const mass = source("src/app/actions/mass-update.ts");
-    expect(mass).toMatch(/demoteCurrentOnOffBookStatusMany|demoteCurrentOnOffBookStatus/);
-    expect(mass).toMatch(/shouldDemoteCurrentForStatus/);
+    expect(mass).toMatch(/applyOffBookEffectsMany/);
+    expect(mass).toMatch(/shouldApplyOffBookEffects/);
 
     const service = source("src/lib/policy/service.ts");
-    expect(service).toMatch(/demoteCurrentOnOffBookStatus/);
+    expect(service).toMatch(/applyOffBookEffects\(/);
   });
 });

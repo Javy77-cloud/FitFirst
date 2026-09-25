@@ -21,7 +21,7 @@ import { documentFileAuditInput } from "@/lib/documents/file-audit";
 import { writeEoAudit, writeEoAuditSafe } from "@/lib/eo-audit/write";
 import { recordPolicyFieldChanges } from "./record-changes";
 import { appendTermFromEndorsement } from "@/lib/ams/ensure-term";
-import { demoteCurrentOnOffBookStatus } from "@/lib/policy/offbook-demote-current";
+import { applyOffBookEffects, shouldApplyOffBookEffects } from "@/lib/policy/offbook-effects";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -155,7 +155,9 @@ export async function filePolicyChange(input: FilePolicyChangeInput) {
       .update(reviewTasks)
       .set({ status: "done", completedAt: new Date() })
       .where(and(eq(reviewTasks.policyId, policy.id), eq(reviewTasks.status, "open")));
-    await demoteCurrentOnOffBookStatus(policy.id);
+    if (shouldApplyOffBookEffects(drafted.policy.status)) {
+      await applyOffBookEffects(policy.id);
+    }
   }
 
   const attachments = [];
