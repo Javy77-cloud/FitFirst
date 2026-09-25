@@ -1,4 +1,5 @@
 import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
+import { stripHeaderRoleTag } from "@/lib/deals/header-addresses";
 import {
   storageLineForInstance,
   type ProductInstance,
@@ -353,6 +354,15 @@ function tabHeaderHasStreet(parts: ProductTabHeaderAddress): boolean {
   return Boolean(parts.address1);
 }
 
+function withoutHeaderRoles(parts: ProductTabHeaderAddress): ProductTabHeaderAddress {
+  return {
+    address1: stripHeaderRoleTag(parts.address1),
+    city: stripHeaderRoleTag(parts.city),
+    state: stripHeaderRoleTag(parts.state),
+    zip: stripHeaderRoleTag(parts.zip),
+  };
+}
+
 /** A one-line mailing already includes city. Don't print that city again. */
 function tabHeaderMailingLine(parts: ProductTabHeaderAddress): ProductTabHeaderAddress {
   if (parts.city && parts.address1.toLowerCase().includes(parts.city.toLowerCase())) {
@@ -377,6 +387,13 @@ export function headerAddressesForProductTab(input: {
     state?: string | null;
     zip?: string | null;
   } | null;
+  /**
+   * DP1/DP3 Deal Details keeps the owner mailing on contact_mailing_*.
+   * The quote-sheet mailing cell can collapse to the rental and make the
+   * header say "Same as insured address".
+   */
+  dwellingFire?: boolean;
+  dealStored?: Record<string, string | null | undefined> | null;
 }): { insured: ProductTabHeaderAddress; mailing: ProductTabHeaderAddress } {
   const values = input.sheetValues;
   const fromRisk = tabHeaderFromRisk(input.ownRisk);
@@ -439,6 +456,28 @@ export function headerAddressesForProductTab(input: {
           ? fromGarage
           : { ...EMPTY_TAB_HEADER_ADDRESS };
 
+  // Deal Details shows this form's address1 before an older risk row. HO3 keeps
+  // risk-first so a stale sheet street cannot replace the property on the chip.
+  if (input.dwellingFire) {
+    insured = tabHeaderHasStreet(fromAddress1)
+      ? fromAddress1
+      : tabHeaderHasStreet(premises)
+        ? premises
+        : tabHeaderHasStreet(fromGarage)
+          ? fromGarage
+          : tabHeaderHasStreet(fromRisk)
+            ? fromRisk
+            : { ...EMPTY_TAB_HEADER_ADDRESS };
+    const stored = input.dealStored ?? {};
+    const fromDetails = {
+      address1: headerPart(stored.contact_mailing_address),
+      city: headerPart(stored.contact_mailing_city),
+      state: headerPart(stored.contact_mailing_state),
+      zip: headerPart(stored.contact_mailing_zip),
+    };
+    if (tabHeaderHasStreet(fromDetails)) mailing = fromDetails;
+  }
+
   if (!tabHeaderHasStreet(insured) && tabHeaderHasStreet(mailing) && premisesSame) {
     insured = { ...mailing };
   }
@@ -447,7 +486,10 @@ export function headerAddressesForProductTab(input: {
     if (applicant) insured = { address1: applicant, city: "", state: "", zip: "" };
   }
 
-  return { insured, mailing: tabHeaderMailingLine(mailing) };
+  return {
+    insured: withoutHeaderRoles(insured),
+    mailing: withoutHeaderRoles(tabHeaderMailingLine(mailing)),
+  };
 }
 
 /**

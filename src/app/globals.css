@@ -1011,6 +1011,10 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
      The rail pulls back by the same amount so Quick Communication stays put. */
   --ff-deal-tab-group-gap: 3rem;
   --ff-deal-tab-group-pad: 0.75rem;
+  /* Five product rows (chip ~26.5px + 4px gap). Do not shrink — QC must not move with product count. */
+  --ff-deal-products-headroom: 9.5rem;
+  /* space-y-3, the gap between stacked rail cards and Quick Communication. */
+  --ff-deal-products-qc-gap: 0.75rem;
 }
 [data-ff-deal-quotes-corner] {
   justify-self: end !important;
@@ -1035,17 +1039,30 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
 [data-ff-deal-workspace] [data-ff-deal-tab-row-wrap] {
   margin-top: calc(1.25rem + var(--ff-deal-tab-group-gap)) !important;
   padding-top: var(--ff-deal-tab-group-pad);
-  background: var(--ff-wash);
-  box-shadow: inset 0 1px 0 var(--ff-row-line);
+  background: transparent;
+  box-shadow: none;
 }
 [data-ff-deal-workspace] [data-ff-deal-tab-panel] {
-  background: var(--ff-wash);
+  background: transparent;
 }
 /* Five product rows of fixed headroom (chip ~26.5px + 4px gap).
    The column is absolute against the top of Quick Communication, so this
    margin lowers that anchor without letting product count move or resize it. */
 [data-ff-deal-workspace] [data-ff-deal-quick-comms]:has([data-ff-deal-products-column]) {
-  margin-top: 9.5rem;
+  margin-top: calc(var(--ff-deal-products-headroom) + var(--ff-deal-products-qc-gap));
+}
+/* Main-tab white card shares the Quick Communication card's top edge.
+   The rail is pulled up by the tab-group offset; QC is then lowered by the
+   product headroom plus the gap under Add / change products. The tab body
+   takes that same net offset under the 50px tab gap. */
+[data-ff-deal-workspace]:has([data-ff-deal-products-column]) [data-ff-deal-tab-panel] {
+  padding-top: calc(
+    50px + var(--ff-deal-products-headroom) + var(--ff-deal-products-qc-gap) -
+      (var(--ff-deal-tab-group-gap) + var(--ff-deal-tab-group-pad))
+  ) !important;
+}
+[data-ff-deal-workspace] [data-ff-deal-products-column] {
+  bottom: calc(100% + var(--ff-deal-products-qc-gap));
 }
 [data-ff-quick-comms-kinds] {
   display: flex !important;

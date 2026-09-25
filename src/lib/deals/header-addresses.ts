@@ -20,6 +20,26 @@ export const INSURED_ADDRESS_LABEL = "Insured address";
 export const MAILING_ADDRESS_LABEL = "Mailing address";
 export const SAME_AS_INSURED_VALUE = "Same as insured address";
 
+/** Header only. Role notes such as "(rental property)" or "(owner)" are not part of the address. */
+const HEADER_ROLE_TAG =
+  /\s*\((?:rental property|owner|rental|primary residence|primary home|landlord)\)/gi;
+
+export function stripHeaderRoleTag(value: string | null | undefined): string {
+  return String(value ?? "")
+    .replace(HEADER_ROLE_TAG, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanHeaderParts(parts: HeaderAddressParts | null | undefined): HeaderAddressParts {
+  return {
+    address1: stripHeaderRoleTag(parts?.address1),
+    city: stripHeaderRoleTag(parts?.city),
+    state: stripHeaderRoleTag(parts?.state),
+    zip: stripHeaderRoleTag(parts?.zip),
+  };
+}
+
 type StreetCityStateZip = {
   address1?: string | null;
   city?: string | null;
@@ -54,7 +74,7 @@ export type DealHeaderAddressSource = {
 
 export function isHeaderAddressEmpty(parts: HeaderAddressParts | null | undefined): boolean {
   if (!parts) return true;
-  return !formatMailingLine(parts).trim();
+  return !formatMailingLine(cleanHeaderParts(parts)).trim();
 }
 
 function normalizeZip(value: string | null | undefined): string {
@@ -70,10 +90,11 @@ function normalizeLocality(value: string | null | undefined): string {
 
 export function normalizeHeaderAddress(parts: HeaderAddressParts | null | undefined): string | null {
   if (!parts) return null;
-  const street = normalizeStreet(parts.address1);
-  const city = normalizeLocality(parts.city);
-  const state = normalizeLocality(parts.state);
-  const zip = normalizeZip(parts.zip);
+  const clean = cleanHeaderParts(parts);
+  const street = normalizeStreet(clean.address1);
+  const city = normalizeLocality(clean.city);
+  const state = normalizeLocality(clean.state);
+  const zip = normalizeZip(clean.zip);
   const key = [street, city, state, zip].filter(Boolean).join("|");
   return key.length ? key : null;
 }
@@ -90,8 +111,8 @@ export function headerAddressesEqual(
   mailing: HeaderAddressParts | null | undefined,
 ): boolean {
   if (isHeaderAddressEmpty(mailing)) return true;
-  const left = insured ?? EMPTY_HEADER_ADDRESS;
-  const right = mailing ?? EMPTY_HEADER_ADDRESS;
+  const left = cleanHeaderParts(insured ?? EMPTY_HEADER_ADDRESS);
+  const right = cleanHeaderParts(mailing ?? EMPTY_HEADER_ADDRESS);
   const fullA = normalizeHeaderAddress(left);
   const fullB = normalizeHeaderAddress(right);
   if (fullA && fullB && fullA === fullB) return true;
@@ -235,7 +256,7 @@ export function resolveDealHeaderAddresses(input: DealHeaderAddressSource): {
 
 export function formatHeaderAddress(parts: HeaderAddressParts | null | undefined): string {
   if (!parts) return "";
-  return formatMailingLine(parts);
+  return formatMailingLine(cleanHeaderParts(parts));
 }
 
 function phoneDigits(value: string): string {

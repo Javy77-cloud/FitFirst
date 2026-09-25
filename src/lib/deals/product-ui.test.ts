@@ -97,6 +97,11 @@ describe("deal shop flow + product chrome", () => {
       }),
     );
     expect(rail).toMatch(/data-ff-deal-products-rail/);
+    expect(rail).toContain("Policy form");
+    expect(rail).not.toContain(">Products<");
+    expect(rail).toMatch(/border-\[#3d4c5c\]/);
+    expect(rail).toMatch(/text-\[11px\]/);
+    expect(rail).not.toMatch(/border-transparent/);
     expect(rail.indexOf("HO3 16021 Northwest 79th")).toBeLessThan(rail.indexOf("DP3 10358 Northwest 30th"));
     expect(rail.indexOf("DP3 10358 Northwest 30th")).toBeLessThan(rail.indexOf("HO3 8944 Adriatico"));
     expect(rail.indexOf("HO3 8944 Adriatico")).toBeLessThan(rail.indexOf("Add / change products"));

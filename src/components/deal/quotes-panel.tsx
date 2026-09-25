@@ -292,7 +292,6 @@ export function QuotesPanel({
         data-ff-quotes-line={activeLine ?? ""}
       >
         {noticeAnchor}
-        {manualQuoteForm}
         <div className="ff-card space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">
@@ -352,6 +351,7 @@ export function QuotesPanel({
             />
           ) : null}
         </div>
+        {manualQuoteForm}
       </div>
     );
   }
@@ -359,7 +359,6 @@ export function QuotesPanel({
   return (
     <div className="relative flex flex-col gap-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
       {noticeAnchor}
-      {manualQuoteForm}
       <QuotesWarningStrip
         quotes={sorted.map((row) => row.quote)}
         sheetStale={sheetStale}
@@ -417,6 +416,7 @@ export function QuotesPanel({
           <p className="text-sm text-muted-foreground">No current quotes yet.</p>
         </div>
       )}
+      {manualQuoteForm}
     </div>
   );
 }
