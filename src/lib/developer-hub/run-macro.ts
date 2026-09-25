@@ -19,6 +19,7 @@ import {
   reviewTasks,
 } from "@/lib/db/schema";
 import { CONTACT_ID, DEAL_ID, LEAD_ID } from "@/lib/fixtures/ids";
+import { applyOffBookEffects, shouldApplyOffBookEffects } from "@/lib/policy/offbook-effects";
 
 export type MacroRunResult = {
   ran: number;
@@ -459,6 +460,10 @@ async function applyFieldUpdates(
       .update(policies)
       .set(patch)
       .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, record.id)));
+    const nextStatus = typeof patch.status === "string" ? patch.status : "";
+    if (shouldApplyOffBookEffects(nextStatus)) {
+      await applyOffBookEffects(record.id);
+    }
     return true;
   }
   if (module === "businesses") {

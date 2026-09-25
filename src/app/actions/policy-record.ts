@@ -5,8 +5,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, carriers, clientHistory, commissions, contacts, policies, policyAutomations, reviewTasks } from "@/lib/db/schema";
-import { addUtcDays, deskNow } from "@/lib/home/as-of";
-import { inferLineFamily, isOepLine, previewCommission, type LineFamily } from "@/lib/desk/commission-line";
+import { deskNow } from "@/lib/home/as-of";
+import { inferLineFamily, previewCommission, type LineFamily } from "@/lib/desk/commission-line";
 import {
   commissionFamilyFromInsurance,
   defaultTermForFamily,
@@ -32,10 +32,9 @@ import {
   buildTermOverridePatch,
   termOverrideSummary,
 } from "@/lib/policy/term-override";
-import {
-  demoteCurrentOnOffBookStatus,
-  shouldDemoteCurrentForStatus,
-} from "@/lib/policy/offbook-demote-current";
+import { planPolicyDateAutomationJobs } from "@/lib/policy/date-automations";
+import { applyOffBookEffects, closeOffBookRenewalWork, shouldApplyOffBookEffects } from "@/lib/policy/offbook-effects";
+import { isOffBookStatus } from "@/lib/policy/status";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -123,8 +122,8 @@ export async function updatePolicyRecord(formData: FormData) {
     })
     .where(eq(policies.id, id));
 
-  if (shouldDemoteCurrentForStatus(next.status)) {
-    await demoteCurrentOnOffBookStatus(id);
+  if (shouldApplyOffBookEffects(next.status)) {
+    await applyOffBookEffects(id);
   }
 
   const shownFamily = insuranceFamilyFromPolicy(existing);
@@ -178,6 +177,12 @@ export async function syncPolicyDateAutomations(policyId: string) {
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
   if (!policy) return;
 
+  // Future X-date must not reopen renewal chase once the policy is off-book.
+  if (isOffBookStatus(policy.status)) {
+    await closeOffBookRenewalWork([policyId]);
+    return;
+  }
+
   const [contact] = policy.contactId
     ? await db.select().from(contacts).where(eq(contacts.id, policy.contactId))
     : [];
@@ -188,31 +193,19 @@ export async function syncPolicyDateAutomations(policyId: string) {
   const policyType = policy.policySubType || policy.formType || policy.lineOfBusiness;
   const xDate = policy.expirationDate;
   const asOf = deskNow();
-  const family = inferLineFamily(policy.lineOfBusiness, policy.commissionFamily, policy.policySubType);
 
-  const jobs: { kind: string; fireOn: Date; title: string; body: string }[] = [];
-
-  for (const days of [30, 60] as const) {
-    const window = addUtcDays(asOf, days);
-    if (xDate > asOf && xDate <= window) {
-      jobs.push({
-        kind: `renewal_${days}`,
-        fireOn: addUtcDays(xDate, -days),
-        title: `Policy renewal coming up - ${party} - ${policyType}`,
-        body: `${policy.policyNumber} X-Date ${xDate.toISOString().slice(0, 10)}. ${days}-day renewal (90-day is off). High. Not Started.`,
-      });
-    }
-  }
-
-  if (policy.oepStart && isOepLine(family, policy.policySubType)) {
-    const fireOn = addUtcDays(policy.oepStart, -30);
-    jobs.push({
-      kind: "oep_stay_put",
-      fireOn,
-      title: `OEP stay-put — ${party} — ${policyType}`,
-      body: `Internal stay-put 30 days before OEP start ${policy.oepStart.toISOString().slice(0, 10)}. No client email. No new policy.`,
-    });
-  }
+  const jobs = planPolicyDateAutomationJobs({
+    status: policy.status,
+    expirationDate: xDate,
+    oepStart: policy.oepStart,
+    lineOfBusiness: policy.lineOfBusiness,
+    commissionFamily: policy.commissionFamily,
+    policySubType: policy.policySubType,
+    asOf,
+    party,
+    policyType,
+    policyNumber: policy.policyNumber,
+  });
 
   // TODO(zoho-deluge): remaining Zoho master legal/compliance policy rules are unknown
   // on this desk. Do not invent extra Deluge branches. 90-day renewal stays off.
@@ -449,8 +442,8 @@ export async function updatePolicyField(input: {
   });
 
 
-  if (fieldKey === "status" && shouldDemoteCurrentForStatus(raw)) {
-    await demoteCurrentOnOffBookStatus(id);
+  if (fieldKey === "status" && shouldApplyOffBookEffects(raw)) {
+    await applyOffBookEffects(id);
   }
 
   if (fieldKey === "effectiveDate" || fieldKey === "expirationDate" || fieldKey === "renewalDate") {
