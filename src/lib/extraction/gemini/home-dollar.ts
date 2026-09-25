@@ -43,6 +43,12 @@ const HOME_OPTIONAL_DOLLAR_KEYS = new Set([
   "ordinance_or_law_premium",
   "ordinance_law_premium",
   "water_backup_premium",
+  "loss_assessment",
+  "loss_assessment_premium",
+  "limited_fungi",
+  "limited_fungi_premium",
+  "unit_owners_coverage_a",
+  "unit_owners_coverage_a_premium",
 ]);
 
 const HOME_DEDUCTIBLE_KEYS = new Set([
@@ -159,6 +165,16 @@ function moneyLabel(raw: string): string {
   return negative ? `-${body}` : body;
 }
 
+/** DEC "Incl" / "Incl." / "Included". "Not Included" does not match. */
+function includedWord(raw: string): string | null {
+  if (/^incl\.?$/i.test(raw) || /^included$/i.test(raw)) return "Included";
+  return null;
+}
+
+function isPlainMoneyToken(raw: string): boolean {
+  return /^[-+]?\$?\s*[\d,]+(?:\.\d+)?$/.test(raw.trim());
+}
+
 /**
  * Coverage A/C/D/E/F, and B when it is a dollar limit.
  * A printed percent stays a percent. A dollar amount displays with $.
@@ -166,16 +182,25 @@ function moneyLabel(raw: string): string {
 export function formatHomeDollarAmount(raw: string | null | undefined): string {
   const trimmed = String(raw ?? "").replace(/\s+/g, " ").trim();
   if (!trimmed) return "";
+  const included = includedWord(trimmed);
+  if (included) return included;
   if (/%/.test(trimmed)) return trimmed;
+  if (trimmed.includes("/") && !/[a-z]/i.test(trimmed)) {
+    const parts = trimmed.split("/").map((part) => part.trim()).filter(Boolean);
+    if (parts.length > 1 && parts.every((part) => isPlainMoneyToken(part))) {
+      return parts.map((part) => moneyLabel(part)).join("/");
+    }
+  }
   if (/[a-z]/i.test(trimmed)) return trimmed;
   return moneyLabel(trimmed);
 }
 
-/** Coverage-row premium: Included, or a dollar amount including a negative ordinance premium. */
+/** Coverage-row premium: Incl/Included, or a dollar amount including a negative ordinance premium. */
 export function formatCoverageLinePremium(raw: string | null | undefined): string {
   const trimmed = String(raw ?? "").replace(/\s+/g, " ").trim();
   if (!trimmed) return "";
-  if (/^included$/i.test(trimmed)) return "Included";
+  const included = includedWord(trimmed);
+  if (included) return included;
   return formatHomeDollarAmount(trimmed);
 }
 
@@ -186,6 +211,8 @@ export function formatCoverageLinePremium(raw: string | null | undefined): strin
 export function formatHomeDeductibleAmount(raw: string | null | undefined): string {
   const trimmed = String(raw ?? "").replace(/\s+/g, " ").trim();
   if (!trimmed) return "";
+  const included = includedWord(trimmed);
+  if (included) return included;
   const pctMatches = [...trimmed.matchAll(/(\d+(?:\.\d+)?)\s*%/g)];
   const money = trimmed.match(/\$\s*([\d,]+(?:\.\d+)?)/);
   if (pctMatches.length > 0 && money) {

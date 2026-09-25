@@ -71,6 +71,9 @@ const LABELS: Record<string, string> = {
   dwelling_replacement_cost: "Replacement Cost Dwelling",
   personal_property_replacement_cost: "Replacement Cost Contents",
   extended_replacement_cost_dwelling: "Extended Replacement Cost - Dwelling",
+  loss_assessment: "Loss Assessment",
+  limited_fungi: "Limited Fungi, Wet or Dry Rot, or Bacteria",
+  unit_owners_coverage_a: "Unit-Owners Coverage A - Special Coverage",
   aop_deductible: "All Other Perils (AOP)",
   wind_hail_deductible: "Windstorm or Hail (Other Than Hurricane)",
   hurricane_deductible: "Hurricane (% of Cov A)",
@@ -105,6 +108,16 @@ const COVERAGE_KEY_ALIASES: Record<string, string> = {
   hurricane: "hurricane_deductible",
   sinkhole: "sinkhole_deductible",
   sinkhole_coverage: "sinkhole_deductible",
+  sinkhole_loss: "sinkhole_deductible",
+  sinkhole_loss_coverage: "sinkhole_deductible",
+  loss_assessment_coverage: "loss_assessment",
+  limited_fungi_wet_or_dry_rot_or_bacteria: "limited_fungi",
+  limited_fungi_wet_or_dry_rot_or_bacteria_coverage: "limited_fungi",
+  fungi: "limited_fungi",
+  mold: "limited_fungi",
+  unit_owners_coverage_a_special: "unit_owners_coverage_a",
+  unit_owners_coverage_a_special_coverage: "unit_owners_coverage_a",
+  ordinance_or_law_coverage: "ordinance_or_law",
 };
 
 export type HomeCoverageScheduleRow = {
