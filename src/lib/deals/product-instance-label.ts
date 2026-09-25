@@ -1,3 +1,4 @@
+import { formatPropertyAddress } from "@/lib/address-links";
 import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
 import { productChipLabel } from "@/lib/deals/product-chip-label";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
@@ -49,6 +50,26 @@ export function policyFormMenuLabel(input: {
   if (!short) return input.fallback;
   const code = input.code.trim();
   return code ? `${code} · ${short}` : short;
+}
+
+/** Expanded menu row: form code plus street, city, state, and zip. */
+export function policyFormFullMenuLabel(input: {
+  code: string;
+  fallback: string;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+}): string {
+  const line = formatPropertyAddress({
+    address1: input.address,
+    city: input.city,
+    state: input.state,
+    zip: input.zip,
+  });
+  if (!line) return input.fallback;
+  const code = input.code.trim();
+  return code ? `${code} · ${line}` : line;
 }
 
 const DIRECTIONALS: Record<string, string> = {

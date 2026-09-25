@@ -159,11 +159,20 @@ describe("deal shop flow + product chrome", () => {
     expect(addressed).not.toMatch(/>HO3 · 8944</);
     expect(addressed).toContain("DP3 · 10358 Northwest");
     expect(addressed).toContain("HO3 · 16021 Northwest");
-    expect(addressed).not.toContain("Adriatico");
-    expect(addressed).not.toContain("Kissimmee");
-    expect(addressed).not.toContain("Doral");
-    expect(addressed).not.toContain("34747");
-    expect(addressed).not.toContain("33172");
+    const trigger = addressed.slice(
+      addressed.indexOf("data-ff-policy-form-trigger"),
+      addressed.indexOf("data-ff-policy-form-menu"),
+    );
+    expect(trigger).toContain("HO3 · 8944 South");
+    expect(trigger).not.toContain("Adriatico");
+    expect(trigger).not.toContain("Kissimmee");
+    expect(trigger).not.toContain("Doral");
+    expect(trigger).not.toContain("34747");
+    expect(trigger).not.toContain("33172");
+    const menu = addressed.slice(addressed.indexOf("data-ff-policy-form-menu"));
+    expect(menu).toContain("HO3 · 8944 S Adriatico Ln, Kissimmee, FL 34747");
+    expect(menu).toContain("DP3 · 10358 NW 30th TER, Doral, FL 33172");
+    expect(menu).toContain("HO3 · 16021 NW 79th Ct, Miami Lakes, FL");
     expect(addressed).toMatch(/minmax\(29ch, max-content\)/);
     const wide = renderToString(
       createElement(DealLineSwitcher, {

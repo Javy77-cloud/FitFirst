@@ -5,6 +5,7 @@ import {
   activeProductFieldCh,
   compactStreetLabel,
   labelProductInstances,
+  policyFormFullMenuLabel,
   policyFormMenuLabel,
   type ProductInstanceLabelInput,
 } from "@/lib/deals/product-instance-label";
@@ -218,6 +219,41 @@ describe("product instance labels", () => {
       }),
     ).toBe("HO3 · 100");
     expect(policyFormMenuLabel({ code: "HO3", fallback: "HO3 8944 Adriatico" })).toBe(
+      "HO3 8944 Adriatico",
+    );
+  });
+
+  it("builds a full menu label with street, city, state, and zip", () => {
+    expect(
+      policyFormFullMenuLabel({
+        code: "DP3",
+        fallback: "DP3",
+        address: "10358 Northwest 30th Street",
+        city: "Miami",
+        state: "FL",
+        zip: "33100",
+      }),
+    ).toBe("DP3 · 10358 Northwest 30th Street, Miami, FL 33100");
+    expect(
+      policyFormFullMenuLabel({
+        code: "HO3",
+        fallback: "HO3",
+        address: "8944 S Adriatico Ln",
+        city: "Kissimmee",
+        state: "FL",
+        zip: "34747",
+      }),
+    ).toBe("HO3 · 8944 S Adriatico Ln, Kissimmee, FL 34747");
+    expect(
+      policyFormFullMenuLabel({
+        code: "DP3",
+        fallback: "DP3",
+        address: "10358 Corporate Blvd",
+        city: "Orlando",
+        state: "FL",
+      }),
+    ).toBe("DP3 · 10358 Corporate Blvd, Orlando, FL");
+    expect(policyFormFullMenuLabel({ code: "HO3", fallback: "HO3 8944 Adriatico" })).toBe(
       "HO3 8944 Adriatico",
     );
   });
