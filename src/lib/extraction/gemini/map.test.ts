@@ -292,6 +292,23 @@ describe("rosa desk training extract prompts", () => {
     expect(system).toMatch(/never invent/);
     expect(user).toMatch(/18025 Cypress Point Rd/);
     expect(user).toMatch(/do not force annual on auto/);
+    expect(user).toMatch(/All Other Perils/);
+    expect(user).toMatch(/Windstorm or Hail \(Other Than Hurricane\)/);
+    expect(user).toMatch(/personal_injury/);
+    expect(user).toMatch(/home_computer/);
+    expect(user).toMatch(/type_of_residence/);
+    expect(user).toMatch(/Not Included/);
+    expect(system).toMatch(/personal_injury/);
+    expect(system).toMatch(/Year of Roof\/Updated/);
+    expect(GEMINI_EXTRACT_JSON_KEYS).toEqual(
+      expect.arrayContaining([
+        "personal_injury",
+        "home_computer",
+        "water_backup_premium",
+        "ordinance_law_premium",
+        "type_of_residence",
+      ]),
+    );
     expect(auto).toMatch(/Do not treat this as homeowners/);
   });
 });

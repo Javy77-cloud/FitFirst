@@ -40,6 +40,31 @@ describe("LOB overview templates", () => {
     expect(dwelling.some((f) => f.key === "premises" || f.key === "roofYear")).toBe(false);
   });
 
+  it("shows printed rating facts on the dwelling section", () => {
+    const sections = buildLobOverviewSections({
+      policyId: "p1",
+      lineOfBusiness: "HO3",
+      coverageA: 337000,
+      yearBuilt: 2024,
+      roofYear: 2024,
+      construction: "Masonry",
+      occupancy: "Owner",
+      dwellingType: "Single Family",
+      typeOfResidence: "Owner Occupied",
+      monthsOccupied: "9 to 12 Months",
+    });
+    const dwelling = sections.find((s) => s.id === "dwelling")?.fields ?? [];
+    expect(dwelling.find((f) => f.key === "construction")?.value).toBe("Masonry");
+    expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("2024");
+    expect(dwelling.find((f) => f.key === "roofYear")?.value).toBe("2024");
+    expect(dwelling.find((f) => f.key === "occupancy")?.label).toBe("Occupancy");
+    expect(dwelling.find((f) => f.key === "occupancy")?.value).toBe("Owner");
+    expect(dwelling.find((f) => f.key === "dwellingType")?.value).toBe("Single Family");
+    expect(dwelling.find((f) => f.key === "typeOfResidence")?.value).toBe("Owner Occupied");
+    expect(dwelling.find((f) => f.key === "monthsOccupied")?.value).toBe("9 to 12 Months");
+    expect(dwelling.find((f) => f.key === "occupancy")?.hint).toBeUndefined();
+  });
+
   it("treats DP, manufactured home, and rentals as home lines", () => {
     expect(resolveLobOverviewFamily({ lineOfBusiness: "DP3" })).toBe("homeowners");
     expect(resolveLobOverviewFamily({ lineOfBusiness: "HO4" })).toBe("homeowners");

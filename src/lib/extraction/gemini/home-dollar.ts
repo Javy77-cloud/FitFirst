@@ -19,6 +19,21 @@ const HOME_DOLLAR_COVERAGE_KEYS = new Set([
   "coverage_f",
 ]);
 
+/** Optional-coverage limits and premiums. Included and percents stay as printed. */
+const HOME_OPTIONAL_DOLLAR_KEYS = new Set([
+  "personal_injury",
+  "home_computer",
+  "ordinance_or_law",
+  "ordinance_law",
+  "water_backup",
+  "personal_injury_premium",
+  "personal_property_replacement_cost_premium",
+  "home_computer_premium",
+  "ordinance_or_law_premium",
+  "ordinance_law_premium",
+  "water_backup_premium",
+]);
+
 const HOME_DEDUCTIBLE_KEYS = new Set([
   "hurricane_deductible",
   "aop_deductible",
@@ -157,7 +172,7 @@ export function formatHomeDeductibleAmount(raw: string | null | undefined): stri
 }
 
 export function displayHomeCoverageLimit(key: string, value: string): string {
-  if (!HOME_DOLLAR_COVERAGE_KEYS.has(key)) return value;
+  if (!HOME_DOLLAR_COVERAGE_KEYS.has(key) && !HOME_OPTIONAL_DOLLAR_KEYS.has(key)) return value;
   return formatHomeDollarAmount(value) || value;
 }
 
@@ -199,7 +214,7 @@ export function enforceHomeDecDollars(fields: ExtractedField[], shopLine?: strin
   if (isAutoShopLine(shopLine)) return;
   for (const field of fields) {
     if (!field.normalizedValue.trim()) continue;
-    if (HOME_DOLLAR_COVERAGE_KEYS.has(field.fieldKey)) {
+    if (HOME_DOLLAR_COVERAGE_KEYS.has(field.fieldKey) || HOME_OPTIONAL_DOLLAR_KEYS.has(field.fieldKey)) {
       const next = formatHomeDollarAmount(field.normalizedValue);
       if (next && next !== field.normalizedValue) field.normalizedValue = next;
     } else if (HOME_DEDUCTIBLE_KEYS.has(field.fieldKey)) {

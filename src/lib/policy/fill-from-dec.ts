@@ -315,6 +315,30 @@ export function formatDecDeductible(raw: string): string {
   return formatHomeDeductibleAmount(raw);
 }
 
+/** Optional-coverage limit or premium. Included and percents stay. Dollars keep $. */
+function formatOptionalAmount(raw: string): string {
+  return formatHomeDollarAmount(raw);
+}
+
+/** Sinkhole "Not Included" stays words. Never turn that phrase into a dollar. */
+function formatSinkhole(raw: string): string {
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (/not\s*included|not\s*covered|excluded|does not provide|not provided/i.test(trimmed)) {
+    return "Not Included";
+  }
+  if (/^(none|n\/a|na|no|false)$/i.test(trimmed)) return "None";
+  return formatHomeDeductibleAmount(trimmed);
+}
+
+/** A printed rating value. An explicit blank token is None. An omitted key stays omitted. */
+function ratingText(raw: string): string {
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (/^(none|n\/a|na|null|—|-)$/i.test(trimmed)) return "None";
+  return trimmed;
+}
+
 function splitDecAddress(raw: string): PremisesAddressParts {
   const text = raw
     .replace(/\s+/g, " ")
@@ -487,7 +511,9 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   putAddress(out, "mailing", rawCell(rows, "mailing_address", "contact_mailing_address"));
 
   const year =
-    parsePropertyYear(rawCell(rows, "year_built", "year_constructed", "yr_built")) ?? null;
+    parsePropertyYear(
+      rawCell(rows, "year_built", "year_constructed", "yr_built", "year_of_construction"),
+    ) ?? null;
   if (year) put(out, "yearBuilt", String(year));
   put(out, "construction", rawCell(rows, "construction", "construction_type"));
 
@@ -505,7 +531,7 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   const occupied = rawCell(rows, "occupancy", "occupied");
   const occupiedYn = yesNo(occupied);
   if (occupiedYn === "Yes" || occupiedYn === "No") put(out, "occupancy", occupiedYn);
-  else put(out, "occupancy", occupied);
+  else put(out, "occupancy", ratingText(occupied));
 
   put(out, "protectionClass", rawCell(rows, "protection_class"));
   put(out, "bceg", rawCell(rows, "bceg_grade", "bceg"));
@@ -578,15 +604,69 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
         "windstorm_or_hail",
         "windstorm_hail_deductible",
         "wind_deductible",
+        "windstorm_or_hail_other_than_hurricane",
+        "windstorm_or_hail_other_than_hurricane_deductible",
       ),
     ),
   );
+  put(
+    out,
+    "sinkholeDeductible",
+    formatSinkhole(rawCell(rows, "sinkhole_deductible", "sinkhole", "sinkhole_coverage")),
+  );
+  put(out, "personalInjury", formatOptionalAmount(rawCell(rows, "personal_injury", "personal_injury_limit")));
+  put(out, "personalInjuryPremium", formatOptionalAmount(rawCell(rows, "personal_injury_premium")));
+  put(
+    out,
+    "personalPropertyReplacementCostPremium",
+    formatOptionalAmount(rawCell(rows, "personal_property_replacement_cost_premium")),
+  );
+  put(
+    out,
+    "homeComputer",
+    formatOptionalAmount(rawCell(rows, "home_computer", "home_computer_limit", "home_computer_coverage")),
+  );
+  put(out, "homeComputerPremium", formatOptionalAmount(rawCell(rows, "home_computer_premium")));
+  put(
+    out,
+    "ordinanceOrLawPremium",
+    formatOptionalAmount(rawCell(rows, "ordinance_or_law_premium", "ordinance_law_premium")),
+  );
+  put(
+    out,
+    "waterBackup",
+    formatOptionalAmount(
+      rawCell(
+        rows,
+        "water_backup",
+        "water_back_up",
+        "water_back_up_and_sump_overflow",
+        "water_backup_and_sump_overflow",
+      ),
+    ),
+  );
+  put(
+    out,
+    "waterBackupPremium",
+    formatOptionalAmount(rawCell(rows, "water_backup_premium", "water_back_up_premium")),
+  );
+  put(out, "typeOfResidence", ratingText(rawCell(rows, "type_of_residence", "residence_type")));
+  put(out, "monthsOccupied", ratingText(rawCell(rows, "months_occupied", "number_of_months_occupied")));
 
   const roofInstall = rawCell(rows, "date_of_roof_installation", "roof_install_date");
   put(out, "roofInstallDate", roofInstall);
   const roofYear =
-    parsePropertyYear(rawCell(rows, "roof_year", "roof_age", "year_roof")) ??
-    parsePropertyYear(roofInstall);
+    parsePropertyYear(
+      rawCell(
+        rows,
+        "roof_year",
+        "roof_age",
+        "year_roof",
+        "year_of_roof",
+        "year_of_roof_updated",
+        "year_roof_updated",
+      ),
+    ) ?? parsePropertyYear(roofInstall);
   if (roofYear) put(out, "roofYear", String(roofYear));
   put(
     out,
@@ -960,6 +1040,17 @@ const LIMIT_KEYS: Record<string, string> = {
   coverage_f: "coverageF",
   ordinance_or_law: "ordinanceOrLaw",
   wind_hail_deductible: "windHailDeductible",
+  sinkhole_deductible: "sinkholeDeductible",
+  personal_injury: "personalInjury",
+  personal_injury_premium: "personalInjuryPremium",
+  personal_property_replacement_cost_premium: "personalPropertyReplacementCostPremium",
+  home_computer: "homeComputer",
+  home_computer_premium: "homeComputerPremium",
+  ordinance_or_law_premium: "ordinanceOrLawPremium",
+  water_backup: "waterBackup",
+  water_backup_premium: "waterBackupPremium",
+  type_of_residence: "typeOfResidence",
+  months_occupied: "monthsOccupied",
   dwelling_type: "dwellingType",
   number_of_families: "families",
   dwelling_replacement_cost: "dwellingReplacementCost",
@@ -1283,6 +1374,17 @@ export function groupAppliedFill(
     ["coverageF", "coverage_f"],
     ["ordinanceOrLaw", "ordinance_or_law"],
     ["windHailDeductible", "wind_hail_deductible"],
+    ["sinkholeDeductible", "sinkhole_deductible"],
+    ["personalInjury", "personal_injury"],
+    ["personalInjuryPremium", "personal_injury_premium"],
+    ["personalPropertyReplacementCostPremium", "personal_property_replacement_cost_premium"],
+    ["homeComputer", "home_computer"],
+    ["homeComputerPremium", "home_computer_premium"],
+    ["ordinanceOrLawPremium", "ordinance_or_law_premium"],
+    ["waterBackup", "water_backup"],
+    ["waterBackupPremium", "water_backup_premium"],
+    ["typeOfResidence", "type_of_residence"],
+    ["monthsOccupied", "months_occupied"],
     ["dwellingType", "dwelling_type"],
     ["families", "number_of_families"],
     ["dwellingReplacementCost", "dwelling_replacement_cost"],
