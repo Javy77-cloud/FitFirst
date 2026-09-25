@@ -24,6 +24,49 @@ export type AutoCoverageExtra = {
   value: string;
 };
 
+/**
+ * Gemini keys Fill must be able to write onto the PAP Coverage schedule.
+ * One key per cell: limit, deductible, and premium, plus UM stacked and discounts.
+ * `comprehensive_deductible` is accepted as an alias of `comp_deductible`.
+ */
+export const PAP_COVERAGE_FILL_KEYS = [
+  "liability_bi",
+  "liability_bi_premium",
+  "liability_pd",
+  "liability_pd_premium",
+  "pip",
+  "pip_deductible",
+  "pip_premium",
+  "med_pay",
+  "med_pay_premium",
+  "um_uim",
+  "um_uim_premium",
+  "um_pd",
+  "um_pd_premium",
+  "comp_deductible",
+  "comp_premium",
+  "collision_deductible",
+  "collision_premium",
+  "rental",
+  "rental_premium",
+  "towing",
+  "towing_premium",
+  "glass",
+  "glass_premium",
+  "um_stacked",
+  "discounts",
+] as const;
+
+/** Coverage example Fill used to teach Gemini — limits only, no line premiums. */
+export const PAP_COVERAGE_FILL_KEYS_BEFORE = [
+  "liability_bi",
+  "liability_pd",
+  "um_uim",
+  "pip",
+  "comp_deductible",
+  "collision_deductible",
+] as const;
+
 const BLANK = "—";
 
 function show(value: string | null | undefined): string {

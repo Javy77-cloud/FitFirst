@@ -300,7 +300,13 @@ export function PolicyOverviewTab({
         />
       ) : null}
 
-      {isAuto || family === "auto" ? <VehiclesList vehicles={vehicles} /> : null}
+      {isAuto || family === "auto" ? (
+        <VehiclesList
+          vehicles={vehicles}
+          bodilyInjury={limits.liability_bi || limits.bodily_injury}
+          propertyDamage={limits.liability_pd || limits.property_damage}
+        />
+      ) : null}
 
       {checklist ? (
         <ServicingChecklistCard

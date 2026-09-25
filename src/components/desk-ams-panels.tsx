@@ -6,7 +6,16 @@ function cell(value: string | number | null | undefined) {
   return text || "—";
 }
 
-export function VehiclesList({ vehicles }: { vehicles: Vehicle[] }) {
+export function VehiclesList({
+  vehicles,
+  bodilyInjury,
+  propertyDamage,
+}: {
+  vehicles: Vehicle[];
+  /** Policy-level PAP limits. The same values show on every vehicle row. */
+  bodilyInjury?: string | null;
+  propertyDamage?: string | null;
+}) {
   const count = vehicles.length;
   return (
     <section className="ff-card mb-4" data-ff-policy-vehicles="">
@@ -23,9 +32,8 @@ export function VehiclesList({ vehicles }: { vehicles: Vehicle[] }) {
                 <th>Year / make / model</th>
                 <th>VIN</th>
                 <th>Use</th>
-                <th>Annual miles</th>
-                <th>Garaging</th>
-                <th>Lienholder</th>
+                <th>Bodily injury</th>
+                <th>Damage to property</th>
                 <th>Comp deductible</th>
                 <th>Collision deductible</th>
                 <th>Premium</th>
@@ -39,11 +47,8 @@ export function VehiclesList({ vehicles }: { vehicles: Vehicle[] }) {
                   </td>
                   <td className="font-mono text-xs">{cell(vehicle.vin)}</td>
                   <td>{vehicleUseLabel(vehicle.usage)}</td>
-                  <td>{cell(vehicle.annualMiles)}</td>
-                  <td>
-                    {[vehicle.garagingAddress, vehicle.garagingZip].filter(Boolean).join(" · ") || "—"}
-                  </td>
-                  <td>{cell(vehicle.lienholder)}</td>
+                  <td>{cell(bodilyInjury)}</td>
+                  <td>{cell(propertyDamage)}</td>
                   <td>{cell(vehicle.comprehensiveDeductible)}</td>
                   <td>{cell(vehicle.collisionDeductible)}</td>
                   <td>{cell(vehicle.premium)}</td>

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { extractWithGeminiPdf } from "./client";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
+import { autoCoverageExtras, autoCoverageSchedule } from "@/lib/policy/auto-coverage";
+import { groupAppliedFill, proposeFillFromDec } from "@/lib/policy/fill-from-dec";
 
 /**
  * Mocked Gemini JSON for Domenic Iori's Auto dec: two drivers, three vehicles,
@@ -186,6 +188,104 @@ describe("Auto DEC fill mapping", () => {
     expect(applied.values.liability_bi_premium).toBeUndefined();
     expect(applied.values.pip_deductible).toBeUndefined();
     expect(applied.values.comp_deductible?.value).toBe("500");
+  });
+
+  it("lands Veronica Boyle coverage limits, deductibles, and premiums on the policy schedule", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        named_insured: { value: "Veronica Boyle", confidence: 0.95 },
+        current_carrier: { value: "Travelers", confidence: 0.95 },
+        policy_number: { value: "612345678 101 1", confidence: 0.94 },
+        effective_date: { value: "09/21/2026", confidence: 0.95 },
+        expiration_date: { value: "03/21/2027", confidence: 0.95 },
+        current_premium: { value: "2109.00", confidence: 0.93 },
+        discounts: ["Multi-car", "Paperless"],
+        vehicles: [
+          {
+            year: "2018",
+            make: "HONDA",
+            model: "CIVIC",
+            vin: "2HGFC2F59JH123456",
+            use: "Pleasure",
+            annual_miles: "12000",
+            garaging_address: "100 Main St, Orlando FL 32801",
+            lienholder: "Honda Financial",
+            premium: "640.00",
+          },
+        ],
+        premiums: {
+          bodily_injury: "412.00",
+          property_damage: "188",
+          full_term: "2109.00",
+        },
+        coverages: [
+          { name: "Bodily Injury", limit: "100/300", premium: "412.00" },
+          { name: "Property Damage", limit: "100000", premium: "188" },
+          { name: "Personal Injury Protection", limit: "10000", deductible: "1000", premium: "220" },
+          { name: "Medical Payments", limit: "5000", premium: "18" },
+          { name: "Uninsured Motorist", limit: "100/300", premium: "64", stacked: "No" },
+          { name: "Uninsured Motorist Property Damage", limit: "100000", premium: "22" },
+          { name: "Comprehensive", deductible: "500", premium: "90" },
+          { name: "Collision", deductible: "500", premium: "310" },
+          { name: "Rental Reimbursement", limit: "30/900", premium: "12" },
+          { name: "Towing and Labor", limit: "100", premium: "6" },
+          { name: "Full Glass", deductible: "50", premium: "4" },
+        ],
+      },
+      "dec",
+      "auto",
+    );
+    const fields = byKey(mapped);
+    expect(fields.liability_bi_premium?.normalizedValue).toBe("412.00");
+    expect(fields.um_pd?.normalizedValue).toBe("100000");
+    expect(fields.um_stacked?.normalizedValue).toBe("No");
+    expect(fields.glass?.normalizedValue).toBe("50");
+    expect(fields.discounts?.normalizedValue).toMatch(/Multi-car/);
+    expect(fields.current_premium?.normalizedValue).toBe("2109.00");
+    expect(fields.pip?.normalizedValue).toBe("10000");
+    expect(fields.pip_deductible?.normalizedValue).toBe("1000");
+    expect(fields.med_pay?.normalizedValue).toBe("5000");
+    expect(fields.rental_premium?.normalizedValue).toBe("12");
+    expect(fields.towing_premium?.normalizedValue).toBe("6");
+
+    const proposed = proposeFillFromDec({
+      family: "auto",
+      rows: mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+    });
+    const patch = groupAppliedFill(proposed, Object.keys(proposed));
+    const schedule = autoCoverageSchedule({
+      coverageLimits: patch.coverageLimits,
+      comprehensiveDeductible: patch.term.comprehensiveDeductible,
+      collisionDeductible: patch.term.collisionDeductible,
+    });
+    const byRow = Object.fromEntries(schedule.map((row) => [row.key, row]));
+    expect(byRow.liability_bi?.limit).toMatch(/100/);
+    expect(byRow.liability_bi?.premium).toMatch(/412/);
+    expect(byRow.liability_pd?.premium).toMatch(/188/);
+    expect(byRow.pip?.deductible).toMatch(/1,?000/);
+    expect(byRow.pip?.premium).toMatch(/220/);
+    expect(byRow.med_pay?.limit).toMatch(/5,?000/);
+    expect(byRow.med_pay?.premium).toMatch(/18/);
+    expect(byRow.um_uim?.premium).toMatch(/64/);
+    expect(byRow.um_pd?.limit).toMatch(/100/);
+    expect(byRow.um_pd?.premium).toMatch(/22/);
+    expect(byRow.comprehensive?.deductible).toMatch(/500/);
+    expect(byRow.comprehensive?.premium).toMatch(/90/);
+    expect(byRow.collision?.premium).toMatch(/310/);
+    expect(byRow.rental?.premium).toMatch(/12/);
+    expect(byRow.towing?.premium).toMatch(/6/);
+    expect(byRow.glass?.deductible).toMatch(/50/);
+    expect(byRow.glass?.premium).toMatch(/4/);
+    const extras = autoCoverageExtras({ coverageLimits: patch.coverageLimits });
+    expect(extras.find((row) => row.key === "um_stacked")?.value).toBe("Non-stacked");
+    expect(extras.find((row) => row.key === "discounts")?.value).toMatch(/Multi-car/);
+    expect(byRow.liability_bi?.deductible).toBe("—");
   });
 
   it("fills blanks and leaves an agent edit, with a diff", () => {
