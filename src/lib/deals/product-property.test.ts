@@ -14,6 +14,8 @@ import {
   DEAL_INSURED_ADDRESS_KEYS,
   DEAL_MAILING_ADDRESS_KEYS,
   editProductAddress,
+  headerAddressesForProductTab,
+  headerRiskOwnerKey,
   insuredAddressForProductTab,
   instanceOwnsSheet,
   legacyPropertyOwnerKey,
@@ -344,5 +346,246 @@ describe("per-product address edits", () => {
         year_built: { value: "1988" },
       }),
     );
+  });
+});
+
+describe("header addresses follow the active product tab", () => {
+  const instances = [
+    { key: "homeowners", productId: "homeowners" as const },
+    { key: "landlord", productId: "landlord" as const },
+    { key: "homeowners~88uvyj", productId: "homeowners" as const },
+  ];
+  const risks = [
+    { productKey: null as string | null, address1: "8944 Adriatico Lane", city: "Kissimmee", state: "FL", zip: "34747" },
+    { productKey: "landlord", address1: "10358 Northwest 30th Ter", city: "Doral", state: "FL", zip: "33172" },
+  ];
+  const homeSheet = {
+    address1: { value: "10358 NW 30th TER" },
+    property_address: { value: "10358 NW 30th TER, Doral, FL 33172" },
+    city: { value: "Doral" },
+    state: { value: "FL" },
+    zip: { value: "33172" },
+    mailing_address: { value: "PO Box 12" },
+    mailing_city: { value: "Naples" },
+    mailing_state: { value: "FL" },
+    mailing_zip: { value: "34102" },
+  };
+  const landlordSheet = {
+    address1: { value: "10358 Northwest 30th Ter" },
+    city: { value: "Doral" },
+    state: { value: "FL" },
+    zip: { value: "33172" },
+    property_address: { value: "8944 Adriatico Lane, Kissimmee, FL 34747" },
+    mailing_address: { value: "412 Harbor Isle Dr" },
+    mailing_city: { value: "Miami" },
+    mailing_state: { value: "FL" },
+    mailing_zip: { value: "33139" },
+  };
+  const copySheet = {
+    address1: { value: "16021 Northwest 79th Court" },
+    city: { value: "Hialeah" },
+    state: { value: "FL" },
+    zip: { value: "33016" },
+    mailing_address: { value: "16021 Northwest 79th Court, Hialeah, FL 33016" },
+    mailing_city: { value: "Hialeah" },
+    mailing_state: { value: "FL" },
+    mailing_zip: { value: "33016" },
+  };
+
+  function forTab(key: string) {
+    const instance = instances.find((row) => row.key === key)!;
+    const sheet = key === "homeowners" ? homeSheet : key === "landlord" ? landlordSheet : copySheet;
+    return headerAddressesForProductTab({
+      instanceKey: instance.key,
+      ownsSheet: instanceOwnsSheet(instance, instances),
+      sheetValues: sheet,
+      ownRisk: tabRiskForInstance(risks, instance.key, headerRiskOwnerKey(instances)),
+    });
+  }
+
+  it("reads each tab's own insured and mailing, not the shared oneliner or the first risk", () => {
+    expect(headerRiskOwnerKey(instances)).toBe("homeowners");
+    const ho3 = forTab("homeowners");
+    expect(ho3.insured).toEqual({
+      address1: "8944 Adriatico Lane",
+      city: "Kissimmee",
+      state: "FL",
+      zip: "34747",
+    });
+    expect(ho3.insured.address1).not.toContain("10358");
+    expect(ho3.mailing).toEqual({
+      address1: "PO Box 12",
+      city: "Naples",
+      state: "FL",
+      zip: "34102",
+    });
+
+    const dp3 = forTab("landlord");
+    expect(dp3.insured.address1).toBe("10358 Northwest 30th Ter");
+    expect(dp3.insured.city).toBe("Doral");
+    expect(dp3.insured.address1).not.toContain("8944");
+    expect(dp3.mailing.address1).toBe("412 Harbor Isle Dr");
+    expect(dp3.mailing.city).toBe("Miami");
+
+    const second = forTab("homeowners~88uvyj");
+    expect(second.insured).toEqual({
+      address1: "16021 Northwest 79th Court",
+      city: "Hialeah",
+      state: "FL",
+      zip: "33016",
+    });
+    expect(second.mailing).toEqual({
+      address1: "16021 Northwest 79th Court, Hialeah, FL 33016",
+      city: "",
+      state: "",
+      zip: "",
+    });
+    expect(second.insured.address1).not.toBe(ho3.insured.address1);
+    expect(second.mailing.address1).not.toBe(ho3.mailing.address1);
+  });
+
+  it("ignores property_address and another tab's sheet when this form has no address1", () => {
+    const bare = headerAddressesForProductTab({
+      instanceKey: "landlord",
+      ownsSheet: true,
+      sheetValues: {
+        property_address: { value: "10358 NW 30th TER, Doral, FL 33172" },
+        mailing_address: { value: "9 Mail St" },
+        mailing_city: { value: "Hialeah" },
+        mailing_state: { value: "FL" },
+        mailing_zip: { value: "33016" },
+      },
+      ownRisk: null,
+    });
+    expect(bare.insured.address1).toBe("");
+    expect(bare.mailing.address1).toBe("9 Mail St");
+  });
+
+  it("reads a shared-sheet sidecar instead of the owner's cells", () => {
+    const shared = headerAddressesForProductTab({
+      instanceKey: "landlord",
+      ownsSheet: false,
+      sheetValues: {
+        address1: { value: "8944 Adriatico Lane" },
+        city: { value: "Kissimmee" },
+        state: { value: "FL" },
+        zip: { value: "34747" },
+        mailing_address: { value: "PO Box 12" },
+        "ffpa:landlord:address1": { value: "8662 Northwest 25th St" },
+        "ffpa:landlord:city": { value: "Miami" },
+        "ffpa:landlord:state": { value: "FL" },
+        "ffpa:landlord:zip": { value: "33147" },
+        "ffpa:landlord:mailing_address": { value: "1 Owner Home" },
+        "ffpa:landlord:mailing_city": { value: "Miami" },
+        "ffpa:landlord:mailing_state": { value: "FL" },
+        "ffpa:landlord:mailing_zip": { value: "33101" },
+      },
+      ownRisk: null,
+    });
+    expect(shared.insured).toEqual({
+      address1: "8662 Northwest 25th St",
+      city: "Miami",
+      state: "FL",
+      zip: "33147",
+    });
+    expect(shared.mailing.address1).toBe("1 Owner Home");
+    expect(shared.mailing.city).toBe("Miami");
+  });
+
+  it("uses premises, garaging, or the business address on non-home forms", () => {
+    const gl = headerAddressesForProductTab({
+      instanceKey: "gl",
+      ownsSheet: true,
+      sheetValues: {
+        address1: { value: "10 Dock St" },
+        city: { value: "Miami" },
+        state: { value: "FL" },
+        zip: { value: "33101" },
+        mailing_address: { value: "PO Box 9" },
+        mailing_city: { value: "Miami" },
+        mailing_state: { value: "FL" },
+        mailing_zip: { value: "33101" },
+      },
+      ownRisk: null,
+    });
+    expect(gl.insured.address1).toBe("10 Dock St");
+    expect(gl.mailing.address1).toBe("PO Box 9");
+
+    const premisesOnly = headerAddressesForProductTab({
+      instanceKey: "gl",
+      ownsSheet: true,
+      sheetValues: {
+        premises_address: { value: "44 Warehouse Rd" },
+        premises_city: { value: "Tampa" },
+        premises_state: { value: "FL" },
+        premises_zip: { value: "33602" },
+      },
+      ownRisk: null,
+    });
+    expect(premisesOnly.insured).toEqual({
+      address1: "44 Warehouse Rd",
+      city: "Tampa",
+      state: "FL",
+      zip: "33602",
+    });
+
+    const auto = headerAddressesForProductTab({
+      instanceKey: "auto",
+      ownsSheet: true,
+      sheetValues: {
+        garaging_address: { value: "500 Garage Rd" },
+        garaging_zip: { value: "33172" },
+      },
+      ownRisk: null,
+    });
+    expect(auto.insured.address1).toBe("500 Garage Rd");
+    expect(auto.insured.zip).toBe("33172");
+    expect(auto.mailing.address1).toBe("");
+
+    const businessOnly = headerAddressesForProductTab({
+      instanceKey: "gl",
+      ownsSheet: true,
+      sheetValues: {
+        mailing_address: { value: "100 Business Blvd" },
+        city: { value: "Miami" },
+        state: { value: "FL" },
+        zip: { value: "33101" },
+        premises_same_as_business: { value: "Yes" },
+      },
+      ownRisk: null,
+    });
+    expect(businessOnly.insured).toEqual({
+      address1: "100 Business Blvd",
+      city: "Miami",
+      state: "FL",
+      zip: "33101",
+    });
+    expect(businessOnly.mailing.address1).toBe("100 Business Blvd");
+  });
+
+  it("gives an auto-only deal's first tab the unscoped risk and not the next auto tab", () => {
+    const autos = [
+      { key: "auto", productId: "auto" as const },
+      { key: "auto~2", productId: "auto" as const },
+    ];
+    expect(headerRiskOwnerKey(autos)).toBe("auto");
+    const rows = [
+      { productKey: null as string | null, address1: "18 Harbor Ct", city: "Miami", state: "FL", zip: "33101" },
+    ];
+    const first = headerAddressesForProductTab({
+      instanceKey: "auto",
+      ownsSheet: true,
+      sheetValues: {},
+      ownRisk: tabRiskForInstance(rows, "auto", headerRiskOwnerKey(autos)),
+    });
+    const second = headerAddressesForProductTab({
+      instanceKey: "auto~2",
+      ownsSheet: true,
+      sheetValues: { address1: { value: "9 Pine St" }, city: { value: "Orlando" }, state: { value: "FL" }, zip: { value: "32801" } },
+      ownRisk: tabRiskForInstance(rows, "auto~2", headerRiskOwnerKey(autos)),
+    });
+    expect(first.insured.address1).toBe("18 Harbor Ct");
+    expect(second.insured.address1).toBe("9 Pine St");
+    expect(second.insured.address1).not.toBe(first.insured.address1);
   });
 });

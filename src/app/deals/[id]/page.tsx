@@ -50,7 +50,6 @@ import { loadRecordContext } from "@/lib/record-context";
 import { quotingFormById, quotingUnlockedForLine } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
 import { quotingFormIsManufacturedHome } from "@/lib/quote-sheet/home-address-fill";
-import { resolveDealHeaderAddresses } from "@/lib/deals/header-addresses";
 import {
   DWELLING_INSURED_ADDRESS_LABEL,
   DWELLING_MAILING_ADDRESS_LABEL,
@@ -84,6 +83,8 @@ import {
   storageLineForInstance,
 } from "@/lib/deals/product-instances";
 import {
+  headerAddressesForProductTab,
+  headerRiskOwnerKey,
   instanceOwnsSheet,
   insuredAddressForProductTab,
   insuredFieldsFromAddress,
@@ -296,15 +297,6 @@ export default async function DealPage({
   const partyName =
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
-  const dwellingFire = isDwellingFireProduct(deal.quotingForm, deal.policySubType);
-  const headerAddresses = resolveDealHeaderAddresses({
-    stored: dealValues,
-    risk,
-    contact,
-    lead,
-    account,
-    dwellingFire,
-  });
   const clientAddress = homeAddressFromRecords({ risk, lead, contact });
   const officeAddress = officeMeetingAddress({
     agencyName: agencyRow?.agencyName,
@@ -365,6 +357,16 @@ export default async function DealPage({
   const activePropertyRisk = isPropertyCoveringProduct(activeProduct)
     ? riskForInstance(propertyRiskRows, activeInstance.key, legacyPropertyKey)
     : null;
+  const headerAddresses = headerAddressesForProductTab({
+    instanceKey: activeInstance.key,
+    ownsSheet: activeOwnsPropertySheet,
+    sheetValues: activeSheet.values,
+    ownRisk: riskForInstance(propertyRiskRows, activeInstance.key, headerRiskOwnerKey(productInstances)),
+  });
+  const headerDwellingFire = isDwellingFireProduct(
+    dealProductDef(activeProduct).quotingForm,
+    activeProduct,
+  );
   const activePropertyAddress = isPropertyCoveringProduct(activeProduct)
     ? resolveProductPropertyAddress({
         instanceKey: activeInstance.key,
@@ -830,8 +832,8 @@ export default async function DealPage({
                 dob={dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth}
                 insuredAddress={headerAddresses.insured}
                 mailingAddress={headerAddresses.mailing}
-                insuredLabel={dwellingFire ? DWELLING_INSURED_ADDRESS_LABEL : undefined}
-                mailingLabel={dwellingFire ? DWELLING_MAILING_ADDRESS_LABEL : undefined}
+                insuredLabel={headerDwellingFire ? DWELLING_INSURED_ADDRESS_LABEL : undefined}
+                mailingLabel={headerDwellingFire ? DWELLING_MAILING_ADDRESS_LABEL : undefined}
                 stage={displayProductStage({
                   stage: activeProductState.stage,
                   selectedQuoteIds: activeProductState.selectedQuoteIds,

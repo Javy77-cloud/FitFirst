@@ -286,7 +286,8 @@ describe("DealPackageShell address display", () => {
     expect(shell).toMatch(/mailingHeaderValue/);
     expect(shell).not.toMatch(/label: "Mailing"/);
     expect(source("src/lib/deals/header-addresses.ts")).toContain("Same as insured address");
-    expect(page).toMatch(/resolveDealHeaderAddresses/);
+    expect(page).toMatch(/headerAddressesForProductTab/);
+    expect(page).not.toMatch(/resolveDealHeaderAddresses/);
     expect(page).toMatch(/insuredAddress=\{headerAddresses\.insured\}/);
     expect(page).toMatch(/mailingAddress=\{headerAddresses\.mailing\}/);
     expect(page).toMatch(/name=\{partyName\}/);
