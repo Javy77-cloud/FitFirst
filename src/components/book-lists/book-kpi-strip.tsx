@@ -34,14 +34,21 @@ export function BookKpiStrip({
   items,
   share = null,
   shareTitle = "Premium share",
+  flat = false,
 }: {
   label: string;
   items: BookKpiItem[];
   share?: BookKpiShare[] | null;
   shareTitle?: string | null;
+  /** Contacts: counters sit on the page, not on a card or strip. */
+  flat?: boolean;
 }) {
   return (
-    <section className="ff-book-kpi" data-ff-book-kpi="" aria-label={label}>
+    <section
+      className={flat ? "ff-book-kpi ff-book-kpi-flat" : "ff-book-kpi"}
+      data-ff-book-kpi={flat ? "flat" : ""}
+      aria-label={label}
+    >
       {items.map((item) => (
         <div
           key={item.id}

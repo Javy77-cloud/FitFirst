@@ -22,6 +22,10 @@ export async function ModuleListActions({
   children,
   showMacrosLink = true,
   showFollowUp,
+  afterCheck = null,
+  afterActions = null,
+  end = null,
+  hideSelectionCue = false,
 }: {
   module: CrmListModule;
   recordIds: string[];
@@ -29,6 +33,10 @@ export async function ModuleListActions({
   children: ReactNode;
   showMacrosLink?: boolean;
   showFollowUp?: boolean;
+  afterCheck?: ReactNode;
+  afterActions?: ReactNode;
+  end?: ReactNode;
+  hideSelectionCue?: boolean;
 }) {
   const tagModule = tagModuleForCrmList(module);
   const [macros, buttons, userRows, templateRows, fieldDefs, tagCatalog] = await Promise.all([
@@ -73,6 +81,10 @@ export async function ModuleListActions({
             actionKind: button.actionKind,
             functionApiName: button.functionApiName,
           }))}
+          afterCheck={afterCheck}
+          afterActions={afterActions}
+          end={end}
+          hideSelectionCue={hideSelectionCue}
         />
       </div>
       {children}

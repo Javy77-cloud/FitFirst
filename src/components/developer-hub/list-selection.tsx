@@ -174,6 +174,10 @@ export function ListMassBar({
   fieldOptions = {},
   tagCatalog = [],
   showMacrosLink = true,
+  afterCheck = null,
+  afterActions = null,
+  end = null,
+  hideSelectionCue = false,
 }: {
   module: CrmListModule;
   macros: MacroOption[];
@@ -186,6 +190,14 @@ export function ListMassBar({
   tagCatalog?: MassTagCatalogRow[];
   showFollowUp?: boolean;
   showMacrosLink?: boolean;
+  /** Contacts list: live search, placed immediately after the checkmark. */
+  afterCheck?: ReactNode;
+  /** Contacts list: Filter, Saved, and Save As, placed immediately after Actions. */
+  afterActions?: ReactNode;
+  /** Contacts list: New Contact, last on the right edge. */
+  end?: ReactNode;
+  /** Contacts list: drop the “Select rows for Actions” cue. Checkmark stays. */
+  hideSelectionCue?: boolean;
 }) {
   const { selected, clear, listColumns } = useSelection();
   const [message, setMessage] = useState<string | null>(null);
@@ -202,13 +214,17 @@ export function ListMassBar({
       <div
         className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2"
         data-testid="list-selection-bar"
+        data-ff-contacts-command={hideSelectionCue ? "" : undefined}
       >
         {recordIds.length ? <SelectAllCheckbox ids={recordIds} /> : null}
-        <span className="text-xs text-muted-foreground">
-          {selected.length === 0
-            ? "Select rows for Actions"
-            : `${selected.length} selected`}
-        </span>
+        {afterCheck}
+        {hideSelectionCue ? null : (
+          <span className="text-xs text-muted-foreground">
+            {selected.length === 0
+              ? "Select rows for Actions"
+              : `${selected.length} selected`}
+          </span>
+        )}
         <SelectionActionsMenu
           module={module}
           selected={selected}
@@ -223,6 +239,7 @@ export function ListMassBar({
           onWidget={setWidget}
           onClear={clear}
         />
+        {afterActions}
         <MassUpdateMenu
           module={module}
           selected={selected}
@@ -271,6 +288,7 @@ export function ListMassBar({
           className="ml-auto inline-flex items-center gap-1"
           aria-label="List columns and settings"
         />
+        {end}
       </div>
       {message ? <p className="text-sm text-navy">{message}</p> : null}
       {widget ? <WidgetHost name={widget.name} url={widget.url} onClose={() => setWidget(null)} /> : null}

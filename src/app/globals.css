@@ -4658,6 +4658,31 @@ tr[data-ff-activity-selected="true"] {
   text-transform: none;
   font-weight: 650;
 }
+/* Contacts only: one flat counter row. Other books keep the card strip. */
+.ff-book-kpi-flat {
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 1.75rem;
+  /* About two rows of air before the Contacts actions bar (that bar also has pt-3). */
+  margin: 0.35rem 0 3rem;
+  padding: 0.15rem 1.5rem 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  overflow-x: auto;
+}
+.ff-book-kpi-flat .ff-book-kpi-item {
+  min-width: max-content;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+[data-ff-contacts-command] {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
 .ff-book-share {
   display: grid;
   grid-template-columns: 3.35rem minmax(10.5rem, 1fr);
