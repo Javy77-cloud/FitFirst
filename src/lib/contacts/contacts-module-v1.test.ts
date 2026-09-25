@@ -24,6 +24,17 @@ describe("Contacts module v1 standards", () => {
     const page = readFileSync("src/app/contacts/page.tsx", "utf8");
     expect(page).toMatch(/AddContactDialog/);
     expect(page).toMatch(/data-ff-contacts-list-actions/);
+    expect(page).not.toMatch(/data-ff-contacts-list=/);
+    expect(page).not.toMatch(/data-ff-healthsherpa-review-banner/);
+    expect(page).toMatch(/BookKpiStrip[\s\S]*flat/);
+    expect(page).toMatch(/banner=\{null\}/);
+    expect(page).toMatch(/hideSelectionCue/);
+    expect(page.indexOf("afterCheck={<PipelineFilterSearch />}")).toBeLessThan(
+      page.indexOf("afterActions={<PipelineFilterControls />}"),
+    );
+    expect(page.indexOf("afterActions={<PipelineFilterControls />}")).toBeLessThan(
+      page.indexOf("data-ff-contacts-list-actions"),
+    );
     expect(page).not.toMatch(/Add contact/);
     expect(page).not.toMatch(/lg:grid-cols-\[320px/);
     expect(page).toMatch(/BookCommandWorkspace/);

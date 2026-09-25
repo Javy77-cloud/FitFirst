@@ -400,7 +400,8 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     expect(source("src/lib/healthsherpa/inbound.ts")).toMatch(/HEALTHSHERPA_NEEDS_REVIEW_REASON/);
     expect(source("src/lib/healthsherpa/inbound.ts")).not.toMatch(/console\.(log|info|debug|error)\(/);
     expect(source("src/lib/desk-id.ts")).toMatch(/healthsherpa-review/);
-    expect(source("src/app/contacts/page.tsx")).toMatch(/data-ff-healthsherpa-review-banner/);
+    expect(source("src/app/contacts/page.tsx")).not.toMatch(/data-ff-healthsherpa-review-banner/);
+    expect(source("src/app/contacts/page.tsx")).not.toMatch(/HealthSherpa enrollment/);
     expect(source("src/app/contacts/healthsherpa-review/page.tsx")).toMatch(/HealthSherpaReviewQueue/);
     expect(source("src/app/developer/healthsherpa/page.tsx")).toMatch(/HealthSherpaReviewQueue/);
     expect(source("src/components/healthsherpa/review-queue.tsx")).toMatch(/Link to existing contact/);

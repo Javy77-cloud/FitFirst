@@ -1,6 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { ConfigurePageFiltersButton } from "@/components/filters/configure-page-filters";
@@ -59,201 +70,106 @@ const DEFAULT_PRESERVE = [
   "attention",
 ] as const;
 
-export function PipelineFilterPopover({
-  moduleId,
-  fields: fieldsProp,
-  searchPlaceholder = "Contains…",
-  preserveParams = DEFAULT_PRESERVE,
-  canConfigure = false,
-  configureSlot,
-  onConfigure,
-  searchClassName = "min-w-40",
-  searchInputClassName = "h-8 w-52 border-[#6b7280]",
-}: {
+type PipelineFilterContextValue = {
   moduleId: string;
   fields: FilterField[];
-  searchPlaceholder?: string;
-  preserveParams?: readonly string[];
-  canConfigure?: boolean;
-  /** Footer slot (e.g. custom Configure control). */
+  searchPlaceholder: string;
+  searchClassName: string;
+  searchInputClassName: string;
+  current: Record<string, string>;
+  activeFilterCount: number;
+  saved: SavedNamedFilter[];
+  naming: boolean;
+  name: string;
+  setName: (value: string) => void;
+  renamingId: string | null;
+  setRenamingId: (id: string | null) => void;
+  renameDraft: string;
+  setRenameDraft: (value: string) => void;
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  configureOpen: boolean;
+  setConfigureOpen: (open: boolean) => void;
+  panelRef: RefObject<HTMLDivElement | null>;
+  filterActive: boolean;
+  showConfigure: boolean;
   configureSlot?: ReactNode;
-  /** Called when footer Configure filters… is clicked (closes panel first). */
-  onConfigure?: () => void;
-  searchClassName?: string;
-  searchInputClassName?: string;
-}) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const search = useSearchParams();
-  const fields = fieldsProp ?? [];
-  const keys = useMemo(() => fields.map((field) => field.key), [fields]);
-  const preserve = useMemo(() => [...preserveParams], [preserveParams]);
+  canConfigure: boolean;
+  hasCurrent: boolean;
+  setField: (key: string, value: string) => void;
+  openConfigure: () => void;
+  saveCurrent: () => void;
+  setNaming: (value: boolean) => void;
+  clearFilters: () => void;
+  commitRename: (id: string) => void;
+  remove: (id: string) => void;
+  go: (params: Record<string, string>) => void;
+};
 
-  const current = useMemo(() => {
-    const params: Record<string, string> = {};
-    for (const key of keys) {
-      const value = search.get(key);
-      if (value) params[key] = value;
-    }
-    const q = search.get("q");
-    if (q) params.q = q;
-    return params;
-  }, [keys, search]);
+const PipelineFilterContext = createContext<PipelineFilterContextValue | null>(null);
 
-  const activeFilterCount = useMemo(
-    () => keys.reduce((count, key) => count + (current[key] ? 1 : 0), 0),
-    [keys, current],
+function usePipelineFilter() {
+  const value = useContext(PipelineFilterContext);
+  if (!value) throw new Error("PipelineFilterPopover is required.");
+  return value;
+}
+
+export function PipelineFilterSearch() {
+  const {
+    moduleId,
+    current,
+    searchPlaceholder,
+    searchClassName,
+    searchInputClassName,
+  } = usePipelineFilter();
+  return (
+    <LiveContainsInput
+      moduleId={moduleId}
+      initialQuery={current.q ?? ""}
+      placeholder={searchPlaceholder}
+      aria-label="Contains Search"
+      className={searchClassName}
+      inputClassName={searchInputClassName}
+    />
   );
+}
 
-  const [saved, setSaved] = useState<SavedNamedFilter[]>([]);
-  const [naming, setNaming] = useState(false);
-  const [name, setName] = useState("");
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameDraft, setRenameDraft] = useState("");
-  const [open, setOpen] = useState(false);
-  const [configureOpen, setConfigureOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+export function PipelineFilterControls() {
+  const {
+    moduleId,
+    fields,
+    current,
+    activeFilterCount,
+    saved,
+    naming,
+    name,
+    setName,
+    renamingId,
+    setRenamingId,
+    renameDraft,
+    setRenameDraft,
+    open,
+    setOpen,
+    configureOpen,
+    setConfigureOpen,
+    panelRef,
+    filterActive,
+    showConfigure,
+    configureSlot,
+    canConfigure,
+    hasCurrent,
+    setField,
+    openConfigure,
+    saveCurrent,
+    setNaming,
+    clearFilters,
+    commitRename,
+    remove,
+    go,
+  } = usePipelineFilter();
 
-  useEffect(() => {
-    setSaved(readSaved(moduleId));
-  }, [moduleId]);
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: MouseEvent) {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (panelRef.current?.contains(target)) return;
-      setOpen(false);
-    }
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  function preservedFromUrl(): Record<string, string> {
-    const next: Record<string, string> = {};
-    for (const key of preserve) {
-      const value = search.get(key);
-      if (value) next[key] = value;
-    }
-    return next;
-  }
-
-  function go(filterParams: Record<string, string>) {
-    const next: Record<string, string> = { ...preservedFromUrl() };
-    for (const [key, value] of Object.entries(filterParams)) {
-      if (preserve.includes(key)) continue;
-      if (value) next[key] = value;
-    }
-    if ("q" in filterParams) {
-      if (filterParams.q) next.q = filterParams.q;
-      else delete next.q;
-    } else {
-      const live = getLiveQuery(moduleId).trim();
-      if (live) next.q = live;
-    }
-    const query = queryFromParams(next);
-    router.push(query ? `${pathname}?${query}` : pathname);
-  }
-
-  /** Clear filter keys + q; keep preserveParams and any other non-filter URL params. */
-  function clearFilters() {
-    setLiveQuery(moduleId, "");
-    const next: Record<string, string> = { ...preservedFromUrl() };
-    search.forEach((value, key) => {
-      if (key === "q") return;
-      if (keys.includes(key)) return;
-      next[key] = value;
-    });
-    const query = queryFromParams(next);
-    router.push(query ? `${pathname}?${query}` : pathname);
-  }
-
-  function setField(key: string, value: string) {
-    const next = { ...current };
-    if (value) next[key] = value;
-    else delete next[key];
-    go(next);
-  }
-
-  function saveCurrent() {
-    const label = name.trim();
-    const params = { ...current };
-    const live = getLiveQuery(moduleId).trim();
-    if (live) params.q = live;
-    for (const key of preserve) delete params[key];
-    if (!label || Object.keys(params).length === 0) return;
-    const next = [
-      ...saved.filter((row) => !sameFilterParams(row.params, params)),
-      { id: crypto.randomUUID(), name: label, params },
-    ];
-    setSaved(next);
-    writeSaved(moduleId, next);
-    setName("");
-    setNaming(false);
-    flashAction("filter-saved");
-  }
-
-  function remove(id: string) {
-    const next = saved.filter((row) => row.id !== id);
-    setSaved(next);
-    writeSaved(moduleId, next);
-    if (renamingId === id) {
-      setRenamingId(null);
-      setRenameDraft("");
-    }
-  }
-
-  function commitRename(id: string) {
-    const label = renameDraft.trim();
-    if (!label) {
-      setRenamingId(null);
-      setRenameDraft("");
-      return;
-    }
-    const next = saved.map((row) => (row.id === id ? { ...row, name: label } : row));
-    setSaved(next);
-    writeSaved(moduleId, next);
-    setRenamingId(null);
-    setRenameDraft("");
-    flashAction("filter-saved");
-  }
-
-  function openConfigure() {
-    setOpen(false);
-    if (onConfigure) {
-      onConfigure();
-      return;
-    }
-    setConfigureOpen(true);
-  }
-
-  const liveQ = getLiveQuery(moduleId).trim();
-  const hasCurrent = Object.keys(current).length > 0 || Boolean(liveQ);
-  const filterActive = activeFilterCount > 0;
-  const showConfigure = Boolean(configureSlot || onConfigure || canConfigure);
-
-  const bar = (
-    <div
-      className="mb-3 flex flex-wrap items-center gap-1.5 text-xs"
-      data-ff-pipeline-filters={moduleId}
-    >
-      <LiveContainsInput
-        moduleId={moduleId}
-        initialQuery={current.q ?? ""}
-        placeholder={searchPlaceholder}
-        aria-label="Contains Search"
-        className={searchClassName}
-        inputClassName={searchInputClassName}
-      />
-
+  return (
+    <>
       <div className="relative" ref={panelRef}>
         <button
           type="button"
@@ -491,12 +407,245 @@ export function PipelineFilterPopover({
           onOpenChange={setConfigureOpen}
         />
       ) : null}
+    </>
+  );
+}
+
+export function PipelineFilterPopover({
+  moduleId,
+  fields: fieldsProp,
+  searchPlaceholder = "Contains…",
+  preserveParams = DEFAULT_PRESERVE,
+  canConfigure = false,
+  configureSlot,
+  onConfigure,
+  searchClassName = "min-w-40",
+  searchInputClassName = "h-8 w-52 border-[#6b7280]",
+  children,
+}: {
+  moduleId: string;
+  fields: FilterField[];
+  searchPlaceholder?: string;
+  preserveParams?: readonly string[];
+  canConfigure?: boolean;
+  /** Footer slot (e.g. custom Configure control). */
+  configureSlot?: ReactNode;
+  /** Called when footer Configure filters… is clicked (closes panel first). */
+  onConfigure?: () => void;
+  searchClassName?: string;
+  searchInputClassName?: string;
+  /** When set, the caller places search and filter controls. Default renders both in one bar. */
+  children?: ReactNode;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams();
+  const fields = fieldsProp ?? [];
+  const keys = useMemo(() => fields.map((field) => field.key), [fields]);
+  const preserve = useMemo(() => [...preserveParams], [preserveParams]);
+
+  const current = useMemo(() => {
+    const params: Record<string, string> = {};
+    for (const key of keys) {
+      const value = search.get(key);
+      if (value) params[key] = value;
+    }
+    const q = search.get("q");
+    if (q) params.q = q;
+    return params;
+  }, [keys, search]);
+
+  const activeFilterCount = useMemo(
+    () => keys.reduce((count, key) => count + (current[key] ? 1 : 0), 0),
+    [keys, current],
+  );
+
+  const [saved, setSaved] = useState<SavedNamedFilter[]>([]);
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [open, setOpen] = useState(false);
+  const [configureOpen, setConfigureOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSaved(readSaved(moduleId));
+  }, [moduleId]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  function preservedFromUrl(): Record<string, string> {
+    const next: Record<string, string> = {};
+    for (const key of preserve) {
+      const value = search.get(key);
+      if (value) next[key] = value;
+    }
+    return next;
+  }
+
+  function go(filterParams: Record<string, string>) {
+    const next: Record<string, string> = { ...preservedFromUrl() };
+    for (const [key, value] of Object.entries(filterParams)) {
+      if (preserve.includes(key)) continue;
+      if (value) next[key] = value;
+    }
+    if ("q" in filterParams) {
+      if (filterParams.q) next.q = filterParams.q;
+      else delete next.q;
+    } else {
+      const live = getLiveQuery(moduleId).trim();
+      if (live) next.q = live;
+    }
+    const query = queryFromParams(next);
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }
+
+  /** Clear filter keys + q; keep preserveParams and any other non-filter URL params. */
+  function clearFilters() {
+    setLiveQuery(moduleId, "");
+    const next: Record<string, string> = { ...preservedFromUrl() };
+    search.forEach((value, key) => {
+      if (key === "q") return;
+      if (keys.includes(key)) return;
+      next[key] = value;
+    });
+    const query = queryFromParams(next);
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }
+
+  function setField(key: string, value: string) {
+    const next = { ...current };
+    if (value) next[key] = value;
+    else delete next[key];
+    go(next);
+  }
+
+  function saveCurrent() {
+    const label = name.trim();
+    const params = { ...current };
+    const live = getLiveQuery(moduleId).trim();
+    if (live) params.q = live;
+    for (const key of preserve) delete params[key];
+    if (!label || Object.keys(params).length === 0) return;
+    const next = [
+      ...saved.filter((row) => !sameFilterParams(row.params, params)),
+      { id: crypto.randomUUID(), name: label, params },
+    ];
+    setSaved(next);
+    writeSaved(moduleId, next);
+    setName("");
+    setNaming(false);
+    flashAction("filter-saved");
+  }
+
+  function remove(id: string) {
+    const next = saved.filter((row) => row.id !== id);
+    setSaved(next);
+    writeSaved(moduleId, next);
+    if (renamingId === id) {
+      setRenamingId(null);
+      setRenameDraft("");
+    }
+  }
+
+  function commitRename(id: string) {
+    const label = renameDraft.trim();
+    if (!label) {
+      setRenamingId(null);
+      setRenameDraft("");
+      return;
+    }
+    const next = saved.map((row) => (row.id === id ? { ...row, name: label } : row));
+    setSaved(next);
+    writeSaved(moduleId, next);
+    setRenamingId(null);
+    setRenameDraft("");
+    flashAction("filter-saved");
+  }
+
+  function openConfigure() {
+    setOpen(false);
+    if (onConfigure) {
+      onConfigure();
+      return;
+    }
+    setConfigureOpen(true);
+  }
+
+  const liveQ = getLiveQuery(moduleId).trim();
+  const hasCurrent = Object.keys(current).length > 0 || Boolean(liveQ);
+  const filterActive = activeFilterCount > 0;
+  const showConfigure = Boolean(configureSlot || onConfigure || canConfigure);
+
+  const value: PipelineFilterContextValue = {
+    moduleId,
+    fields,
+    searchPlaceholder,
+    searchClassName,
+    searchInputClassName,
+    current,
+    activeFilterCount,
+    saved,
+    naming,
+    name,
+    setName,
+    renamingId,
+    setRenamingId,
+    renameDraft,
+    setRenameDraft,
+    open,
+    setOpen,
+    configureOpen,
+    setConfigureOpen,
+    panelRef,
+    filterActive,
+    showConfigure,
+    configureSlot,
+    canConfigure,
+    hasCurrent,
+    setField,
+    openConfigure,
+    saveCurrent,
+    setNaming,
+    clearFilters,
+    commitRename,
+    remove,
+    go,
+  };
+
+  const bar = (
+    <div
+      className="mb-3 flex flex-wrap items-center gap-1.5 text-xs"
+      data-ff-pipeline-filters={moduleId}
+    >
+      <PipelineFilterSearch />
+      <PipelineFilterControls />
     </div>
   );
 
   return (
     <PageFilterChromeProvider canConfigure={canConfigure} moduleId={moduleId}>
-      {bar}
+      <PipelineFilterContext.Provider value={value}>
+        {children ?? bar}
+      </PipelineFilterContext.Provider>
     </PageFilterChromeProvider>
   );
 }
