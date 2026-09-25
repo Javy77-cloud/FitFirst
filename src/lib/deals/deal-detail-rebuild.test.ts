@@ -106,7 +106,7 @@ describe("deal detail final rebuild", () => {
     expect(docs).toMatch(/ff-card w-full/);
     expect(docs).toMatch(/Document Upload/);
     expect(docs).toMatch(/data-ff-document-upload/);
-    expect(docs).toMatch(/max-w-3xl/);
+    expect(docs).not.toMatch(/max-w-3xl/);
     expect(docs).toMatch(/Deal Document Library/);
     expect(docs).toMatch(/ChevronUp/);
     expect(docs).toMatch(/ChevronDown/);
