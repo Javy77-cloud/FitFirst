@@ -11,6 +11,7 @@ import {
 import { formatDay, formatMoney } from "@/lib/domain";
 import type { ElsewhereCoverageRow } from "@/lib/db/schema";
 import { isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
+import { policyFormBesideLine } from "@/lib/policy/form-label";
 import { cn } from "@/lib/utils";
 
 export type CoveragePolicyRow = GapPolicyInput & {
@@ -19,6 +20,8 @@ export type CoveragePolicyRow = GapPolicyInput & {
   expirationDate?: Date | string | null;
   carrierName?: string | null;
   policyType?: string | null;
+  policySubType?: string | null;
+  formType?: string | null;
 };
 
 /**
@@ -67,6 +70,8 @@ export function ContactCoveragePanel({
             {inForce.map((row) => {
               const focused = focusPolicyId === row.id;
               const renewal = row.renewalDate ?? row.expirationDate;
+              const line = gapLineLabel(classifyCoverageLine(row.lineOfBusiness));
+              const form = policyFormBesideLine(line, row);
               return (
                 <li
                   key={row.id}
@@ -81,9 +86,9 @@ export function ContactCoveragePanel({
                         Line
                       </p>
                       <p className="truncate">
-                        {gapLineLabel(classifyCoverageLine(row.lineOfBusiness))}
-                        {row.policyType ? (
-                          <span className="text-xs text-muted-foreground"> · {row.policyType}</span>
+                        {line}
+                        {form ? (
+                          <span className="text-xs text-muted-foreground"> · {form}</span>
                         ) : null}
                       </p>
                     </div>

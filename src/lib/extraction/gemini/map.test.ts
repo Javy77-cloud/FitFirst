@@ -308,6 +308,10 @@ describe("rosa desk training extract prompts", () => {
     expect(user).toMatch(/Rating Characteristics/);
     expect(system).toMatch(/personal_injury/);
     expect(system).toMatch(/do not invent Owner from unit-owners/);
+    expect(user).toMatch(/Catastrophic Ground Cover Collapse/);
+    expect(sheetKeysForGeminiKey("Catastrophic Ground Cover Collapse Coverage")).toEqual([
+      "catastrophic_ground_cover_collapse",
+    ]);
     expect(sheetKeysForGeminiKey("sinkhole_loss_coverage")).toEqual(["sinkhole_deductible"]);
     expect(sheetKeysForGeminiKey("limited_fungi_wet_or_dry_rot_or_bacteria_coverage")).toEqual([
       "limited_fungi",
@@ -326,6 +330,7 @@ describe("rosa desk training extract prompts", () => {
         "loss_assessment",
         "limited_fungi",
         "unit_owners_coverage_a_premium",
+        "catastrophic_ground_cover_collapse_premium",
         "property_and_liability_coverages_premium",
       ]),
     );

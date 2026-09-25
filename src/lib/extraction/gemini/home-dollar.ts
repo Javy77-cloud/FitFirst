@@ -49,6 +49,8 @@ const HOME_OPTIONAL_DOLLAR_KEYS = new Set([
   "limited_fungi_premium",
   "unit_owners_coverage_a",
   "unit_owners_coverage_a_premium",
+  "catastrophic_ground_cover_collapse",
+  "catastrophic_ground_cover_collapse_premium",
 ]);
 
 const HOME_DEDUCTIBLE_KEYS = new Set([

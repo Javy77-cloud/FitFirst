@@ -208,7 +208,6 @@ describe("account card glance", () => {
     expect(card.facts?.map((fact) => fact.label)).toEqual([
       "Heritage",
       "HO3",
-      "Home",
       "$2,184",
       "Renewal $2,547",
       "+$363",
@@ -218,6 +217,7 @@ describe("account card glance", () => {
       "Needs care",
       "1 open claim",
       "Annual",
+      "HP-FL-88421",
     ]);
   });
 

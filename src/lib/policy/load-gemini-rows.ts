@@ -166,17 +166,35 @@ const HOME_CONSTRUCTION_KEYS = new Set([
   "building_construction",
 ]);
 
+/** Unit-owners endorsement pages. A cache from before ground-cover collapse must be read again. */
+const UNIT_OWNER_ENDORSEMENT_KEYS = new Set([
+  "loss_assessment",
+  "limited_fungi",
+  "unit_owners_coverage_a",
+  "unit_owners_coverage_a_premium",
+  "property_liability_package_premium",
+  "property_and_liability_coverages_premium",
+]);
+
+const GROUND_COVER_COLLAPSE_KEYS = new Set([
+  "catastrophic_ground_cover_collapse",
+  "catastrophic_ground_cover_collapse_premium",
+]);
+
 /**
  * A dwelling cache is reusable only when it already has coverage-row premiums,
  * a year of construction, and a construction type. A cache that filled Coverage
  * A–F and dropped Year of Construction / Masonry must be read again.
  * Liability-only caches with no dwelling limit are left alone.
+ * A unit-owners endorsement cache that predates Catastrophic Ground Cover Collapse is read again.
  */
 export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
   let sawDwellingCoverage = false;
   let sawLinePremium = false;
   let sawYear = false;
   let sawConstruction = false;
+  let sawUnitOwnerEndorsement = false;
+  let sawGroundCoverCollapse = false;
   for (const row of rows) {
     const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
     if (!value) continue;
@@ -185,7 +203,10 @@ export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolea
     if (HOME_COVERAGE_LINE_PREMIUM_KEYS.has(key)) sawLinePremium = true;
     if (HOME_YEAR_KEYS.has(key)) sawYear = true;
     if (HOME_CONSTRUCTION_KEYS.has(key)) sawConstruction = true;
+    if (UNIT_OWNER_ENDORSEMENT_KEYS.has(key)) sawUnitOwnerEndorsement = true;
+    if (GROUND_COVER_COLLAPSE_KEYS.has(key)) sawGroundCoverCollapse = true;
   }
+  if (sawUnitOwnerEndorsement && !sawGroundCoverCollapse) return false;
   if (!sawDwellingCoverage) return true;
   return sawLinePremium && sawYear && sawConstruction;
 }

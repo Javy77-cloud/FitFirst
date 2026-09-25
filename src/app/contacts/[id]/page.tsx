@@ -545,6 +545,8 @@ export default async function ContactDetailPage({
                     expirationDate: policy.expirationDate,
                     carrierName: carrier?.name ?? null,
                     policyType: policy.policyType,
+                    policySubType: policy.policySubType,
+                    formType: policy.formType,
                   }))}
                 />
               ),
@@ -605,6 +607,8 @@ export default async function ContactDetailPage({
                     expirationDate: policy.expirationDate,
                     lineOfBusiness: policy.lineOfBusiness,
                     policyType: policy.policyType,
+                    policySubType: policy.policySubType,
+                    formType: policy.formType,
                     carrierName: carrier?.name ?? null,
                     dealId: deal?.id ?? null,
                     dealTitle: deal?.title ?? null,

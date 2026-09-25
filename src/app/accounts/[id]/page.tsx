@@ -456,6 +456,8 @@ export default async function AccountDetailPage({
                     expirationDate: policy.expirationDate,
                     carrierName: carrier?.name ?? null,
                     policyType: policy.policyType,
+                    policySubType: policy.policySubType,
+                    formType: policy.formType,
                   }))}
                 />
               ),

@@ -457,6 +457,7 @@ describe("fillPolicyFromDec field map", () => {
         bceg_grade: "Incl",
         limited_fungi: "10000/10000",
         limited_fungi_premium: "Incl",
+        catastrophic_ground_cover_collapse: "Incl",
         loss_assessment: "2000",
         loss_assessment_premium: "4.00",
         ordinance_or_law_coverage: "10%",
@@ -482,6 +483,8 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.hurricaneDeductible).toBe("$1,000");
     expect(proposed.limitedFungi).toBe("$10,000/$10,000");
     expect(proposed.limitedFungiPremium).toBe("Included");
+    expect(proposed.catastrophicGroundCoverCollapse).toBeUndefined();
+    expect(proposed.catastrophicGroundCoverCollapsePremium).toBe("Included");
     expect(proposed.lossAssessment).toBe("$2,000");
     expect(proposed.lossAssessmentPremium).toBe("$4");
     expect(proposed.ordinanceOrLaw).toBe("10%");
@@ -496,6 +499,14 @@ describe("fillPolicyFromDec field map", () => {
       rows: rows({ occupancy: "Unit-Owners" }),
     });
     expect(endorsed.occupancy).toBeUndefined();
+
+    const collapseOnly = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ catastrophic_ground_cover_collapse_coverage: "Incl" }),
+    });
+    expect(collapseOnly.catastrophicGroundCoverCollapse).toBeUndefined();
+    expect(collapseOnly.catastrophicGroundCoverCollapsePremium).toBe("Included");
+    expect(collapseOnly.sinkholeDeductible).toBeUndefined();
 
     const perLine = proposeFillFromDec({
       family: "homeowners",
@@ -523,6 +534,8 @@ describe("fillPolicyFromDec field map", () => {
     expect(patch.coverageLimits.coverage_a_premium).toBeUndefined();
     expect(patch.coverageLimits.limited_fungi).toBe("$10,000/$10,000");
     expect(patch.coverageLimits.limited_fungi_premium).toBe("Included");
+    expect(patch.coverageLimits.catastrophic_ground_cover_collapse_premium).toBe("Included");
+    expect(patch.coverageLimits.sinkhole_deductible).toBe("Included");
     expect(patch.coverageLimits.loss_assessment).toBe("$2,000");
     expect(patch.coverageLimits.loss_assessment_premium).toBe("$4");
     expect(patch.coverageLimits.ordinance_or_law).toBe("10%");
@@ -571,6 +584,7 @@ describe("fillPolicyFromDec field map", () => {
     expect(html).toContain("Ordinance or Law");
     expect(html).toContain("10%");
     expect(html).toContain("$20");
+    expect(html).toContain("Catastrophic Ground Cover Collapse");
     expect(html).toContain("Limited Fungi, Wet or Dry Rot, or Bacteria");
     expect(html).toContain("$10,000/$10,000");
     expect(html).toContain("Included");
@@ -580,7 +594,8 @@ describe("fillPolicyFromDec field map", () => {
     expect(html).toContain("Sinkhole");
     const at = (label: string) => html.indexOf(label);
     expect(at("Coverage A")).toBeLessThan(at("Ordinance or Law"));
-    expect(at("Ordinance or Law")).toBeLessThan(at("Limited Fungi"));
+    expect(at("Ordinance or Law")).toBeLessThan(at("Catastrophic Ground Cover Collapse"));
+    expect(at("Catastrophic Ground Cover Collapse")).toBeLessThan(at("Limited Fungi"));
     expect(at("Limited Fungi")).toBeLessThan(at("Loss Assessment"));
     expect(at("Loss Assessment")).toBeLessThan(at("Unit-Owners Coverage A"));
     expect(at("Unit-Owners Coverage A")).toBeLessThan(at("All Other Perils (AOP)"));

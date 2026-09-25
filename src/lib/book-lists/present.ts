@@ -2,7 +2,7 @@ import { mailtoHref, telHref } from "@/lib/desk/contact-actions";
 import { bookFamily } from "@/lib/desk/policy-line";
 import { formatMoney } from "@/lib/domain";
 import { homeLineLabel } from "@/lib/home/lines";
-import { policyProductDisplayLabel } from "@/lib/policy/eo";
+import { policyFormChipLabel } from "@/lib/policy/form-label";
 import { businessDateKey } from "@/lib/policies/current-term";
 import { isOffBookStatus, policyStatusLabel } from "@/lib/policy/status";
 import { contactHealthScore } from "@/lib/contacts/health-score";
@@ -853,10 +853,14 @@ export function presentPolicyCard(
   });
   const why = withSecondFact(attention.why, premiumCue(row.premium));
   const insured = row.partyName?.trim() || row.displayName || row.policyNumber;
-  const form = policyProductDisplayLabel(
-    row.formType?.trim() || row.policySubType?.trim() || row.policyType?.trim() || "",
-  );
+  const form = policyFormChipLabel({
+    formType: row.formType,
+    policySubType: row.policySubType,
+    policyType: row.policyType,
+    lineOfBusiness: row.lineOfBusiness,
+  });
   const lob = homeLineLabel(row.lineOfBusiness).trim();
+  const genericHome = /^home$/i.test(lob);
   const currentPremium = moneyAmount(row.premium);
   const proposedPremium = moneyAmount(row.renewalPremium);
   const renews =
@@ -871,7 +875,9 @@ export function presentPolicyCard(
     [
       row.carrierName?.trim() ? { id: "carrier", label: row.carrierName.trim() } : null,
       form ? { id: "form", label: form } : null,
-      lob && lob.toLowerCase() !== form.toLowerCase() ? { id: "lob", label: lob } : null,
+      lob && lob.toLowerCase() !== form.toLowerCase() && !(form && genericHome)
+        ? { id: "lob", label: lob }
+        : null,
       currentPremium != null ? { id: "premium", label: formatMoney(currentPremium) } : null,
       proposedPremium != null ? { id: "renewal-premium", label: `Renewal ${formatMoney(proposedPremium)}` } : null,
       delta ? { id: "delta", label: delta, tone: delta.startsWith("+") ? ("hot" as const) : ("ok" as const) } : null,
