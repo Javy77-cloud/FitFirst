@@ -146,6 +146,40 @@ describe("loadGeminiRows document store", () => {
     expect(readStoredFile).not.toHaveBeenCalled();
   });
 
+  it("reads the PDF and the Gemini key at the same time", async () => {
+    let started = 0;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const readStoredFile = vi.fn(async () => {
+      started += 1;
+      await gate;
+      return Buffer.from("%PDF-1.4 parallel");
+    });
+    const loadGeminiApiKey = vi.fn(async () => {
+      started += 1;
+      await gate;
+      return "test-key";
+    });
+    const pending = loadGeminiRows(
+      { docId: "doc-parallel", storagePath: ROSA_BLOB_KEY, force: true },
+      {
+        readStoredFile,
+        loadGeminiApiKey,
+        extractWithGeminiPdf: extractOk([{ fieldKey: "premium", normalizedValue: "1" }]),
+      },
+    );
+    await vi.waitFor(() => {
+      expect(started).toBe(2);
+    });
+    release();
+    const result = await pending;
+    expect(result.ok).toBe(true);
+    expect(readStoredFile).toHaveBeenCalledTimes(1);
+    expect(loadGeminiApiKey).toHaveBeenCalledTimes(1);
+  });
+
   it("fails loud when the Gemini key is missing", async () => {
     const result = await loadGeminiRows(
       { docId: "doc-1", storagePath: ROSA_BLOB_KEY },
@@ -357,6 +391,7 @@ describe("readDecPdfBytes + mint failure toast", () => {
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/geminiPreview/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/mintFailureFlashText/);
     expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/FF-MINT/);
+    expect(source("src/lib/policy/load-gemini-rows.ts")).toMatch(/Promise\.allSettled\(\[/);
     expect(source("src/lib/policy/mint-gate.ts")).toMatch(/need_dec_file/);
     expect(source("src/lib/policy/mint-gate.ts")).toMatch(/need_dec_fields/);
   });

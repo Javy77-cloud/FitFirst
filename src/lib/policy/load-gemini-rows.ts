@@ -184,12 +184,19 @@ export async function loadGeminiRows(
     }
   }
 
-  const bytes = await readDecPdfBytes(input.storagePath, deps.readStoredFile, log);
+  // Blob download and the API key lookup do not depend on each other.
+  const [bytesResult, keyResult] = await Promise.allSettled([
+    readDecPdfBytes(input.storagePath, deps.readStoredFile, log),
+    deps.loadGeminiApiKey ? deps.loadGeminiApiKey() : Promise.resolve(null),
+  ]);
+  if (bytesResult.status === "rejected") throw bytesResult.reason;
+  const bytes = bytesResult.value;
   if (!bytes.ok) {
     return { ok: false, reason: "need_dec_file", message: bytes.message };
   }
+  if (keyResult.status === "rejected") throw keyResult.reason;
 
-  const key = ((await deps.loadGeminiApiKey?.()) ?? "").trim();
+  const key = (keyResult.value ?? "").trim();
   if (!key) {
     log("dec extract: GEMINI_API_KEY is not configured — refusing extract", {
       documentId: input.docId,

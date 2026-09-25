@@ -604,8 +604,20 @@ describe("fillPolicyFromDec wiring", () => {
   it("inserts the audit table and does not write quote sheets", () => {
     const action = source("src/app/actions/policy-fill-from-dec.ts");
     expect(action).toMatch(/export async function fillPolicyFromDec/);
+    expect(action).toMatch(/export async function peekFillPolicyFromDec/);
     expect(action).toMatch(/export async function previewFillPolicyFromDec/);
     expect(action).toMatch(/export async function fillPolicyFromDecOnIssue/);
+    const peekStart = action.indexOf("export async function peekFillPolicyFromDec");
+    const peekEnd = action.indexOf("export async function previewFillPolicyFromDec");
+    const peekBody = action.slice(peekStart, peekEnd);
+    expect(peekBody).toMatch(/loadFillDecDocument/);
+    expect(peekBody).not.toMatch(/loadGeminiRows/);
+    const snapAt = action.indexOf("const snapshotPromise = Promise.all");
+    const geminiAt = action.indexOf("const gemini = await loadGeminiRows");
+    const awaitSnap = action.indexOf("await snapshotPromise");
+    expect(snapAt).toBeGreaterThan(-1);
+    expect(snapAt).toBeLessThan(geminiAt);
+    expect(geminiAt).toBeLessThan(awaitSnap);
     expect(action.indexOf("manualFillReasonError")).toBeLessThan(action.indexOf("prepareFill"));
     expect(action).toMatch(/insert\(policyFillAudit\)/);
     expect(action).toMatch(/policySet\.effectiveDate = patch\.policy\.effectiveDate/);
@@ -626,6 +638,15 @@ describe("fillPolicyFromDec wiring", () => {
     expect(button).toMatch(/Fill from declaration page/);
     expect(button).toMatch(/fillOverwriteWarning/);
     expect(button).toMatch(/Reason/);
+    const openFn = button.slice(button.indexOf("function openModal"), button.indexOf("function confirm"));
+    const peekCall = openFn.indexOf("peekFillPolicyFromDec(policyId)");
+    const previewCall = openFn.indexOf("previewFillPolicyFromDec(policyId)");
+    expect(openFn.indexOf("setOpen(true)")).toBeGreaterThan(-1);
+    expect(openFn.indexOf("setOpen(true)")).toBeLessThan(peekCall);
+    expect(peekCall).toBeLessThan(previewCall);
+    expect(previewCall).toBeLessThan(openFn.indexOf("await "));
+    expect(openFn).toMatch(/fillDecCaughtError/);
+    expect(openFn).not.toMatch(/startTransition/);
     expect(button).toMatch(/WaitHold/);
     expect(button).toMatch(/ProcessingLabel/);
     expect(button).toMatch(/data-ff-fill-policy-from-dec-working/);
