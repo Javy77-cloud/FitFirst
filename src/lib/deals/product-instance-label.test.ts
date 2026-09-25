@@ -123,7 +123,17 @@ describe("product instance labels", () => {
     expect(after.get("homeowners~k7f3a2")).toBe("HO3 410 Palm");
   });
 
-  it("builds a policy-form menu label from the form code and the full address", () => {
+  it("builds a compact policy-form label from the form code and the street start", () => {
+    expect(
+      policyFormMenuLabel({
+        code: "DP3",
+        fallback: "DP3",
+        address: "10358 Northwest 30th St",
+        city: "West Palm Beach",
+        state: "FL",
+        zip: "33418",
+      }),
+    ).toBe("DP3 · 10358 Northwest");
     expect(
       policyFormMenuLabel({
         code: "HO3",
@@ -133,7 +143,7 @@ describe("product instance labels", () => {
         state: "FL",
         zip: "34747",
       }),
-    ).toBe("HO3 · 8944 Adriatico Ln, Kissimmee, FL 34747");
+    ).toBe("HO3 · 8944 Adriatico · Kissimmee");
     expect(
       policyFormMenuLabel({
         code: "DP3",
@@ -142,7 +152,7 @@ describe("product instance labels", () => {
         city: "Orlando",
         state: "FL",
       }),
-    ).toBe("DP3 · 10358 Corporate Blvd, Orlando, FL");
+    ).toBe("DP3 · 10358 Corporate · Orlando");
     expect(policyFormMenuLabel({ code: "HO3", fallback: "HO3 8944 Adriatico" })).toBe(
       "HO3 8944 Adriatico",
     );

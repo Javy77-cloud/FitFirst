@@ -1,4 +1,3 @@
-import { formatPropertyAddress } from "@/lib/address-links";
 import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
 import { productChipLabel } from "@/lib/deals/product-chip-label";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
@@ -20,7 +19,9 @@ export type ProductInstanceLabelInput = {
   vehicles?: readonly VehicleLabelFact[] | null;
 };
 
-/** Dropdown line: form code plus the full address when one exists. */
+/** Form code plus street number and the first street word. City only while the line stays short. */
+const COMPACT_POLICY_LABEL = 36;
+
 export function policyFormMenuLabel(input: {
   code: string;
   fallback: string;
@@ -29,15 +30,14 @@ export function policyFormMenuLabel(input: {
   state?: string | null;
   zip?: string | null;
 }): string {
-  const line = formatPropertyAddress({
-    address1: input.address,
-    city: input.city,
-    state: input.state,
-    zip: input.zip,
-  });
-  if (!line) return input.fallback;
+  const short = shortStreetStart(input.address);
+  if (!short) return input.fallback;
   const code = input.code.trim();
-  return code ? `${code} · ${line}` : line;
+  const base = code ? `${code} · ${short}` : short;
+  const city = String(input.city ?? "").replace(/\s+/g, " ").trim();
+  if (!city) return base;
+  const withCity = `${base} · ${city}`;
+  return withCity.length <= COMPACT_POLICY_LABEL ? withCity : base;
 }
 
 const DIRECTIONALS: Record<string, string> = {
@@ -135,6 +135,16 @@ export function compactStreetLabel(street: string | null | undefined): string {
   const name = tokens.slice(index).join(" ");
   const label = [number, direction, name].filter(Boolean).join(" ");
   return label.length > 42 ? label.slice(0, 42).trim() : label;
+}
+
+/** Street number plus the first street word (direction spelled out). */
+function shortStreetStart(street: string | null | undefined): string {
+  const compact = compactStreetLabel(street);
+  if (!compact) return "";
+  const tokens = compact.split(" ").filter(Boolean);
+  if (!tokens.length) return "";
+  if (/^\d+[a-z]?$/i.test(tokens[0]!)) return tokens.slice(0, 2).join(" ");
+  return tokens[0]!;
 }
 
 function titleWord(value: string): string {

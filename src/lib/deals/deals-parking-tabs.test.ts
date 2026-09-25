@@ -73,6 +73,13 @@ describe("Won-Lost + Archived parking tabs", () => {
     const tabsSource = source("src/components/section-tabs.tsx");
     const row = tabsSource.slice(tabsSource.indexOf("data-ff-deal-tab-row"));
     expect(row.indexOf("data-ff-deal-tab-row")).toBeLessThan(row.indexOf("data-ff-deal-tab-row-field"));
+    const fieldWrap = tabsSource.slice(
+      tabsSource.indexOf("tabRowField ? ("),
+      tabsSource.indexOf("{tabRowField}"),
+    );
+    expect(fieldWrap).toMatch(/ml-auto/);
+    expect(fieldWrap).toMatch(/w-max/);
+    expect(fieldWrap).not.toMatch(/flex-1/);
     const switcher = source("src/components/deal/deal-line-switcher.tsx");
     const railLayout = switcher.slice(switcher.indexOf("if (rail)"), switcher.indexOf("const chips"));
     expect(railLayout.indexOf("</PolicyFormDropup>")).toBeLessThan(

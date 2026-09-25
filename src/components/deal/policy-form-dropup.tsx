@@ -33,7 +33,7 @@ export function PolicyFormDropup({
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative min-w-0 w-full" data-ff-policy-form-field="">
+    <div ref={rootRef} className="relative min-w-0 w-full max-w-full" data-ff-policy-form-field="">
       <button
         type="button"
         className="flex h-8 w-full min-w-0 items-center gap-1 rounded-md border border-[var(--ff-row-line)] bg-white px-2 text-left text-[12px] font-medium text-[var(--ff-ink)] shadow-sm"

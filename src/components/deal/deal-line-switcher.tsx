@@ -159,7 +159,7 @@ export function DealLineSwitcher({
     const activeOption = options.find((row) => row.selected) ?? options[0];
     return (
       <div
-        className="flex w-full min-w-0 flex-col gap-1"
+        className="flex w-max max-w-full min-w-0 flex-col gap-1"
         data-ff-deal-product-chip-row=""
         data-ff-deal-products-rail=""
         data-ff-policy-form-line=""
