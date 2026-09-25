@@ -78,6 +78,7 @@ import {
   resolveVisibleProductInstances,
   storageLineForInstance,
 } from "@/lib/deals/product-instances";
+import { hideCrossProductDealFacts } from "@/lib/quote-sheet/product-fact-scope";
 import {
   headerAddressesForProductTab,
   headerRiskOwnerKey,
@@ -378,10 +379,13 @@ export default async function DealPage({
         ownRisk: activePropertyRisk,
       })
     : null;
-  const profileValues =
+  const profileValues = hideCrossProductDealFacts(
     activePropertyAddress && !activeOwnsPropertySheet
       ? overlaySharedProductSheet(activeSheet.values, activeInstance.key, activePropertyAddress.address)
-      : activeSheet.values;
+      : activeSheet.values,
+    productInstances.length > 1,
+    { includeAddress: activeInstance.key !== legacyPropertyKey },
+  );
   const detailsAddressOverlay =
     activePropertyAddress && activeInstance.key !== legacyPropertyKey
       ? insuredFieldsFromAddress(activePropertyAddress.address)
@@ -439,7 +443,8 @@ export default async function DealPage({
   const sheetFilled = sheetHasMarketFacts(profileValues);
   const marketsUseSheet = !isLifeHealthShopLine(sheetLine);
   const sheetReady = marketsUseSheet && sheetFilled;
-  const scoringRisk = activePropertyRisk ?? risk;
+  const scoringRisk =
+    activePropertyRisk ?? (activeInstance.key === legacyPropertyKey ? risk : null);
   const evalMarkets = Boolean(scoringRisk && sheetReady);
   const rawMatches =
     evalMarkets && scoringRisk
