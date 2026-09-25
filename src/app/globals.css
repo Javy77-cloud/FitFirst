@@ -1025,7 +1025,7 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }
-/* Rail sits up with the tab group so Quick Communication stays level with the tab body. */}
+/* Rail sits up with the tab group so Quick Communication stays level with the tab body. */
 [data-ff-deal-workspace] [data-ff-deal-right-rail] {
   overflow: visible !important;
   margin-top: calc(-1 * (var(--ff-deal-tab-group-gap) + var(--ff-deal-tab-group-pad)));
