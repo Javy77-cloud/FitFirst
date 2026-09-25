@@ -2,6 +2,7 @@ import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
 import { normalizeNamedInsured } from "@/lib/people/named-insured";
 import { isRepeatableSheetKey } from "@/lib/quote-sheet/repeatable-units";
+import { PAP_COVERAGE_FILL_KEYS } from "@/lib/policy/auto-coverage";
 import { expandAutoDecLayout } from "./auto-layout";
 import { readGeminiDocumentKind, sanitizeGeminiPreview } from "./preview";
 import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
@@ -750,6 +751,8 @@ export function mapGeminiJsonToFields(
     });
   }
 
+  stampAbsentAutoDecFields(fields, seen, shopLine, sourceDocTag);
+
   const glanceRequired = fields.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0;
   return {
     fields,
@@ -761,6 +764,66 @@ export function mapGeminiJsonToFields(
     documentKind: readGeminiDocumentKind(json),
     geminiPreview: sanitizeGeminiPreview(json),
   };
+}
+
+const ABSENT_COVERAGE = "None";
+
+function isAutoShopLine(shopLine?: string | null): boolean {
+  const line = (shopLine ?? "").trim().toLowerCase();
+  return line === "auto" || line === "motorcycle" || line === "commercial_auto";
+}
+
+function pushNone(
+  fields: ExtractedField[],
+  seen: Set<string>,
+  fieldKey: string,
+  sourceDocTag: ExtractedField["sourceDocTag"],
+) {
+  if (seen.has(fieldKey)) return;
+  seen.add(fieldKey);
+  fields.push({
+    fieldKey,
+    label: labelForKey(fieldKey),
+    rawValue: ABSENT_COVERAGE,
+    normalizedValue: ABSENT_COVERAGE,
+    confidence: 1,
+    flagged: false,
+    source: "inferred",
+    sourceDocTag,
+    matchPath: "gemini",
+  });
+}
+
+function vehicleListed(seen: Set<string>, index: number): boolean {
+  if (index === 1) return seen.has("vin") || seen.has("vehicle_year") || seen.has("vehicle_make");
+  return (
+    seen.has(`vehicle_${index}_vin`) ||
+    seen.has(`vehicle_${index}_year`) ||
+    seen.has(`vehicle_${index}_make`)
+  );
+}
+
+/** Issued auto dec: missing coverages and missing per-vehicle overview facts are explicit None. */
+function stampAbsentAutoDecFields(
+  fields: ExtractedField[],
+  seen: Set<string>,
+  shopLine: string | null | undefined,
+  sourceDocTag: ExtractedField["sourceDocTag"],
+) {
+  if (!isAutoShopLine(shopLine)) return;
+  const listed = [1, 2, 3, 4].filter((index) => vehicleListed(seen, index));
+  const hasCoverage = PAP_COVERAGE_FILL_KEYS.some((key) => seen.has(key));
+  if (listed.length === 0 && !hasCoverage) return;
+  for (const key of PAP_COVERAGE_FILL_KEYS) pushNone(fields, seen, key, sourceDocTag);
+  const overview: Record<number, string[]> = {
+    1: ["vehicle_usage", "annual_miles", "garaging_address", "garaging_zip", "vehicle_lienholder", "vehicle_1_premium"],
+    2: ["vehicle_2_usage", "vehicle_2_annual_miles", "vehicle_2_garaging_address", "vehicle_2_garaging_zip", "vehicle_2_lienholder", "vehicle_2_premium"],
+    3: ["vehicle_3_usage", "vehicle_3_annual_miles", "vehicle_3_garaging_address", "vehicle_3_garaging_zip", "vehicle_3_lienholder", "vehicle_3_premium"],
+    4: ["vehicle_4_usage", "vehicle_4_annual_miles", "vehicle_4_garaging_address", "vehicle_4_garaging_zip", "vehicle_4_lienholder", "vehicle_4_premium"],
+  };
+  for (const index of listed) {
+    for (const key of overview[index] ?? []) pushNone(fields, seen, key, sourceDocTag);
+  }
 }
 
 /** Fields safe to pass into applyExtractedToSheet (skips below-threshold blanks). */

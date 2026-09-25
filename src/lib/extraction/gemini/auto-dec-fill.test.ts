@@ -111,13 +111,14 @@ describe("Auto DEC fill mapping", () => {
     expect(fields.vehicle_2_lienholder_other?.normalizedValue).toBe("Some Local Credit Union");
   });
 
-  it("fills printed coverages and leaves missing optional coverages blank", () => {
+  it("fills printed coverages and writes None for coverages the page does not print", () => {
     expect(fields.liability_bi?.normalizedValue).toBe("100/300");
     expect(fields.liability_pd?.normalizedValue).toBe("100000");
     expect(fields.comp_deductible?.normalizedValue).toBe("500");
     expect(fields.collision_deductible?.normalizedValue).toBe("500");
-    expect(fields.pip).toBeUndefined();
-    expect(fields.um_uim).toBeUndefined();
+    expect(fields.pip?.normalizedValue).toBe("None");
+    expect(fields.um_uim?.normalizedValue).toBe("None");
+    expect(fields.med_pay?.normalizedValue).toBe("None");
     expect(fields.current_premium?.normalizedValue).toBe("2109.00");
   });
 
@@ -285,7 +286,18 @@ describe("Auto DEC fill mapping", () => {
     const extras = autoCoverageExtras({ coverageLimits: patch.coverageLimits });
     expect(extras.find((row) => row.key === "um_stacked")?.value).toBe("Non-stacked");
     expect(extras.find((row) => row.key === "discounts")?.value).toMatch(/Multi-car/);
-    expect(byRow.liability_bi?.deductible).toBe("—");
+    expect(byRow.liability_bi?.deductible).toBe("None");
+    const columns = schedule.flatMap((row) => [row.limit, row.deductible, row.premium]);
+    expect(columns.every((cell) => cell.trim().length > 0)).toBe(true);
+    expect(columns).not.toContain("—");
+    const vehicleKey = Object.keys(proposed).find((key) => key.startsWith("vehicle:"));
+    expect(vehicleKey).toBeTruthy();
+    const prefix = vehicleKey!.slice(0, vehicleKey!.indexOf(".") + 1);
+    const overview = ["vin", "year", "make", "model", "usage", "annualMiles", "garagingAddress", "lienholder", "premium"];
+    const filled = overview.filter((key) => proposed[`${prefix}${key}`]?.trim());
+    const blanks = overview.filter((key) => !proposed[`${prefix}${key}`]?.trim());
+    expect(blanks).toEqual([]);
+    expect(filled).toEqual(overview);
   });
 
   it("fills blanks and leaves an agent edit, with a diff", () => {
