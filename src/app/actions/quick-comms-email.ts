@@ -2,6 +2,7 @@
 
 import { and, asc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { listEmailTemplates } from "@/lib/db/template-queries";
+import { deskFallbackCopy } from "@/lib/templates/revision";
 import { resolveOutboundEmailSignature } from "@/lib/desk/outbound-email-signature";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -35,12 +36,18 @@ export type ComposeRecipientHit = {
 
 export async function loadQuickCommsEmailTemplates(): Promise<QuickCommsEmailTemplateOption[]> {
   const rows = await listEmailTemplates();
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    subject: (row.subjectEn ?? row.subject ?? "").trim() || row.name,
-    body: (row.bodyEn ?? row.body ?? "").trim(),
-  }));
+  return rows.flatMap((row) => {
+    const resolved = deskFallbackCopy(row.slug, row);
+    if (!resolved.send) return [];
+    return [
+      {
+        id: row.id,
+        name: row.name,
+        subject: resolved.subject || row.name,
+        body: resolved.body,
+      },
+    ];
+  });
 }
 
 export async function loadQuickCommsEmailSignature(): Promise<string> {

@@ -18,6 +18,11 @@ import {
   quotes,
   reviewTasks,
 } from "@/lib/db/schema";
+import {
+  MACRO_LEAD_FOLLOWUP_KEY,
+  MACRO_LEAD_FOLLOWUP_SUBJECT,
+  resolveTemplateText,
+} from "@/lib/templates/revision";
 import { CONTACT_ID, DEAL_ID, LEAD_ID } from "@/lib/fixtures/ids";
 import { applyOffBookEffects, shouldApplyOffBookEffects } from "@/lib/policy/offbook-effects";
 
@@ -583,6 +588,8 @@ async function queueMacroEmail(record: LoadedRecord, actions: MacroActions): Pro
   if (!actions.email) return 0;
   let subject = actions.email.subject ?? "";
   let body = actions.email.body ?? "";
+  const inlineSubject = (actions.email.subject ?? "").trim();
+  const inlineBody = (actions.email.body ?? "").trim();
   if (actions.email.templateId) {
     const [template] = await db
       .select()
@@ -593,7 +600,19 @@ async function queueMacroEmail(record: LoadedRecord, actions: MacroActions): Pro
     if (template) {
       subject = subject || template.subjectEn || template.subject || "";
       body = body || template.bodyEn || template.body || "";
+      if (!inlineSubject && !inlineBody) {
+        const resolved = resolveTemplateText(template.slug, "en", { subject, body });
+        if (!resolved.send) return 0;
+        subject = resolved.subject;
+        body = resolved.body;
+      }
     }
+  }
+  if (inlineSubject === MACRO_LEAD_FOLLOWUP_SUBJECT) {
+    const resolved = resolveTemplateText(MACRO_LEAD_FOLLOWUP_KEY, "en", { subject, body });
+    if (!resolved.send) return 0;
+    subject = resolved.subject;
+    body = resolved.body;
   }
   const now = new Date();
   await db.insert(emailSendJobs).values({
