@@ -1,4 +1,5 @@
 import type { BookKpiItem, BookKpiShare } from "@/lib/book-lists/kpi";
+import { BookKpiFlatRow } from "@/components/book-lists/book-kpi-flat-row";
 
 const SHARE_COLORS = ["var(--ff-navy)", "var(--ff-heat-near-cold)", "var(--ff-urgency-amber)", "var(--ff-border)"] as const;
 
@@ -43,23 +44,23 @@ export function BookKpiStrip({
   /** Contacts: counters sit on the page, not on a card or strip. */
   flat?: boolean;
 }) {
-  return (
-    <section
-      className={flat ? "ff-book-kpi ff-book-kpi-flat" : "ff-book-kpi"}
-      data-ff-book-kpi={flat ? "flat" : ""}
-      aria-label={label}
+  const chips = items.map((item) => (
+    <div
+      key={item.id}
+      className={item.variant === "name" ? "ff-book-kpi-item is-name" : "ff-book-kpi-item"}
+      data-ff-book-kpi-item={item.id}
     >
-      {items.map((item) => (
-        <div
-          key={item.id}
-          className={item.variant === "name" ? "ff-book-kpi-item is-name" : "ff-book-kpi-item"}
-          data-ff-book-kpi-item={item.id}
-        >
-          <strong title={item.variant === "name" ? item.value : undefined}>{item.value}</strong>
-          <span>{item.label}</span>
-          {item.hint ? <em>{item.hint}</em> : null}
-        </div>
-      ))}
+      <strong title={item.variant === "name" ? item.value : undefined}>{item.value}</strong>
+      <span>{item.label}</span>
+      {item.hint ? <em>{item.hint}</em> : null}
+    </div>
+  ));
+  if (flat) {
+    return <BookKpiFlatRow label={label}>{chips}</BookKpiFlatRow>;
+  }
+  return (
+    <section className="ff-book-kpi" data-ff-book-kpi="" aria-label={label}>
+      {chips}
       {share && share.length > 1 ? <SharePie share={share} title={shareTitle || "Premium share"} /> : null}
     </section>
   );

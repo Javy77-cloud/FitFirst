@@ -55,8 +55,11 @@ describe("Won-Lost + Archived parking tabs", () => {
     expect(css).not.toMatch(
       /\[data-ff-deal-workspace\] \[data-ff-deal-tab-row-wrap\] \{[^}]*box-shadow:\s*inset/,
     );
-    expect(css).toMatch(
+    expect(css).not.toMatch(
       /margin-top:\s*calc\(-1 \* \(var\(--ff-deal-tab-group-gap\) \+ var\(--ff-deal-tab-group-pad\)\)\);/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-deal-workspace\] \[data-ff-deal-right-rail\] \{[^}]*margin-top:\s*0;/,
     );
     // Address field sits on the tab row. Products stay out of the header and the rail.
     const headingSlice = page.slice(
