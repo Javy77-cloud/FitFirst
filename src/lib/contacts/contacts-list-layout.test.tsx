@@ -30,6 +30,9 @@ describe("Contacts list header", () => {
     );
     expect(html).toContain('data-ff-book-kpi="flat"');
     expect(html).toContain("ff-book-kpi-flat");
+    expect(readFileSync("src/app/globals.css", "utf8")).toMatch(
+      /\.ff-book-kpi-flat \{[^}]*margin:\s*0\.35rem 0 3rem/,
+    );
     expect(html).not.toContain("ff-book-kpi-item is-name");
     expect(html).not.toContain("<em>");
     for (const label of ["People", "With phone", "With email", "Reached lately", "Not reached", "Open deals", "Renewing ≤60d"]) {

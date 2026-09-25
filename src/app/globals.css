@@ -4663,8 +4663,9 @@ tr[data-ff-activity-selected="true"] {
   flex-wrap: nowrap;
   align-items: flex-end;
   gap: 1.75rem;
-  margin: 0.2rem 0 0.15rem;
-  padding: 0.35rem 1.5rem 0.7rem;
+  /* About two rows of air before the Contacts actions bar (that bar also has pt-3). */
+  margin: 0.35rem 0 3rem;
+  padding: 0.15rem 1.5rem 0;
   background: transparent;
   border: 0;
   box-shadow: none;
