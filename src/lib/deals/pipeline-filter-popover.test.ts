@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { placePipelineFilterPanel } from "@/lib/page-filters/place-pipeline-filter-panel";
 import { filterStorageKey } from "@/lib/saved-filters";
 import {
   DEAL_PIPELINE_FILTER_KEYS,
@@ -101,6 +102,35 @@ describe("Pipeline filter popover chrome", () => {
     expect(views).not.toMatch(/column-prefs/);
     expect(views).not.toMatch(/next\/headers/);
     expect(views).not.toMatch(/currentDeskSession/);
+  });
+
+  it("portals the column-filter menu so a scrolling module header cannot clip it", () => {
+    const popover = source("src/components/filters/pipeline-filter-popover.tsx");
+    expect(popover).toMatch(/createPortal\(/);
+    expect(popover).toMatch(/data-ff-pipeline-filter-panel=""/);
+    expect(popover).toMatch(/className="fixed z-50 overflow-y-auto overscroll-contain/);
+    expect(popover).not.toMatch(/absolute left-0 top-\[calc\(100%\+0\.35rem\)\]/);
+    expect(popover).toMatch(/target\.closest\("\[data-ff-pipeline-filter-panel\]"\)/);
+    const setField = popover.slice(popover.indexOf("function setField"));
+    expect(setField.indexOf("setOpen(false)")).toBeGreaterThan(-1);
+    expect(setField.indexOf("setOpen(false)")).toBeLessThan(setField.indexOf("go(next)"));
+  });
+
+  it("places the filter menu over the page, inside the viewport", () => {
+    const below = placePipelineFilterPanel(
+      { top: 80, right: 120, bottom: 112, left: 40, width: 80, height: 32 },
+      { width: 1200, height: 800 },
+    );
+    expect(below.top).toBeGreaterThan(112);
+    expect(below.left).toBe(40);
+    expect(below.top + below.maxHeight).toBeLessThanOrEqual(800);
+
+    const shifted = placePipelineFilterPanel(
+      { top: 80, right: 1180, bottom: 112, left: 1100, width: 80, height: 32 },
+      { width: 1200, height: 800 },
+    );
+    expect(shifted.left + shifted.width).toBeLessThanOrEqual(1200);
+    expect(shifted.left).toBeGreaterThanOrEqual(8);
   });
 
   it("matches renewals days bands", () => {

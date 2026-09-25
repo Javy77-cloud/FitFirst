@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,6 +13,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { ConfigurePageFiltersButton } from "@/components/filters/configure-page-filters";
@@ -37,6 +39,7 @@ import {
 } from "@/lib/saved-filters";
 import { getLiveQuery, setLiveQuery } from "@/lib/search/live-query";
 import { flashAction } from "@/lib/flash-client";
+import { placePipelineFilterPanel } from "@/lib/page-filters/place-pipeline-filter-panel";
 import { chipTabClass } from "@/lib/ui/chip-tabs";
 import { titleCaseLabel } from "@/lib/ui/title-case";
 import { cn } from "@/lib/utils";
@@ -167,32 +170,45 @@ export function PipelineFilterControls() {
     remove,
     go,
   } = usePipelineFilter();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [panelBox, setPanelBox] = useState<ReturnType<typeof placePipelineFilterPanel> | null>(null);
 
-  return (
-    <>
-      <div className="relative" ref={panelRef}>
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-haspopup="dialog"
-          data-ff-pipeline-filter-button=""
-          data-active={filterActive ? "true" : "false"}
-          onClick={() => setOpen((value) => !value)}
-          className={cn(
-            chipTabClass(filterActive),
-            "inline-flex h-8 items-center gap-1 px-2.5",
-          )}
-        >
-          Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-          <ChevronDown className={cn("size-3.5 opacity-80", open && "rotate-180")} />
-        </button>
+  useLayoutEffect(() => {
+    if (!open) return;
+    function place() {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPanelBox(
+        placePipelineFilterPanel(rect, {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        }),
+      );
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
 
-        {open ? (
+  const panel =
+    open && panelBox && typeof document !== "undefined"
+      ? createPortal(
           <div
             role="dialog"
             aria-label="Column filters"
             data-ff-pipeline-filter-panel=""
-            className="absolute left-0 top-[calc(100%+0.35rem)] z-40 min-w-[18rem] max-w-[22rem] rounded-lg border border-border bg-white p-3 shadow-md"
+            className="fixed z-50 overflow-y-auto overscroll-contain rounded-lg border border-border bg-white p-3 shadow-md"
+            style={{
+              top: panelBox.top,
+              left: panelBox.left,
+              width: panelBox.width,
+              maxHeight: panelBox.maxHeight,
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <ul className="space-y-2">
               {fields.map((field) => (
@@ -238,8 +254,31 @@ export function PipelineFilterControls() {
                 )}
               </div>
             ) : null}
-          </div>
-        ) : null}
+          </div>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      <div className="relative" ref={panelRef}>
+        <button
+          ref={buttonRef}
+          type="button"
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          data-ff-pipeline-filter-button=""
+          data-active={filterActive ? "true" : "false"}
+          onClick={() => setOpen((value) => !value)}
+          className={cn(
+            chipTabClass(filterActive),
+            "inline-flex h-8 items-center gap-1 px-2.5",
+          )}
+        >
+          Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          <ChevronDown className={cn("size-3.5 opacity-80", open && "rotate-180")} />
+        </button>
+        {panel}
       </div>
 
       <DropdownMenu>
@@ -479,6 +518,7 @@ export function PipelineFilterPopover({
       const target = event.target as Node | null;
       if (!target) return;
       if (panelRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest("[data-ff-pipeline-filter-panel]")) return;
       setOpen(false);
     }
     function onKey(event: KeyboardEvent) {
@@ -535,6 +575,7 @@ export function PipelineFilterPopover({
     const next = { ...current };
     if (value) next[key] = value;
     else delete next[key];
+    setOpen(false);
     go(next);
   }
 
