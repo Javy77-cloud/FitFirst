@@ -15,6 +15,7 @@ import {
   type PageFilter,
 } from "@/lib/page-filters";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
+import { policyProductDisplayLabel } from "@/lib/policy/eo";
 
 /** URL keys for Renewals pipeline column filters (q counted separately). */
 export const RENEWAL_PIPELINE_FILTER_KEYS = [
@@ -122,7 +123,10 @@ export function buildRenewalPipelineFilterFields(
     {
       key: "subType",
       label: "Policy subtype",
-      options: uniqueOptions(cards.map((card) => card.policySubType)),
+      options: uniqueOptions(cards.map((card) => card.policySubType)).map((option) => ({
+        ...option,
+        label: policyProductDisplayLabel(option.label),
+      })),
     },
     {
       key: "daysBand",

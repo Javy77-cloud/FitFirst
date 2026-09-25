@@ -7,6 +7,11 @@ import {
   type QuotingFormId,
   type ShopLine,
 } from "@/lib/domain";
+import {
+  ERRORS_OMISSIONS_LABEL,
+  ERRORS_OMISSIONS_LINE,
+  isErrorsOmissionsProduct,
+} from "@/lib/policy/eo";
 
 export function quotingFormById(id: string) {
   return QUOTING_FORMS.find((form) => form.id === id) ?? null;
@@ -103,7 +108,6 @@ const LEGACY_INSURANCE_TYPE_TO_FORM: Record<string, QuotingFormId> = {
   MH: "MHO",
   MMHO: "MHO",
   MHO: "MHO",
-  MMHO: "MHO",
   MDP: "MDP",
   "Mobile Home": "MHO",
   "Mobile Home Owners": "MHO",
@@ -113,6 +117,10 @@ const LEGACY_INSURANCE_TYPE_TO_FORM: Record<string, QuotingFormId> = {
   "Mobile Home Renters": "MDP",
   "Workers Comp": "WC",
   "Workers' Comp": "WC",
+  "Errors & Omissions": "EO",
+  "Errors and Omissions": "EO",
+  "E&O": "EO",
+  EO: "EO",
 };
 
 const LIFE_HEALTH_PICK: Record<string, { quotingForm: string; policySubType: string; lineOfBusiness: string; quotingLine: ShopLine }> = {
@@ -157,6 +165,14 @@ export function dealCreateFieldsFromPick(raw: string | null | undefined): {
   quotingLine: ShopLine;
 } {
   const trimmed = (raw ?? "").trim();
+  if (isErrorsOmissionsProduct(trimmed)) {
+    return {
+      quotingForm: ERRORS_OMISSIONS_LABEL,
+      policySubType: ERRORS_OMISSIONS_LABEL,
+      lineOfBusiness: ERRORS_OMISSIONS_LINE,
+      quotingLine: "general_liability",
+    };
+  }
   const lifeHealth = LIFE_HEALTH_PICK[trimmed.toLowerCase()];
   if (lifeHealth) return { ...lifeHealth };
   // Unknown Life/Health freeform label (agency custom subfilter) → keep label, route by keywords.

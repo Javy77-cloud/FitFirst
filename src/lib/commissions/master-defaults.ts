@@ -61,6 +61,7 @@ export function inferPolicyType(
   if (sub === "Commercial Auto") return "Auto";
   if (
     sub === "General Liability" ||
+    sub === "Errors & Omissions" ||
     sub === "Workers' Comp" ||
     sub === "Business Owners Policy (BOP)" ||
     sub === "Commercial Property"

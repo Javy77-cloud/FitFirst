@@ -1,4 +1,5 @@
 import type { FilterField } from "@/lib/saved-filters";
+import { policyProductDisplayLabel } from "@/lib/policy/eo";
 import { titleCaseLabel } from "@/lib/ui/title-case";
 import { defaultPageFilters } from "./defaults";
 import { pageFilterFields } from "./fields";
@@ -111,7 +112,11 @@ export function mergeLiveOptions(
       const value = raw?.trim();
       if (!value || seen.has(value.toLowerCase())) continue;
       seen.add(value.toLowerCase());
-      options.push({ value, label: titleCaseLabel(value.replaceAll("_", " ")), color: null });
+      options.push({
+        value,
+        label: policyProductDisplayLabel(titleCaseLabel(value.replaceAll("_", " "))),
+        color: null,
+      });
     }
     return { ...filter, options };
   });

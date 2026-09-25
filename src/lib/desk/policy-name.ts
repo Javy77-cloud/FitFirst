@@ -1,3 +1,5 @@
+import { policyProductDisplayLabel } from "@/lib/policy/eo";
+
 export function formatPolicyDate(value: Date | string | null | undefined): string {
   if (!value) return "—";
   const d = value instanceof Date ? value : new Date(value);
@@ -19,7 +21,10 @@ export function policyRecordName(input: {
   effectiveDate?: Date | string | null;
 }): string {
   const party = input.contactName?.trim() || input.businessName?.trim() || "Unnamed";
-  const sub = input.subType?.trim() || input.formType?.trim() || input.lineOfBusiness?.trim() || "Policy";
+  const sub =
+    policyProductDisplayLabel(
+      input.subType?.trim() || input.formType?.trim() || input.lineOfBusiness?.trim() || "",
+    ) || "Policy";
   const carrier = input.carrierName?.trim() || "Carrier TBD";
   return `${party} / ${sub} / ${carrier} / ${formatPolicyDate(input.effectiveDate)}`;
 }

@@ -1,4 +1,5 @@
 import { appointmentLine, type ServicingCheckKey, type ServicingDocKey } from "@/lib/domain-ams";
+import { isErrorsOmissionsProduct } from "@/lib/policy/eo";
 
 export type ChecklistLobFamily =
   | "auto"
@@ -16,6 +17,7 @@ export function resolveChecklistLob(lineOfBusiness: string | null | undefined): 
   if (["GL", "WC", "BOP", "COMMERCIAL"].includes(line) || /GL|WC|BOP|CGL/.test(raw)) {
     return "commercial";
   }
+  if (isErrorsOmissionsProduct(lineOfBusiness)) return "commercial";
   return "default";
 }
 

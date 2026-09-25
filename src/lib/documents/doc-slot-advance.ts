@@ -106,6 +106,13 @@ export function canonicalQuotingForm(value: string | null | undefined): string {
   if (compact === "PA" || compact === "AUTO" || compact === "PERSONALAUTO") return "PA";
   if (compact === "FLOOD") return "FLOOD";
   if (compact === "GL" || compact === "WC" || compact === "BOP" || compact === "CA") return compact;
+  if (
+    compact === "EO" ||
+    compact === "ERRORSOMISSIONS" ||
+    compact === "ERRORSANDOMISSIONS"
+  ) {
+    return "EO";
+  }
   if (compact === "RV" || compact === "BOAT" || compact === "UMBRELLA") return compact;
   if (compact === "MOTORCYCLE") return "MOTORCYCLE";
   return compact;
@@ -138,9 +145,11 @@ export function requiredDocSlots(input: {
   }
   if (
     product === "gl" ||
+    product === "eo" ||
     product === "workers_comp" ||
     product === "bop" ||
     form === "GL" ||
+    form === "EO" ||
     form === "WC" ||
     form === "BOP" ||
     line === "general_liability" ||

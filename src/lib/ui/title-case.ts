@@ -58,6 +58,7 @@ export function titleCaseLabel(input: string): string {
   return parts
     .map((part, index) => {
       if (/^\s+$/.test(part)) return part;
+      if (/^e&o$/i.test(part)) return "E&O";
       if (KEEP_AS_IS.has(part)) return part;
       if (/^[A-Z0-9]{2,}$/.test(part)) return part;
       if (/^[A-Z0-9]+(?:\/[A-Z0-9]+)+$/.test(part)) return part;

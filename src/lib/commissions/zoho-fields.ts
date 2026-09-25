@@ -51,6 +51,7 @@ export const POLICY_SUB_TYPES = [
   "Part D (Prescription)",
   "Business Owners Policy (BOP)",
   "General Liability",
+  "Errors & Omissions",
   "Commercial Property",
   "Workers' Comp",
   "Personal Umbrella",
@@ -120,6 +121,7 @@ const AUTO_SUBS = new Set([
 const COMMERCIAL_SUBS = new Set([
   "Business Owners Policy (BOP)",
   "General Liability",
+  "Errors & Omissions",
   "Commercial Property",
   "Workers' Comp",
   "Cyber",
@@ -180,7 +182,12 @@ export function lineOfBusinessFromZoho(
   if (sub.includes("Flood") || policyType === "Flood") return "FLOOD";
   if (sub.includes("Umbrella") || policyType === "Umbrella") return "UMBRELLA";
   if (sub === "Business Owners Policy (BOP)") return "BOP";
-  if (sub === "General Liability" || sub === "Workers' Comp" || policyType === "Commercial") {
+  if (
+    sub === "General Liability" ||
+    sub === "Errors & Omissions" ||
+    sub === "Workers' Comp" ||
+    policyType === "Commercial"
+  ) {
     return "GL";
   }
   if (

@@ -1,5 +1,7 @@
 /** Agency-configurable policy display-name template. Empty fields are skipped — no double separators. */
 
+import { policyProductDisplayLabel } from "@/lib/policy/eo";
+
 export const POLICY_LABEL_FIELD_IDS = [
   "ownerName",
   "carrier",
@@ -101,19 +103,19 @@ function resolveFieldValue(id: PolicyLabelFieldId, values: PolicyLabelValues): s
     case "carrier":
       return (values.carrier ?? "").trim();
     case "policyType":
-      return (
+      return policyProductDisplayLabel(
         (values.policyType ?? "").trim() ||
-        (values.formType ?? "").trim() ||
-        (values.lineOfBusiness ?? "").trim()
+          (values.formType ?? "").trim() ||
+          (values.lineOfBusiness ?? "").trim(),
       );
     case "policyNumber":
       return (values.policyNumber ?? "").trim();
     case "lineOfBusiness":
       return (values.lineOfBusiness ?? "").trim();
     case "formType":
-      return (values.formType ?? "").trim();
+      return policyProductDisplayLabel(values.formType);
     case "policySubType":
-      return (values.policySubType ?? "").trim();
+      return policyProductDisplayLabel(values.policySubType);
     case "status":
       return (values.status ?? "").trim().replaceAll("_", " ");
     case "effectiveDate":

@@ -2,6 +2,7 @@ import { and, asc, eq, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   DEFAULT_AGENCY_LOBS,
+  withBuiltInErrorsOmissions,
   LOB_CODE_ALIASES,
   canonicalizeLobCode,
   findAgencyLobOrphans,
@@ -91,7 +92,8 @@ export async function loadAgencyLobs(opts?: {
       .from(agencyLobs)
       .where(eq(agencyLobs.tenantId, tenant()))
       .orderBy(asc(agencyLobs.sortOrder), asc(agencyLobs.label));
-    const mapped = rows.length > 0 ? rows.map(toAgencyLob) : DEFAULT_AGENCY_LOBS;
+    const mapped =
+      rows.length > 0 ? withBuiltInErrorsOmissions(rows.map(toAgencyLob)) : DEFAULT_AGENCY_LOBS;
     return visibleAgencyLobs(mapped, settings, { includeInactive: opts?.includeInactive });
   } catch {
     return visibleAgencyLobs(DEFAULT_AGENCY_LOBS, DEFAULT_DESK_LINE_SETTINGS, {

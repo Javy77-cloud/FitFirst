@@ -12,6 +12,7 @@ import {
   uniqueLobCodes,
   visibleAgencyLobs,
   visibleDealProductIds,
+  withBuiltInErrorsOmissions,
 } from "./agency-lobs";
 
 describe("agency master Lines of Business", () => {
@@ -21,6 +22,18 @@ describe("agency master Lines of Business", () => {
       DEAL_PRODUCT_DEFS.map((row) => row.id),
     );
     expect(DEFAULT_AGENCY_LOBS.every((row) => row.active && row.builtIn)).toBe(true);
+    const withoutEo = DEFAULT_AGENCY_LOBS.filter((row) => row.productId !== "eo");
+    const merged = withBuiltInErrorsOmissions(withoutEo);
+    expect(merged.filter((row) => row.productId === "eo")).toHaveLength(1);
+    expect(merged.find((row) => row.productId === "eo")).toMatchObject({
+      label: "E&O",
+      lobCode: "GL",
+      quotingForm: "Errors & Omissions",
+    });
+    expect(withBuiltInErrorsOmissions(merged)).toHaveLength(merged.length);
+    expect(withoutEo.map((row) => row.productId)).toEqual(
+      merged.filter((row) => row.productId !== "eo").map((row) => row.productId),
+    );
   });
 
   it("hides Life / Health families when the agency does not write them", () => {

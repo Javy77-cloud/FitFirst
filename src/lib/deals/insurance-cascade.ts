@@ -75,6 +75,7 @@ const FORM_CATEGORY: Record<QuotingFormId, Exclude<InsuranceCategoryId, "life" |
   UMBRELLA: "umbrella",
   FLOOD: "flood",
   GL: "commercial",
+  EO: "commercial",
   WC: "commercial",
   BOP: "commercial",
   CA: "commercial",
@@ -87,7 +88,7 @@ const CATEGORY_FORMS: Record<Exclude<InsuranceCategoryId, "life" | "health">, Qu
   rec: ["RV", "BOAT"],
   flood: ["FLOOD"],
   umbrella: ["UMBRELLA"],
-  commercial: ["GL", "WC", "BOP", "CA"],
+  commercial: ["GL", "EO", "WC", "BOP", "CA"],
 };
 
 export function pipelineFamilyFromDeal(input: {

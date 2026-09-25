@@ -12,6 +12,7 @@ export const SHEET_PRODUCTS = [
   "boat",
   "flood",
   "gl",
+  "eo",
   "bop",
   "workers_comp",
   "umbrella",
@@ -31,6 +32,7 @@ export const SHEET_PRODUCT_LABELS: Record<SheetProduct, string> = {
   boat: "Boat/Watercraft",
   flood: "Flood",
   gl: "General liability",
+  eo: "E&O",
   bop: "Businessowners (BOP)",
   workers_comp: "Workers' comp",
   umbrella: "Umbrella",
@@ -47,7 +49,7 @@ const LINE_PRODUCTS: Record<ShopLine, SheetProduct[]> = {
   life: ["life"],
   health: ["health"],
   workers_comp: ["workers_comp"],
-  general_liability: ["gl"],
+  general_liability: ["gl", "eo"],
   bop: ["bop"],
 };
 

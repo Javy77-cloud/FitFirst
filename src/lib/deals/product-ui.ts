@@ -42,7 +42,7 @@ export const DEAL_GROUP_THEMES: Record<DealProductGroupId, DealGroupTheme> = {
   commercial: {
     id: "commercial",
     label: "Commercial",
-    blurb: "GL, WC, BOP, Commercial Auto — Business path on bind",
+    blurb: "GL, E&O, WC, BOP, Commercial Auto — Business path on bind",
     stripe: "bg-[var(--ff-terracotta)]",
     wash: "bg-[#f8e8df]",
     ink: "text-[var(--ff-terracotta)]",

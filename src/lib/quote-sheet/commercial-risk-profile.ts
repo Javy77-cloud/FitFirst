@@ -99,6 +99,7 @@ export const COMMERCIAL_AUTO_USE_OPTIONS = ["Service", "Delivery", "Sales", "Com
 const PRODUCT_TO_COVERAGE: Partial<Record<DealProductId, CommercialCoverageLine>> = {
   workers_comp: "Workers' Comp",
   gl: "General Liability",
+  eo: "General Liability",
   bop: "BOP",
   commercial_auto: "Commercial Auto",
 };

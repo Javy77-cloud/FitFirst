@@ -18,6 +18,13 @@ export type AgencyLobRecord = {
   sortOrder: number;
 };
 
+/** Show E&O in the deal picker before migration 0159 inserts the agency_lobs row. */
+export function withBuiltInErrorsOmissions(rows: readonly AgencyLobRecord[]): AgencyLobRecord[] {
+  if (rows.some((row) => row.productId === "eo")) return [...rows];
+  const eo = DEFAULT_AGENCY_LOBS.find((row) => row.productId === "eo");
+  return eo ? [...rows, eo] : [...rows];
+}
+
 export const DEFAULT_AGENCY_LOBS: AgencyLobRecord[] = DEAL_PRODUCT_DEFS.map((row, index) => ({
   productId: row.id,
   label: row.label,
@@ -140,6 +147,9 @@ export const LOB_CODE_ALIASES: Record<string, string> = {
   watercraft: "RV",
   workers_comp: "WC",
   "workers comp": "WC",
+  eo: "GL",
+  "e and o": "GL",
+  "errors and omissions": "GL",
   "workers' comp": "WC",
   "work comp": "WC",
   "term life": "LIFE",

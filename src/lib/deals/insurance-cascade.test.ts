@@ -65,7 +65,7 @@ describe("insurance cascade", () => {
 
   it("Commercial includes CA as a distinct form", () => {
     const ids = formsForCategory("pc", "commercial").map((s) => s.id);
-    expect(ids).toEqual(["GL", "WC", "BOP", "CA"]);
+    expect(ids).toEqual(["GL", "EO", "WC", "BOP", "CA"]);
   });
 
   it("resolves HO8, MH, Motorcycle, Boat, and CA onto the right category", () => {

@@ -2,6 +2,7 @@ import { mailtoHref, telHref } from "@/lib/desk/contact-actions";
 import { bookFamily } from "@/lib/desk/policy-line";
 import { formatMoney } from "@/lib/domain";
 import { homeLineLabel } from "@/lib/home/lines";
+import { policyProductDisplayLabel } from "@/lib/policy/eo";
 import { businessDateKey } from "@/lib/policies/current-term";
 import { isOffBookStatus, policyStatusLabel } from "@/lib/policy/status";
 import { contactHealthScore } from "@/lib/contacts/health-score";
@@ -852,8 +853,9 @@ export function presentPolicyCard(
   });
   const why = withSecondFact(attention.why, premiumCue(row.premium));
   const insured = row.partyName?.trim() || row.displayName || row.policyNumber;
-  const form =
-    row.formType?.trim() || row.policySubType?.trim() || row.policyType?.trim() || "";
+  const form = policyProductDisplayLabel(
+    row.formType?.trim() || row.policySubType?.trim() || row.policyType?.trim() || "",
+  );
   const lob = homeLineLabel(row.lineOfBusiness).trim();
   const currentPremium = moneyAmount(row.premium);
   const proposedPremium = moneyAmount(row.renewalPremium);

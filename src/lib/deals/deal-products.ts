@@ -26,6 +26,7 @@ export const DEAL_PRODUCTS = [
   "boat",
   "umbrella",
   "gl",
+  "eo",
   "workers_comp",
   "bop",
   "commercial_auto",
@@ -152,6 +153,16 @@ export const DEAL_PRODUCT_DEFS: readonly DealProductDef[] = [
     shopLine: "general_liability",
     sheetProduct: "gl",
     quotingForm: "GL",
+    lob: "GL",
+    commercial: true,
+  },
+  {
+    id: "eo",
+    label: "E&O",
+    group: "commercial",
+    shopLine: "general_liability",
+    sheetProduct: "eo",
+    quotingForm: "Errors & Omissions",
     lob: "GL",
     commercial: true,
   },
@@ -303,6 +314,10 @@ const ALIAS_TO_PRODUCT: Record<string, DealProductId> = {
   umbrella: "umbrella",
   gl: "gl",
   general_liability: "gl",
+  eo: "eo",
+  "e&o": "eo",
+  "errors & omissions": "eo",
+  "errors and omissions": "eo",
   workers_comp: "workers_comp",
   wc: "workers_comp",
   bop: "bop",
@@ -362,6 +377,7 @@ export function parseDealProduct(raw: string | null | undefined): DealProductId 
   if (fromForm === "boat") return "boat";
   if (fromForm === "umbrella") return "umbrella";
   if (fromForm === "gl") return "gl";
+  if (fromForm === "eo") return "eo";
   if (fromForm === "workers_comp") return "workers_comp";
   if (fromForm === "bop") return "bop";
   if (fromForm === "commercial_auto") return "commercial_auto";
