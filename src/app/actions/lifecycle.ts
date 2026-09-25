@@ -25,6 +25,7 @@ import { MELBOURNE_HO_DEC_TEXT } from "@/lib/fixtures/sample-docs";
 import { inferMimeFromName } from "@/lib/files/urls";
 import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
 import { textFromUpload } from "@/lib/extraction/pdf";
+import { fillStayHref } from "@/lib/documents/deal-docs-save";
 import { withFlash } from "@/lib/flash";
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import {
@@ -233,11 +234,12 @@ export async function finalizeQuoteResults(formData: FormData) {
 export async function fillQuoteSheetBlanks(formData: FormData) {
   const dealId = str(formData, "dealId");
   const line = (str(formData, "line") || "home") as ShopLine;
+  const product = str(formData, "product") || str(formData, "productInstance");
   const counts = await runFillDealSheets(dealId, line);
   revalidatePath(`/deals/${dealId}`);
   redirect(
     withFlash(
-      `/deals/${dealId}?tab=documents&line=${line}&notice=filled`,
+      fillStayHref({ dealId, line, product, notice: "filled" }),
       toastForFillCounts({
         filledCount: counts.filledKeys.length,
         skippedCount: counts.skippedKeys.length,

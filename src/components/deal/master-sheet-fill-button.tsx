@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { WaitHold } from "@/components/desk/wait-hold";
+import { fillStayHref } from "@/lib/documents/deal-docs-save";
 import { flashAction } from "@/lib/flash-client";
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import {
@@ -52,11 +53,18 @@ function withClientDeadline<T>(work: Promise<T>, timeoutMs: number, message: str
 export function MasterSheetFillButton({
   dealId,
   line,
+  storageLine,
+  product,
 }: {
   dealId: string;
   line: ShopLine;
+  /** Sheet line for this product. A second HO3 is `home~homeowners~…`, not `home`. */
+  storageLine?: string | null;
+  /** Instance key in the URL. Fill must not drop this or the deal opens the sibling. */
+  product?: string | null;
 }) {
   const router = useRouter();
+  const fillLine = (storageLine ?? "").trim() || line;
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const steps = masterFillStepsForLine(line);
@@ -68,7 +76,7 @@ export function MasterSheetFillButton({
     let listed: unknown;
     try {
       listed = await withClientDeadline(
-        listMasterFillDocs({ dealId, line }),
+        listMasterFillDocs({ dealId, line: fillLine }),
         20_000,
         masterFillStepTimeoutMessage("Docs"),
       );
@@ -113,7 +121,7 @@ export function MasterSheetFillButton({
       setStatus(masterFillDocStatus(index, listed.docs.length, label));
       try {
         const raw = await withClientDeadline(
-          fillMasterSheetDocument({ dealId, line, documentId: doc.id }),
+          fillMasterSheetDocument({ dealId, line: fillLine, documentId: doc.id }),
           MASTER_FILL_DOC_CLIENT_TIMEOUT_MS,
           masterFillStepTimeoutMessage(label),
         );
@@ -160,7 +168,7 @@ export function MasterSheetFillButton({
         let raw: unknown;
         try {
           raw = await withClientDeadline(
-            fillMasterSheetStep({ dealId, line, step: step.id }),
+            fillMasterSheetStep({ dealId, line: fillLine, step: step.id }),
             MASTER_FILL_STEP_TIMEOUT_MS,
             masterFillStepTimeoutMessage(step.label),
           );
@@ -174,7 +182,7 @@ export function MasterSheetFillButton({
               isNhtsaTransportFailure(message) ||
               /unexpected|failed to fetch|network/i.test(caught))
           ) {
-            const recovered = await recoverVinDecodeFromBrowser({ dealId, line });
+            const recovered = await recoverVinDecodeFromBrowser({ dealId, line: fillLine });
             if (recovered.ok) {
               results.push({
                 step: "vin",
@@ -226,7 +234,7 @@ export function MasterSheetFillButton({
         }
         let stepResult: MasterFillStepResult = raw;
         if (stepResult.error && step.id === "vin" && line === "auto" && isNhtsaTransportFailure(stepResult.error)) {
-          const recovered = await recoverVinDecodeFromBrowser({ dealId, line });
+          const recovered = await recoverVinDecodeFromBrowser({ dealId, line: fillLine });
           if (recovered.ok) {
             results.push({
               step: "vin",
@@ -252,7 +260,7 @@ export function MasterSheetFillButton({
         setStatus(MASTER_FILL_STEP_PROPERTY);
         try {
           const againRaw = await withClientDeadline(
-            fillMasterSheetStep({ dealId, line, step: "property" }),
+            fillMasterSheetStep({ dealId, line: fillLine, step: "property" }),
             MASTER_FILL_STEP_TIMEOUT_MS,
             masterFillStepTimeoutMessage(MASTER_FILL_STEP_PROPERTY),
           );
@@ -291,9 +299,9 @@ export function MasterSheetFillButton({
         ),
       ];
       const toast = toastForFillCounts({ filledCount: filled, skippedCount: skipped, sources });
-      // Stay on Documents after Fill — Markets only after Confirm & request quotes.
+      // Stay on Documents and this product. Markets only after Confirm & request quotes.
       flashAction(toast);
-      router.replace(`/deals/${dealId}?tab=documents&line=${line}`);
+      router.replace(fillStayHref({ dealId, line: fillLine, product }));
       router.refresh();
     } catch (error) {
       const message = masterFillCaughtMessage(currentLabel, error);

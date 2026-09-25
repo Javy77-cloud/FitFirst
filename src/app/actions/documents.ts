@@ -10,7 +10,7 @@ import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } fr
 import { parseStorageLine } from "@/lib/deals/product-instances";
 import { withFlash } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
-import { dealDocumentsTabHref, type DealDocumentsSaveResult } from "@/lib/documents/deal-docs-save";
+import { dealDocumentsTabHref, fillStayHref, type DealDocumentsSaveResult } from "@/lib/documents/deal-docs-save";
 import { isRedirectError } from "@/lib/lifecycle/shop";
 import { formTag, leadDocFormById, lineTag } from "@/lib/leads/line-documents";
 import {
@@ -531,10 +531,16 @@ export async function uploadDocument(formData: FormData) {
       const savedDealId = last.dealId;
       const line = String(formData.get("line") ?? "home") || "home";
       const tab = String(formData.get("returnTab") ?? "documents") || "documents";
+      const product = String(formData.get("product") ?? formData.get("productInstance") ?? "").trim();
       if (last.slot === "source_doc") {
         after(() => fillDealSheetIfReady(savedDealId, line));
       }
-      redirect(withFlash(`/deals/${last.dealId}?tab=${tab}&notice=filled&line=${line}`, "sheet-filled"));
+      redirect(
+        withFlash(
+          fillStayHref({ dealId: last.dealId, line, product, tab, notice: "filled" }),
+          "sheet-filled",
+        ),
+      );
     }
     if (formData.get("library")) {
       const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
