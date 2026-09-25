@@ -130,11 +130,9 @@ export function LifeHealthQuotesPanel({
 
   return (
     <div className="relative flex flex-col gap-4" data-ff-life-health-quotes="" data-ff-quotes-line={shopLine}>
-      {createNotice ? (
-        <div className="absolute bottom-full left-0 z-20">{createNotice}</div>
-      ) : null}
       {shopLine === "health" && healthSherpaEnrollment ? (
         <section className="ff-card space-y-1 p-4" data-ff-healthsherpa-quote-status="">
+          {createNotice ? <div className="mb-2" data-ff-quotes-head="">{createNotice}</div> : null}
           <h3 className="text-sm font-semibold text-navy">HealthSherpa enrollment</h3>
           <p className="text-xs text-muted-foreground">
             {healthSherpaEnrollment.event === "enrollment_submitted"
@@ -149,6 +147,9 @@ export function LifeHealthQuotesPanel({
         </section>
       ) : null}
       <section className="ff-card space-y-3 p-4" data-ff-life-health-quote-writer="">
+        {!(shopLine === "health" && healthSherpaEnrollment) && createNotice ? (
+          <div data-ff-quotes-head="">{createNotice}</div>
+        ) : null}
         <div>
           <h3 className="text-sm font-semibold text-navy">
             {productLabel ? `${familyLabel} · ${productLabel}` : `${familyLabel} quote writer`}

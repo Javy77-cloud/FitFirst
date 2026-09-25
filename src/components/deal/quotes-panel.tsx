@@ -278,9 +278,18 @@ export function QuotesPanel({
       product={product}
     />
   );
-  const noticeAnchor = createNotice ? (
-    <div className="absolute bottom-full left-0 z-20">{createNotice}</div>
-  ) : null;
+  const quotesHead = (
+    <div className="flex flex-wrap items-center" data-ff-quotes-head="">
+      {createNotice ? <div className="shrink-0">{createNotice}</div> : null}
+      <div className={createNotice ? "ml-3" : undefined}>
+        <QuotesWarningStrip
+          quotes={sorted.map((row) => row.quote)}
+          sheetStale={sheetStale}
+          completeness={completeness}
+        />
+      </div>
+    </div>
+  );
 
   if (sorted.length === 0) {
     return (
@@ -291,8 +300,8 @@ export function QuotesPanel({
         data-ff-quotes-empty=""
         data-ff-quotes-line={activeLine ?? ""}
       >
-        {noticeAnchor}
         <div className="ff-card space-y-3 p-4">
+          {quotesHead}
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">
               {productLabel ? `Quotes · ${productLabel}` : "Quotes"}
@@ -304,11 +313,6 @@ export function QuotesPanel({
               variant="hero"
             />
           ) : null}
-          <QuotesWarningStrip
-            quotes={sorted.map((row) => row.quote)}
-            sheetStale={sheetStale}
-            completeness={completeness}
-          />
           <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
             0 quote rows
           </p>
@@ -356,32 +360,30 @@ export function QuotesPanel({
     );
   }
 
+  const issueControl =
+    product &&
+    (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue || outsideOverride) ? (
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-3">
+        <IssuePolicyFromDec
+          dealId={dealId}
+          product={product}
+          stage={productStage}
+          selectedQuoteIds={selectedQuoteIds}
+          outsideOverride={outsideOverride}
+          mintStatus={mintStatus}
+          issued={issuedPolicy}
+          autoOpen={autoIssue}
+          folderHasPolicy={selectedHasFolderPolicy}
+        />
+      </div>
+    ) : null;
+
   return (
     <div className="relative flex flex-col gap-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
-      {noticeAnchor}
-      <QuotesWarningStrip
-        quotes={sorted.map((row) => row.quote)}
-        sheetStale={sheetStale}
-        completeness={completeness}
-      />
-      {product &&
-      (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue || outsideOverride) ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <IssuePolicyFromDec
-            dealId={dealId}
-            product={product}
-            stage={productStage}
-            selectedQuoteIds={selectedQuoteIds}
-            outsideOverride={outsideOverride}
-            mintStatus={mintStatus}
-            issued={issuedPolicy}
-            autoOpen={autoIssue}
-            folderHasPolicy={selectedHasFolderPolicy}
-          />
-        </div>
-      ) : null}
       {grouped.current.length ? (
         <section className="ff-card overflow-hidden" data-ff-quotes-current="">
+          <div className="border-b border-border px-4 py-3">{quotesHead}</div>
+          {issueControl}
           <QuotesResultsTable
             dealId={dealId}
             rows={grouped.current}
@@ -404,6 +406,8 @@ export function QuotesPanel({
         </section>
       ) : (
         <div className="ff-card space-y-2 p-4" data-ff-quotes-current="" data-ff-quotes-current-empty="">
+          {quotesHead}
+          {issueControl}
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">
               {productLabel

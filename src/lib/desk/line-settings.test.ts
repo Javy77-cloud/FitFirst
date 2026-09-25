@@ -17,6 +17,7 @@ import {
   visiblePolicyBooks,
   visibleShopLines,
   allowLifeHealthFamily,
+  dealPipelineShowsSellingAgency,
 } from "./line-settings";
 
 const hiddenBoth = { writeLife: false, writeHealth: false, showSellingAgency: false };
@@ -44,6 +45,14 @@ describe("default Life / Health subfilters", () => {
 
   it("keeps selling-agency picklists off by default", () => {
     expect(DEFAULT_DESK_LINE_SETTINGS.showSellingAgency).toBe(false);
+  });
+
+  it("shows Deal Details selling agency only when Life or Health is written", () => {
+    expect(dealPipelineShowsSellingAgency(hiddenBoth)).toBe(false);
+    expect(dealPipelineShowsSellingAgency(lifeOnly)).toBe(true);
+    expect(dealPipelineShowsSellingAgency(healthOnly)).toBe(true);
+    expect(dealPipelineShowsSellingAgency({ writeLife: true, writeHealth: true })).toBe(true);
+    expect(dealPipelineShowsSellingAgency(null)).toBe(true);
   });
 });
 

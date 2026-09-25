@@ -104,6 +104,14 @@ describe("deal detail final rebuild", () => {
     expect(docs).toMatch(/data-ff-deal-docs-sheet/);
     expect(docs).toMatch(/className="w-full min-w-0" data-ff-deal-upload/);
     expect(docs).toMatch(/ff-card w-full/);
+    expect(docs).toMatch(/Document Upload/);
+    expect(docs).toMatch(/data-ff-document-upload/);
+    expect(docs).toMatch(/max-w-3xl/);
+    expect(docs).toMatch(/Deal Document Library/);
+    expect(docs).toMatch(/ChevronUp/);
+    expect(docs).toMatch(/ChevronDown/);
+    expect(docs).not.toMatch(/>Upload</);
+    expect(docs).not.toMatch(/Deal library/);
     expect(docs).not.toMatch(/data-ff-deal-upload-split/);
     expect(docs).not.toMatch(/lg:grid-cols-/);
     expect(docs).not.toMatch(/grid-cols-/);

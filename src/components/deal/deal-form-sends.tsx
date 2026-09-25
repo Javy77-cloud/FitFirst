@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { listDocumentPipelineJobs } from "@/lib/document-pipeline/store";
 import { letterStatusChipClass, letterStatusLabel } from "@/lib/document-pipeline/status";
 import {
@@ -13,12 +12,7 @@ export async function DealFormSends({ dealId }: { dealId: string }) {
   if (jobs.length === 0) return null;
   return (
     <section className="ff-card p-3" data-ff-form-sends="">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-navy">Form sends</h3>
-        <Link href="/documents" className="text-xs text-primary hover:underline">
-          Open Documents
-        </Link>
-      </div>
+      <h3 className="mb-2 text-sm font-semibold text-navy">Form sends</h3>
       <ul className="space-y-1.5">
         {jobs.slice(0, 6).map((job) => {
           if (!isDocumentPipelineJobType(job.type) || !isDocumentPipelineStatus(job.status)) return null;

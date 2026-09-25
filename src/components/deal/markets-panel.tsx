@@ -176,11 +176,10 @@ export function MarketsPanel({
     </>
   );
 
+  const marketsLead = productLabel ? `Markets · ${productLabel}` : null;
+
   return (
     <div className="space-y-3" data-ff-deal-markets="">
-      {productLabel ? (
-        <h3 className="text-sm font-semibold text-navy">{`Markets · ${productLabel}`}</h3>
-      ) : null}
       {appetite.length > 0 ? (
         <MarketsSelectTable
           dealId={dealId}
@@ -190,12 +189,11 @@ export function MarketsPanel({
           selected={selected}
           onSelectedChange={setSelected}
           toolbar={appetiteToolbar}
+          lead={marketsLead}
         />
       ) : (
-        <div
-          className="flex flex-wrap items-center justify-between gap-2"
-          data-ff-deal-markets-stats=""
-        >
+        <div className="ff-card space-y-3 p-4" data-ff-deal-markets-stats="">
+          {marketsLead ? <h3 className="text-sm font-semibold text-navy">{marketsLead}</h3> : null}
           {appetiteToolbar}
         </div>
       )}

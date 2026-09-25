@@ -196,6 +196,19 @@ export function deskNavExtras(settings: Pick<DeskLineSettings, "writeLife" | "wr
   return extras;
 }
 
+/**
+ * Deal Details Selling agency is only for desks that write Life or Health.
+ * A P&C-only desk is always the selling agency, so the field stays off the row.
+ * Missing settings follow the desk default (Life and Health both on).
+ */
+export function dealPipelineShowsSellingAgency(
+  settings?: Pick<DeskLineSettings, "writeLife" | "writeHealth"> | null,
+): boolean {
+  const writeLife = settings?.writeLife ?? DEFAULT_DESK_LINE_SETTINGS.writeLife;
+  const writeHealth = settings?.writeHealth ?? DEFAULT_DESK_LINE_SETTINGS.writeHealth;
+  return writeLife || writeHealth;
+}
+
 /** Cascade Type / commission book rows keyed life | health. */
 export function visibleInsuranceTypes<T extends { id: string }>(
   types: readonly T[],
