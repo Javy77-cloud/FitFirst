@@ -18,9 +18,11 @@ export type SectionTab = {
  * Server-rendered tabs.
  *
  * Deal layout (heading + corner + sidePanel):
- *   [ heading     ] [ corner chip ]
- *   [ tabs        ] [             ]
- *   [ content     ] [ side panel  ]  ← same top (50px under tabs)
+ *   [ name / producer / phone / addresses ] [ momentum ]
+ *   [ tabs + section under them           ] [ side panel ]
+ *   The tab row and the panel share one surface, separated from the name block.
+ *   Side panel keeps the 50px top; a negative margin cancels the extra tab gap
+ *   so Quick Communication does not move.
  */
 export function SectionTabs({
   tabs,

@@ -1007,6 +1007,10 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
   column-gap: 1.25rem !important;
   row-gap: 0 !important;
   align-items: start !important;
+  /* Extra air under the deal-name block, plus padding inside the tab group.
+     The rail pulls back by the same amount so Quick Communication stays put. */
+  --ff-deal-tab-group-gap: 3rem;
+  --ff-deal-tab-group-pad: 0.75rem;
 }
 [data-ff-deal-quotes-corner] {
   justify-self: end !important;
@@ -1024,6 +1028,18 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
 /* Product tabs sit above Quick Communication and grow upward out of the rail. */
 [data-ff-deal-workspace] [data-ff-deal-right-rail] {
   overflow: visible !important;
+  margin-top: calc(-1 * (var(--ff-deal-tab-group-gap) + var(--ff-deal-tab-group-pad)));
+}
+/* Deal Details / Documents / Markets / Quotes and the section under them
+   are one block, set down from the name, producer, phone, and addresses. */
+[data-ff-deal-workspace] [data-ff-deal-tab-row-wrap] {
+  margin-top: calc(1.25rem + var(--ff-deal-tab-group-gap)) !important;
+  padding-top: var(--ff-deal-tab-group-pad);
+  background: var(--ff-wash);
+  box-shadow: inset 0 1px 0 var(--ff-row-line);
+}
+[data-ff-deal-workspace] [data-ff-deal-tab-panel] {
+  background: var(--ff-wash);
 }
 /* Five product rows of fixed headroom (chip ~26.5px + 4px gap).
    The column is absolute against the top of Quick Communication, so this
