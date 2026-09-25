@@ -102,10 +102,17 @@ describe("deal shop flow + product chrome", () => {
     expect(rail).toMatch(/bottom-full/);
     expect(rail).toContain(">Products<");
     expect(rail).not.toMatch(/>Policy form</);
-    expect(rail).toMatch(/flex w-full min-w-0 items-center/);
-    expect(rail).not.toMatch(/flex w-full flex-col/);
-    expect(rail.indexOf(">Products<")).toBeLessThan(rail.indexOf("data-ff-policy-form-trigger"));
-    expect(rail.indexOf("data-ff-policy-form-trigger")).toBeLessThan(rail.indexOf("Add or change product"));
+    expect(rail).toMatch(/flex w-full min-w-0 flex-col/);
+    expect(rail).toMatch(/data-ff-policy-form-caption/);
+    expect(rail.indexOf("data-ff-policy-form-trigger")).toBeLessThan(rail.indexOf("data-ff-policy-form-caption"));
+    expect(rail.indexOf("data-ff-policy-form-caption")).toBeLessThan(rail.indexOf(">Products<"));
+    expect(rail.indexOf(">Products<")).toBeLessThan(rail.indexOf("Add or change product"));
+    const field = rail.slice(
+      rail.indexOf("data-ff-policy-form-field"),
+      rail.indexOf("data-ff-policy-form-caption"),
+    );
+    expect(field).not.toContain(">Products<");
+    expect(field).not.toContain("Add or change product");
     const menu = rail.slice(rail.indexOf("data-ff-policy-form-menu"));
     expect(menu.indexOf("HO3 16021 Northwest 79th")).toBeLessThan(menu.indexOf("DP3 10358 Northwest 30th"));
     expect(menu.indexOf("DP3 10358 Northwest 30th")).toBeLessThan(menu.indexOf("HO3 8944 Adriatico"));

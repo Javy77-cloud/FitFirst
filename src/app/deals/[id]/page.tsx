@@ -881,9 +881,10 @@ export default async function DealPage({
                   </div>
                 }
               />
-              {dealProducts.length ? (
-                <div className="flex justify-end" data-ff-deal-products-header="">
-                  <div className="min-w-0 w-full sm:w-1/4">
+            </div>
+          }
+          tabRowField={
+            dealProducts.length ? (
               <DealLineSwitcher
                 layout="rail"
                 dealId={deal.id}
@@ -969,10 +970,7 @@ export default async function DealPage({
                   }),
                 )}
               />
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            ) : null
           }
           subnav={null}
           corner={
