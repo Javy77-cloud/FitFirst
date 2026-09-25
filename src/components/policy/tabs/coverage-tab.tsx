@@ -1,5 +1,6 @@
 import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
 import { formatMoney } from "@/lib/domain";
+import { displayHomeCoverageLimit, displayHomeDeductible } from "@/lib/extraction/gemini/home-dollar";
 import {
   allowedInterestKinds,
   canHoldInterests,
@@ -36,6 +37,28 @@ type ScheduleRow = {
   premium: string;
   source: "carrier_download" | "manual" | "unknown";
 };
+
+const DEDUCTIBLE_LIMIT_KEYS = new Set([
+  "wind_hail_deductible",
+  "hurricane_deductible",
+  "aop_deductible",
+]);
+
+function shownCoverageLimit(key: string, label: string, value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "—") return trimmed || "—";
+  const fromKey = displayHomeCoverageLimit(key, trimmed);
+  if (fromKey !== trimmed) return fromKey;
+  const letter = label.match(/^coverage\s+([a-f])$/i);
+  if (letter) return displayHomeCoverageLimit(`coverage_${letter[1]!.toLowerCase()}`, trimmed);
+  return trimmed;
+}
+
+function shownDeductible(value: string | null | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || trimmed === "—") return "—";
+  return displayHomeDeductible(trimmed) || trimmed;
+}
 
 function titleCase(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
@@ -110,7 +133,7 @@ function buildSchedule(
       key: "coverage_a",
       label: "Coverage A",
       limit: formatMoney(policy.coverageA),
-      deductible: current?.aopDeductible?.trim() || "—",
+      deductible: shownDeductible(current?.aopDeductible),
       premium: current?.premium ? formatMoney(current.premium) : "—",
       source: termSource,
     });
@@ -128,10 +151,13 @@ function buildSchedule(
   if (policy.coverageLimits) {
     for (const [key, value] of Object.entries(policy.coverageLimits)) {
       if (!value?.trim()) continue;
+      if (DEDUCTIBLE_LIMIT_KEYS.has(key)) continue;
+      if (key === "coverage_a" && policy.coverageA != null) continue;
+      const label = titleCase(key);
       rows.push({
         key: `limit_${key}`,
-        label: titleCase(key),
-        limit: value.trim(),
+        label,
+        limit: shownCoverageLimit(key, label, value),
         deductible: "—",
         premium: "—",
         source: "manual",
@@ -151,8 +177,8 @@ function buildSchedule(
         rows.push({
           key: `term_${row.key || label}`,
           label,
-          limit: row.value?.trim() || "—",
-          deductible: extended.deductible?.trim() || "—",
+          limit: shownCoverageLimit(row.key || "", label, row.value?.trim() || "—"),
+          deductible: shownDeductible(extended.deductible),
           premium: extended.premium?.trim() || "—",
           source:
             extended.source === "carrier_download"
@@ -165,10 +191,11 @@ function buildSchedule(
     } else {
       for (const [key, value] of Object.entries(current.coverages)) {
         if (!value?.trim()) continue;
+        const label = titleCase(key);
         rows.push({
           key: `term_map_${key}`,
-          label: titleCase(key),
-          limit: value.trim(),
+          label,
+          limit: shownCoverageLimit(key, label, value),
           deductible: "—",
           premium: "—",
           source: termSource,
@@ -179,16 +206,23 @@ function buildSchedule(
   for (const [label, value] of [
     ["AOP deductible", current?.aopDeductible],
     ["Hurricane deductible", current?.hurricaneDeductible],
+    ["Wind/hail deductible", policy.coverageLimits?.wind_hail_deductible],
     ["Comprehensive deductible", current?.comprehensiveDeductible],
     ["Collision deductible", current?.collisionDeductible],
   ] as const) {
     if (!value?.trim()) continue;
-    if (rows.some((row) => row.deductible === value.trim() && row.label === "Coverage A")) continue;
+    const deductible = shownDeductible(value);
+    if (
+      label === "AOP deductible" &&
+      rows.some((row) => row.label === "Coverage A" && row.deductible === deductible)
+    ) {
+      continue;
+    }
     rows.push({
       key: `ded_${label}`,
       label,
       limit: "—",
-      deductible: value.trim(),
+      deductible,
       premium: "—",
       source: termSource,
     });

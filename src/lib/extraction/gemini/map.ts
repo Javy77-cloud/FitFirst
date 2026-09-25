@@ -3,6 +3,7 @@ import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/l
 import { normalizeNamedInsured } from "@/lib/people/named-insured";
 import { isRepeatableSheetKey } from "@/lib/quote-sheet/repeatable-units";
 import { enforceAutoPhysDam, formatAutoDollarDeductible, isAutoDeductibleField } from "./auto-deductible";
+import { enforceHomeDecDollars } from "./home-dollar";
 import { expandAutoDecLayout } from "./auto-layout";
 import { readGeminiDocumentKind, sanitizeGeminiPreview } from "./preview";
 import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
@@ -42,8 +43,21 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   screen_enclosure: ["screen_enclosure"],
   screen_enclosure_limit: ["screen_enclosure"],
   hurricane_deductible: ["hurricane_deductible"],
+  hurricane: ["hurricane_deductible"],
+  hurricane_ded: ["hurricane_deductible"],
   aop_deductible: ["aop_deductible"],
+  aop: ["aop_deductible"],
+  all_other_perils: ["aop_deductible"],
+  all_other_perils_deductible: ["aop_deductible"],
+  other_perils_deductible: ["aop_deductible"],
   wind_hail_deductible: ["wind_hail_deductible"],
+  wind_hail: ["wind_hail_deductible"],
+  windstorm_deductible: ["wind_hail_deductible"],
+  windstorm_or_hail: ["wind_hail_deductible"],
+  windstorm_hail_deductible: ["wind_hail_deductible"],
+  wind_deductible: ["wind_hail_deductible"],
+  dwelling: ["coverage_a"],
+  dwelling_limit: ["coverage_a"],
   current_policy_name_insured: ["named_insured", "current_policy_named_insured"],
   policy_number: ["policy_number"],
   policy: ["policy_number"],
@@ -138,9 +152,15 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   inspected_date: ["date_inspected"],
   date_of_inspected: ["date_inspected"],
   coverage_b: ["coverage_b"],
+  other_structures: ["coverage_b"],
   coverage_c: ["coverage_c"],
+  personal_property: ["coverage_c"],
+  contents: ["coverage_c"],
   coverage_d: ["coverage_d"],
+  loss_of_use: ["coverage_d"],
+  additional_living_expense: ["coverage_d"],
   coverage_e: ["coverage_e"],
+  personal_liability: ["coverage_e"],
   coverage_f: ["coverage_f"],
   sinkhole_deductible: ["sinkhole_deductible"],
   protection_class: ["protection_class"],
@@ -770,6 +790,7 @@ export function mapGeminiJsonToFields(
   }
 
   enforceAutoPhysDam(fields, shopLine);
+  enforceHomeDecDollars(fields, shopLine);
 
   const glanceRequired = fields.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0;
   return {

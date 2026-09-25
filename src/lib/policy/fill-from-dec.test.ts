@@ -3,6 +3,8 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ProcessingLabel, WaitHold } from "@/components/desk/wait-hold";
+import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
+import { policyInformationFields } from "@/lib/desk/policy-information";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
 import { sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
 import { autoCoverageExtras, autoCoverageSchedule, autoVehicleCoverageBlocks } from "@/lib/policy/auto-coverage";
@@ -95,7 +97,9 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.coverageA).toBe("433613");
     expect(proposed.coverageB).toBe("$43,368");
     expect(proposed.coverageE).toBe("$300,000");
-    expect(proposed.aopDeductible).toBe("2500");
+    expect(proposed.aopDeductible).toBe("$2,500");
+    expect(proposed.policyType).toBeUndefined();
+    expect(proposed.coverageALimit).toBe("$433,613");
     expect(proposed.hurricaneDeductible).toBe("2% ($8,672)");
     expect(proposed.ordinanceOrLaw).toBe("25%");
     expect(proposed.premium).toBe("6567.76");
@@ -136,6 +140,60 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.scheduledCarport).toBe("$9,000");
     expect(proposed.scheduledScreenRoom).toBe("$10,000");
     expect(proposed.scheduledShed).toBe("$2,000");
+    expect(proposed.formType).toBe("MHO");
+    expect(proposed.policyType).toBe("MHO");
+    expect(proposed.policySubType).toBe("MHO");
+  });
+
+  it("fills an American Traditions manufactured-home dec as MHO with dollars and deductibles", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        form: "HO3",
+        insurance_type: "Home",
+        current_carrier: "American Traditions",
+        unit_year: "2006",
+        unit_make: "General MFG",
+        unit_serial: "GMHGA40533527a/b",
+        coverage_a: "130000",
+        coverage_c: "65000",
+        coverage_d: "26000",
+        coverage_e: "100000",
+        coverage_f: "500",
+        aop_deductible: "1000",
+        hurricane_deductible: "2%",
+        windstorm_deductible: "1000",
+      }),
+    });
+    expect(proposed.formType).toBe("MHO");
+    expect(proposed.policyType).toBe("MHO");
+    expect(proposed.policySubType).toBe("MHO");
+    expect(proposed.coverageA).toBe("130000");
+    expect(proposed.coverageALimit).toBe("$130,000");
+    expect(proposed.coverageB).toBeUndefined();
+    expect(proposed.coverageC).toBe("$65,000");
+    expect(proposed.coverageD).toBe("$26,000");
+    expect(proposed.coverageE).toBe("$100,000");
+    expect(proposed.coverageF).toBe("$500");
+    expect(proposed.aopDeductible).toBe("$1,000");
+    expect(proposed.hurricaneDeductible).toBe("2%");
+    expect(proposed.windHailDeductible).toBe("$1,000");
+    expect(sheetKeysForGeminiKey("all_other_perils_deductible")).toContain("aop_deductible");
+    expect(sheetKeysForGeminiKey("windstorm_or_hail")).toContain("wind_hail_deductible");
+    expect(sheetKeysForGeminiKey("dwelling_limit")).toContain("coverage_a");
+  });
+
+  it("keeps a stick-built HO5 when only a carrier name is present", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        form: "HO5",
+        current_carrier: "American Traditions",
+        coverage_a: "200000",
+      }),
+    });
+    expect(proposed.formType).toBe("HO5");
+    expect(proposed.policyType).toBeUndefined();
   });
 
   it("maps an auto dec onto vehicles, drivers, and coverage", () => {
@@ -454,6 +512,60 @@ describe("fill overwrite count", () => {
     expect(fillOverwriteWarning(1)).toBe("replaces 1 field");
   });
 
+  it("replaces bare manufactured-home limits and deductibles with dollar amounts", () => {
+    const proposedMh = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        form: "HO3",
+        unit_make: "General MFG",
+        coverage_a: "130000",
+        coverage_c: "65000",
+        aop_deductible: "1000",
+        hurricane_deductible: "2%",
+        wind_hail_deductible: "1000",
+      }),
+    });
+    const existing = snapshotFillTargets({
+      policy: {
+        coverageA: 130000,
+        formType: "HO3",
+        policyType: "Home",
+        policySubType: "HO3",
+        coverageLimits: { coverage_a: "130000", coverage_c: "65000" },
+      },
+      term: { aopDeductible: "1000", hurricaneDeductible: "2%" },
+    });
+    const classified = classifyFillFields(existing, proposedMh);
+    expect(classified.overwritten).toEqual(
+      expect.arrayContaining([
+        "formType",
+        "policyType",
+        "policySubType",
+        "coverageALimit",
+        "coverageC",
+        "aopDeductible",
+      ]),
+    );
+    expect(classified.skipped).toEqual(expect.arrayContaining(["coverageA", "hurricaneDeductible"]));
+    expect(classified.filled).toContain("windHailDeductible");
+    const patch = groupAppliedFill(proposedMh, [
+      "formType",
+      "policyType",
+      "policySubType",
+      "coverageALimit",
+      "coverageC",
+      "aopDeductible",
+      "hurricaneDeductible",
+      "windHailDeductible",
+    ]);
+    expect(patch.policy).toMatchObject({ formType: "MHO", policyType: "MHO", policySubType: "MHO" });
+    expect(patch.coverageLimits.coverage_a).toBe("$130,000");
+    expect(patch.coverageLimits.coverage_c).toBe("$65,000");
+    expect(patch.coverageLimits.wind_hail_deductible).toBe("$1,000");
+    expect(patch.term.aopDeductible).toBe("$1,000");
+    expect(patch.term.hurricaneDeductible).toBe("2%");
+  });
+
   it("counts a non-blank policy term the DEC would replace", () => {
     const existing = snapshotFillTargets({
       policy: {
@@ -699,5 +811,77 @@ describe("fillPolicyFromDec wiring", () => {
     expect(pickPolicyDecDocument([older, newer])?.id).toBe("new");
     expect(pickPolicyDecDocument([older, newer], { documentId: "old" })?.id).toBe("old");
     expect(pickPolicyDecDocument([older, newer], { sourceDocumentId: "old" })?.id).toBe("old");
+  });
+});
+
+describe("manufactured home coverage display", () => {
+  it("shows dollar coverage limits and hurricane, AOP, and wind/hail deductibles", () => {
+    const html = renderToString(
+      createElement(PolicyCoverageTab, {
+        policy: {
+          id: "p1",
+          coverageA: 130000,
+          coverageLimits: {
+            coverage_c: "65000",
+            coverage_d: "26000",
+            coverage_e: "100000",
+            coverage_f: "500",
+            unit_year: "2006",
+            wind_hail_deductible: "1000",
+          },
+          faceAmount: null,
+          lineOfBusiness: "HO",
+          formType: "MHO",
+          policyType: "MHO",
+          policySubType: "MHO",
+        },
+        terms: [],
+        currentTerm: {
+          id: "t1",
+          role: "current",
+          premium: "3678.00",
+          aopDeductible: "1000",
+          hurricaneDeductible: "2%",
+          comprehensiveDeductible: null,
+          collisionDeductible: null,
+          coverages: [{ key: "coverage_c", label: "Coverage C", value: "65000" }],
+          termEffective: new Date("2026-09-25T12:00:00.000Z"),
+          termExpiration: new Date("2027-09-25T12:00:00.000Z"),
+        },
+      }),
+    );
+    expect(html).toContain("$130,000");
+    expect(html).toContain("$65,000");
+    expect(html).toContain("$26,000");
+    expect(html).toContain("$100,000");
+    expect(html).toContain("$500");
+    expect(html).toContain("$1,000");
+    expect(html).toContain("Hurricane deductible");
+    expect(html).toContain("Wind/hail deductible");
+    expect(html).toContain(">2%<");
+    expect(html).toContain("2006");
+    expect(html).not.toContain("$2,006");
+
+    const fields = policyInformationFields({
+      policy: {
+        policyNumber: "ATM205086",
+        status: "active",
+        lineOfBusiness: "HO",
+        policyType: "MHO",
+        policySubType: "MHO",
+        formType: "MHO",
+        effectiveDate: new Date("2026-09-25T12:00:00.000Z"),
+        expirationDate: new Date("2027-09-25T12:00:00.000Z"),
+        coverageA: 130000,
+        coverageLimits: { coverage_c: "65000", unit_year: "2006" },
+      },
+    });
+    expect(fields.find((field) => field.key === "line")?.value).toBe("HO · MHO");
+    expect(fields.find((field) => field.key === "subType")?.value).toBe("MHO");
+    expect(fields.find((field) => field.key === "coverageA")?.value).toBe("$130,000");
+    const limits = fields.find((field) => field.key === "limits")?.value ?? "";
+    expect(limits).toContain("Coverage C $65,000");
+    expect(limits).toContain("Unit Year 2006");
+    expect(limits).not.toContain("$2,006");
   });
 });

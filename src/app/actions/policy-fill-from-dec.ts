@@ -430,6 +430,8 @@ export async function fillPolicyFromDec(input: {
     if (patch.policy.premisesZip) policySet.premisesZip = patch.policy.premisesZip;
     if (patch.policy.coverageA != null) policySet.coverageA = patch.policy.coverageA;
     if (patch.policy.formType) policySet.formType = patch.policy.formType;
+    if (patch.policy.policyType) policySet.policyType = patch.policy.policyType;
+    if (patch.policy.policySubType) policySet.policySubType = patch.policy.policySubType;
     if (patch.policy.premium) policySet.premium = patch.policy.premium;
     if (patch.policy.effectiveDate) policySet.effectiveDate = patch.policy.effectiveDate;
     if (patch.policy.expirationDate) policySet.expirationDate = patch.policy.expirationDate;
