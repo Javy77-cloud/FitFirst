@@ -20,7 +20,12 @@ import {
   PHYS_DAM_COVERED_MARK,
   physDamLimitForDeductible,
 } from "@/lib/extraction/gemini/auto-deductible";
-import { normalizeDeductibleDisplay } from "@/lib/renewal/fill-compare-from-decs";
+import {
+  classifyManufacturedHomeForm,
+  formatHomeDeductibleAmount,
+  formatHomeDollarAmount,
+  HOME_DOLLAR_DISPLAY_FILL_KEYS,
+} from "@/lib/extraction/gemini/home-dollar";
 import { parseMoney } from "@/lib/renewal/compare";
 
 export type FillSource = "issue" | "manual";
@@ -102,6 +107,8 @@ export type AppliedFillPatch = {
     premisesZip?: string;
     coverageA?: number;
     formType?: string;
+    policyType?: string;
+    policySubType?: string;
     premium?: string;
     effectiveDate?: Date;
     expirationDate?: Date;
@@ -303,19 +310,9 @@ export function formatDecLimit(raw: string): string {
   return moneyLabel(trimmed);
 }
 
-/** Keep both a percent and a dollar when the dec prints both (Gloria hurricane). */
+/** Keep a percent, and keep a dollar sign on a dollar deductible. */
 export function formatDecDeductible(raw: string): string {
-  const trimmed = raw.replace(/\s+/g, " ").trim();
-  if (!trimmed) return "";
-  const pctMatches = [...trimmed.matchAll(/(\d+(?:\.\d+)?)\s*%/g)];
-  const money = trimmed.match(/\$\s*([\d,]+(?:\.\d+)?)/);
-  if (pctMatches.length > 0 && money) {
-    const pctRaw = pctMatches[pctMatches.length - 1]![1]!;
-    const pct = Number(pctRaw);
-    const pctText = Number.isFinite(pct) && pct % 1 === 0 ? `${pct}%` : `${pctRaw}%`;
-    return `${pctText} (${moneyLabel(money[1]!)})`;
-  }
-  return normalizeDeductibleDisplay(trimmed) ?? (/[a-z]/i.test(trimmed) ? trimmed : moneyLabel(trimmed));
+  return formatHomeDeductibleAmount(raw);
 }
 
 function splitDecAddress(raw: string): PremisesAddressParts {
@@ -527,18 +524,63 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   if (mortgagee && !isNoMortgageValue(mortgagee)) put(out, "mortgageeName", mortgagee);
   put(out, "mortgageeLoanNumber", rawCell(rows, "loan_number"));
 
-  put(out, "formType", rawCell(rows, "form", "policy_form"));
+  const printedForm = rawCell(rows, "form", "policy_form");
+  const manufactured = classifyManufacturedHomeForm({
+    form: printedForm,
+    insuranceType: rawCell(rows, "insurance_type"),
+    construction: rawCell(rows, "construction", "construction_type"),
+    dwellingType: rawCell(rows, "dwelling_type"),
+    carrier: rawCell(rows, "current_carrier", "carrier", "carrier_name"),
+    unitYear: rawCell(rows, "unit_year", "mh_year"),
+    unitMake: rawCell(rows, "unit_make", "mh_make"),
+    unitSerial: rawCell(rows, "unit_serial", "mh_serial"),
+  });
+  if (manufactured) {
+    put(out, "formType", manufactured);
+    put(out, "policyType", manufactured);
+    put(out, "policySubType", manufactured);
+  } else {
+    put(out, "formType", printedForm);
+  }
 
-  const coverageA = parseMoney(rawCell(rows, "coverage_a", "dwelling"));
+  const coverageARaw = rawCell(rows, "coverage_a", "dwelling", "dwelling_limit");
+  const coverageA = parseMoney(coverageARaw);
   if (coverageA != null && coverageA > 0) put(out, "coverageA", String(Math.round(coverageA)));
-  put(out, "coverageB", coverageMoney(rows, "coverage_b"));
-  put(out, "coverageC", coverageMoney(rows, "coverage_c"));
-  put(out, "coverageD", coverageMoney(rows, "coverage_d"));
-  put(out, "coverageE", coverageMoney(rows, "coverage_e"));
-  put(out, "coverageF", coverageMoney(rows, "coverage_f"));
+  const coverageADisplay = formatHomeDollarAmount(coverageARaw);
+  if (coverageADisplay && !coverageADisplay.includes("%")) put(out, "coverageALimit", coverageADisplay);
+  put(out, "coverageB", coverageMoney(rows, "coverage_b", "other_structures"));
+  put(out, "coverageC", coverageMoney(rows, "coverage_c", "personal_property", "contents"));
+  put(out, "coverageD", coverageMoney(rows, "coverage_d", "loss_of_use", "additional_living_expense"));
+  put(out, "coverageE", coverageMoney(rows, "coverage_e", "personal_liability"));
+  put(out, "coverageF", coverageMoney(rows, "coverage_f", "medical_payments_to_others"));
   put(out, "ordinanceOrLaw", formatDecDeductible(rawCell(rows, "ordinance_or_law", "ordinance_law")));
-  put(out, "aopDeductible", formatDecDeductible(rawCell(rows, "aop_deductible")));
-  put(out, "hurricaneDeductible", formatDecDeductible(rawCell(rows, "hurricane_deductible")));
+  put(
+    out,
+    "aopDeductible",
+    formatDecDeductible(
+      rawCell(rows, "aop_deductible", "all_other_perils", "all_other_perils_deductible", "other_perils_deductible", "aop"),
+    ),
+  );
+  put(
+    out,
+    "hurricaneDeductible",
+    formatDecDeductible(rawCell(rows, "hurricane_deductible", "hurricane", "hurricane_ded")),
+  );
+  put(
+    out,
+    "windHailDeductible",
+    formatDecDeductible(
+      rawCell(
+        rows,
+        "wind_hail_deductible",
+        "wind_hail",
+        "windstorm_deductible",
+        "windstorm_or_hail",
+        "windstorm_hail_deductible",
+        "wind_deductible",
+      ),
+    ),
+  );
 
   const roofInstall = rawCell(rows, "date_of_roof_installation", "roof_install_date");
   put(out, "roofInstallDate", roofInstall);
@@ -882,6 +924,7 @@ export function fillValuesEqual(key: string, prev: string, next: string): boolea
     const b = licenseTail(next);
     return Boolean(a && b && a === b);
   }
+  if (HOME_DOLLAR_DISPLAY_FILL_KEYS.has(key)) return prev.trim() === next.trim();
   const norm = (value: string) =>
     value.trim().toLowerCase().replace(/[$,]/g, "").replace(/\s+/g, " ");
   return norm(prev) === norm(next);
@@ -909,12 +952,14 @@ export function classifyFillFields(
 }
 
 const LIMIT_KEYS: Record<string, string> = {
+  coverage_a: "coverageALimit",
   coverage_b: "coverageB",
   coverage_c: "coverageC",
   coverage_d: "coverageD",
   coverage_e: "coverageE",
   coverage_f: "coverageF",
   ordinance_or_law: "ordinanceOrLaw",
+  wind_hail_deductible: "windHailDeductible",
   dwelling_type: "dwellingType",
   number_of_families: "families",
   dwelling_replacement_cost: "dwellingReplacementCost",
@@ -971,6 +1016,8 @@ export type FillSnapshotInput = {
     premisesZip?: string | null;
     coverageA?: number | null;
     formType?: string | null;
+    policyType?: string | null;
+    policySubType?: string | null;
     premium?: string | number | null;
     coverageLimits?: Record<string, string> | null;
     effectiveDate?: Date | string | null;
@@ -1035,6 +1082,8 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
     put(out, "coverageA", String(policy.coverageA));
   }
   put(out, "formType", policy?.formType);
+  put(out, "policyType", policy?.policyType);
+  put(out, "policySubType", policy?.policySubType);
   put(out, "effectiveDate", businessDateKey(policy?.effectiveDate));
   put(out, "expirationDate", businessDateKey(policy?.expirationDate));
   if (policy?.termMonths != null && Number.isFinite(policy.termMonths) && policy.termMonths > 0) {
@@ -1198,6 +1247,10 @@ export function groupAppliedFill(
   }
   const formType = take("formType");
   if (formType) patch.policy.formType = formType;
+  const policyType = take("policyType");
+  if (policyType) patch.policy.policyType = policyType;
+  const policySubType = take("policySubType");
+  if (policySubType) patch.policy.policySubType = policySubType;
   const effectiveDate = take("effectiveDate");
   const expirationDate = take("expirationDate");
   const effective = effectiveDate ? noonUtcFromBusinessDate(effectiveDate) : null;
@@ -1222,12 +1275,14 @@ export function groupAppliedFill(
   }
 
   const limitPairs: Array<[string, string]> = [
+    ["coverageALimit", "coverage_a"],
     ["coverageB", "coverage_b"],
     ["coverageC", "coverage_c"],
     ["coverageD", "coverage_d"],
     ["coverageE", "coverage_e"],
     ["coverageF", "coverage_f"],
     ["ordinanceOrLaw", "ordinance_or_law"],
+    ["windHailDeductible", "wind_hail_deductible"],
     ["dwellingType", "dwelling_type"],
     ["families", "number_of_families"],
     ["dwellingReplacementCost", "dwelling_replacement_cost"],

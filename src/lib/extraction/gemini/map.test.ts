@@ -180,7 +180,7 @@ describe("gemini map key mapping", () => {
     expect(byKey.year_built.blankAfterMatch).toBe(true);
     expect(byKey.year_built.missReason).toBe("below_confidence_threshold");
 
-    expect(byKey.coverage_a.normalizedValue).toBe("350000");
+    expect(byKey.coverage_a.normalizedValue).toBe("$350,000");
     expect(byKey.coverage_a.flagged).toBe(false);
 
     expect(byKey.address1.normalizedValue).toBe("100 Palm St");

@@ -143,7 +143,7 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(year?.normalizedValue).toBe("");
     expect(low.fields.some((field) => field.fieldKey === "vehicle_year")).toBe(false);
     const coverage = low.fields.find((field) => field.fieldKey === "coverage_a");
-    expect(coverage?.normalizedValue).toBe("250000");
+    expect(coverage?.normalizedValue).toBe("$250,000");
   });
 
   it("maps extra vehicles and drivers onto the repeatable Auto sheet keys", () => {

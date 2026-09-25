@@ -5,6 +5,7 @@ import {
   sellingAgencyLabel,
 } from "@/lib/domain";
 import { partyLabel } from "@/lib/desk/policy-name";
+import { displayHomeCoverageLimit } from "@/lib/extraction/gemini/home-dollar";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { formatPremisesDisplay, premisesLinesEqual } from "@/lib/policy/premises";
 
@@ -103,7 +104,7 @@ function coverageLimitsLine(limits: Record<string, string> | null | undefined): 
   if (!limits) return null;
   const parts = Object.entries(limits)
     .filter(([, value]) => value?.trim())
-    .map(([key, value]) => `${titleCase(key)} ${value.trim()}`);
+    .map(([key, value]) => `${titleCase(key)} ${displayHomeCoverageLimit(key, value.trim())}`);
   return parts.length ? parts.join(" · ") : null;
 }
 
