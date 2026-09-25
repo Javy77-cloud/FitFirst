@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -164,7 +166,7 @@ export function PolicyDocumentsAttach({
         />
       </div>
       <Button type="submit" size="sm" disabled={saving}>
-        {saving ? "Attaching…" : "Attach file"}
+        {saving ? <ProcessingLabel>Attaching…</ProcessingLabel> : "Attach file"}
       </Button>
     </form>
   );

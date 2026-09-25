@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState, useTransition } from "react";
 import { revealPiiField, type PiiEntityType, type PiiFieldKey } from "@/app/actions/pii";
 import { Button } from "@/components/ui/button";
@@ -47,7 +49,7 @@ export function MaskedPiiField({
           </Button>
         ) : (
           <Button type="button" size="xs" variant="outline" onClick={onReveal} disabled={pending}>
-            {pending ? "Revealing…" : "Reveal"}
+            {pending ? <ProcessingLabel>Revealing…</ProcessingLabel> : "Reveal"}
           </Button>
         )
       ) : null}

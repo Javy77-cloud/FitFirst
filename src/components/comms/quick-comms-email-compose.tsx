@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useRef, useState, useTransition, type ClipboardEvent } from "react";
 import { Bold, Italic, Paperclip, Type } from "lucide-react";
 import { sendDeskEmail } from "@/app/actions/comms";
@@ -465,7 +467,7 @@ export function QuickCommsEmailCompose({
             Cancel
           </Button>
           <Button type="button" size="sm" disabled={pending} onClick={send} data-ff-qc-compose-send="">
-            {pending ? "Sending…" : "Send"}
+            {pending ? <ProcessingLabel>Sending…</ProcessingLabel> : "Send"}
           </Button>
         </DialogFooter>
       </DialogContent>

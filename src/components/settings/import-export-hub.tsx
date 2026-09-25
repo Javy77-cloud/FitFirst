@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useMemo, useState } from "react";
 import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
@@ -248,7 +250,7 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
             ) : null}
             <div className="flex flex-wrap gap-2">
               <Button type="button" size="sm" disabled={!file || busy !== null} onClick={runPreview}>
-                {busy === "preview" ? "Validating…" : "Validate + preview"}
+                {busy === "preview" ? <ProcessingLabel>Validating…</ProcessingLabel> : "Validate + preview"}
               </Button>
               <Button
                 type="button"
@@ -257,7 +259,7 @@ export function ImportExportHub({ initialJobs }: { initialJobs: JobRow[] }) {
                 disabled={!preview || !file || busy !== null || Boolean(commit)}
                 onClick={runCommit}
               >
-                {busy === "commit" ? "Committing…" : "Commit import"}
+                {busy === "commit" ? <ProcessingLabel>Committing…</ProcessingLabel> : "Commit import"}
               </Button>
             </div>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}

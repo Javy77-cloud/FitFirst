@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { startAgencyLetterJob } from "@/app/actions/document-pipeline";
@@ -74,7 +76,7 @@ export function AgencyLettersRail({
         title="Agency letters"
         defaultOpen={false}
         data-ff="agency-letters"
-        badge={extracting ? "Extracting" : undefined}
+        badge={extracting ? <ProcessingLabel>Extracting</ProcessingLabel> : undefined}
       >
         <p className="mb-3 text-helper text-muted-foreground">
           Drop a dec on ACORD, No Run Loss, Cancellation, or AOR. Gemini extracts. You confirm,

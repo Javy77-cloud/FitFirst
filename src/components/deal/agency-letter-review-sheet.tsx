@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -152,7 +154,7 @@ export function AgencyLetterReviewSheet({
               });
             }}
           >
-            {pending ? "Saving…" : confirmed ? "Update confirmed fields" : "Confirm fields"}
+            {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : confirmed ? "Update confirmed fields" : "Confirm fields"}
           </Button>
           <div className="space-y-1">
             <Button

@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
@@ -50,7 +52,7 @@ export function LiveSearchResults({
     return null;
   }
   if (loading && hits.length === 0) {
-    return <p className="text-base text-muted-foreground">Searching…</p>;
+    return <p className="text-base text-muted-foreground"><ProcessingLabel>Searching…</ProcessingLabel></p>;
   }
   if (hits.length === 0) {
     return <p className="text-base text-muted-foreground">No records for “{q}”.</p>;

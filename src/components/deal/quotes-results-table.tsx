@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { Fragment, useMemo, useState, useTransition } from "react";
 import {
   acceptQuoteFloorAndRecheckAction,
@@ -571,7 +573,7 @@ export function QuotesResultsTable({
                   data-ff-quotes-recheck=""
                   data-ff-quotes-recheck-count={compareCount}
                 >
-                  {pending ? "Queuing…" : `Re-quote selected (${compareCount})`}
+                  {pending ? <ProcessingLabel>Queuing…</ProcessingLabel> : `Re-quote selected (${compareCount})`}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={compareExceedsMax(compareCount)}

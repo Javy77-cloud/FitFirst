@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ProcessingLabel } from "@/components/desk/wait-hold";
 import { Button } from "@/components/ui/button";
 
 export function PolicySensitiveConfirmDialog({
@@ -42,7 +43,7 @@ export function PolicySensitiveConfirmDialog({
             Cancel
           </Button>
           <Button type="button" disabled={pending} onClick={onConfirm}>
-            {pending ? "Saving…" : "Confirm & save"}
+            {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Confirm & save"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useFormStatus } from "react-dom";
+import { ProcessingLabel } from "@/components/desk/wait-hold";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,7 @@ function FormSubmitButton({ label }: { label: string }) {
       aria-busy={pending}
       data-pending={pending ? "1" : undefined}
     >
-      {label}
+      {pending ? <ProcessingLabel>{label}</ProcessingLabel> : label}
     </Button>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
@@ -233,7 +235,7 @@ export function RepeatableUnitBlocks({
                   aria-label={`Remove ${title.toLowerCase()} ${index}`}
                   onClick={() => void removeAt(index)}
                 >
-                  Remove
+                  {pending ? <ProcessingLabel>Remove</ProcessingLabel> : "Remove"}
                 </button>
               ) : null}
             </div>
@@ -320,7 +322,7 @@ export function RepeatableUnitBlocks({
           data-ff-remove-unit-last={kind}
           onClick={() => void removeAt(shownCount)}
         >
-          {pending ? "Removing…" : removeLabel}
+          {pending ? <ProcessingLabel>Removing…</ProcessingLabel> : removeLabel}
         </button>
         {canRemove ? null : (
           <span className="sr-only" data-ff-remove-blocked={kind}>

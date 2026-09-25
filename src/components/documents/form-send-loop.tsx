@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -228,7 +230,7 @@ export function FormSendLoop({
             </div>
             {job.message ? <p className="text-xs text-muted-foreground">{job.message}</p> : null}
             {extracting ? (
-              <p className="text-sm text-muted-foreground">Extracting from the declaration and deal…</p>
+              <p className="text-sm text-muted-foreground"><ProcessingLabel>Extracting from the declaration and deal…</ProcessingLabel></p>
             ) : (
               <>
                 <table className="ff-table w-full text-sm" data-ff-letter-diff="">
@@ -303,7 +305,7 @@ export function FormSendLoop({
                       });
                     }}
                   >
-                    {pending ? "Sending…" : "Send to DocuSign"}
+                    {pending ? <ProcessingLabel>Sending…</ProcessingLabel> : "Send to DocuSign"}
                   </Button>
                   <Button
                     type="button"
@@ -326,7 +328,7 @@ export function FormSendLoop({
                       });
                     }}
                   >
-                    Save fields
+                    {pending ? <ProcessingLabel>Save fields</ProcessingLabel> : "Save fields"}
                   </Button>
                   {job.envelopeId ? (
                     <Button
@@ -347,7 +349,7 @@ export function FormSendLoop({
                         });
                       }}
                     >
-                      Refresh status
+                      {pending ? <ProcessingLabel>Refresh status</ProcessingLabel> : "Refresh status"}
                     </Button>
                   ) : null}
                 </div>

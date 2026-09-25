@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { uploadPolicyIdCards } from "@/app/actions/policy-files";
 import { ChooseFileButton } from "@/components/choose-file-button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
+import { ProcessingLabel } from "@/components/desk/wait-hold";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -188,7 +189,7 @@ export function IdCardsUploadPanel({
           </Button>
         ) : null}
         <Button type="button" size="sm" disabled={pending || !hasFile} onClick={submit} data-ff-id-cards-upload-submit="">
-          {pending ? "Uploading…" : "Upload"}
+          {pending ? <ProcessingLabel>Uploading…</ProcessingLabel> : "Upload"}
         </Button>
       </div>
     </div>

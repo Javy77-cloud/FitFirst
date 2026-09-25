@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState } from "react";
 import { syncDealToHealthSherpaAction } from "@/app/actions/healthsherpa";
 import { Button } from "@/components/ui/button";
@@ -73,7 +75,7 @@ export function HealthSherpaHandoff({
           onClick={() => void onSync()}
           data-ff-healthsherpa-sync=""
         >
-          {busy ? "Syncing…" : "Sync to HealthSherpa"}
+          {busy ? <ProcessingLabel>Syncing…</ProcessingLabel> : "Sync to HealthSherpa"}
         </Button>
       </div>
       {note ? (

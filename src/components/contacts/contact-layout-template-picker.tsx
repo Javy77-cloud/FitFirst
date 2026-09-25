@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -63,7 +65,7 @@ export function ContactLayoutTemplatePicker({
         }
         onClick={() => void apply("classic")}
       >
-        {busy === "classic" ? "Saving…" : "Classic (Dense)"}
+        {busy === "classic" ? <ProcessingLabel>Saving…</ProcessingLabel> : "Classic (Dense)"}
       </Button>
       <Button
         type="button"
@@ -80,7 +82,7 @@ export function ContactLayoutTemplatePicker({
         }
         onClick={() => void apply("card")}
       >
-        {busy === "card" ? "Saving…" : "Card (Two column)"}
+        {busy === "card" ? <ProcessingLabel>Saving…</ProcessingLabel> : "Card (Two column)"}
       </Button>
     </div>
   );

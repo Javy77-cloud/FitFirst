@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState, useTransition } from "react";
 import { getWhyCellAuditAction } from "@/app/actions/synonym-candidates";
 import { MarkMappingWrong } from "@/components/deal/mark-mapping-wrong";
@@ -55,7 +57,7 @@ export function WhyCellDrawer({
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-4 px-4 pb-6 text-sm">
-          {pending && !audit ? <p className="text-muted-foreground">Loading audit…</p> : null}
+          {pending && !audit ? <p className="text-muted-foreground"><ProcessingLabel>Loading audit…</ProcessingLabel></p> : null}
           {match ? (
             <section className="space-y-1 rounded-md border border-border p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-navy">Match</p>

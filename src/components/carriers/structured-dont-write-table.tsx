@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState, useTransition } from "react";
 import { saveCarrierDontWriteRows } from "@/app/actions/carriers-ops";
 import { Button } from "@/components/ui/button";
@@ -159,7 +161,7 @@ export function StructuredDontWriteTable({
           disabled={pending}
           onClick={save}
         >
-          {pending ? "Saving…" : "Save Don't Write Rows"}
+          {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save Don't Write Rows"}
         </Button>
       </div>
     </div>

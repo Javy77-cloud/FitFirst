@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -500,7 +502,7 @@ export function QuoteFileActions({
                 />
               </label>
               <Button type="submit" size="sm" disabled={pending}>
-                {pending ? "Uploading…" : "Upload"}
+                {pending ? <ProcessingLabel>Uploading…</ProcessingLabel> : "Upload"}
               </Button>
               {uploadError ? (
                 <p className="text-xs text-destructive" role="alert" data-ff-quote-upload-error="">

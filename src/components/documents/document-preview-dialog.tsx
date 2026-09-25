@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,7 +137,7 @@ export function DocumentPreviewDialog({
         <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-muted/20">
           {loadState === "loading" || loadState === "idle" ? (
             <div className="px-6 py-16 text-center text-sm text-muted-foreground" data-ff-document-preview-loading="">
-              Checking file…
+              <ProcessingLabel>Checking file…</ProcessingLabel>
             </div>
           ) : null}
           {showMissing ? (

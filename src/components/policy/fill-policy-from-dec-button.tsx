@@ -6,6 +6,7 @@ import {
   fillPolicyFromDec,
   previewFillPolicyFromDec,
 } from "@/app/actions/policy-fill-from-dec";
+import { ProcessingLabel, WaitHold } from "@/components/desk/wait-hold";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -114,6 +115,7 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
           className="sm:max-w-md"
           showCloseButton={!pending}
           data-ff-fill-policy-from-dec-modal=""
+          aria-busy={pending}
         >
           <DialogHeader>
             <DialogTitle>Fill from declaration page</DialogTitle>
@@ -125,56 +127,69 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
               if (!pending) confirm();
             }}
           >
-            <div>
-              <div className="text-helper text-muted-foreground">Agent</div>
-              <div className="font-medium text-navy" data-ff-fill-policy-from-dec-agent="">
-                {preview?.agentName ?? "—"}
-              </div>
-            </div>
-            <div>
-              <div className="text-helper text-muted-foreground">Date / time</div>
-              <div className="font-medium text-navy" data-ff-fill-policy-from-dec-time="">
-                {preview?.serverNow ?? "—"}
-              </div>
-            </div>
-            {preview?.filename ? (
-              <div>
-                <div className="text-helper text-muted-foreground">Declaration</div>
-                <div className="font-medium text-navy">{preview.filename}</div>
-              </div>
-            ) : null}
-            <label className="grid gap-1" htmlFor={`fill-dec-reason-${policyId}`}>
-              <span className="text-helper text-muted-foreground">Reason</span>
-              <Input
-                id={`fill-dec-reason-${policyId}`}
-                name="reason"
-                value={reason}
-                required
-                disabled={pending || !preview}
-                onChange={(event) => setReason(event.target.value)}
-                data-ff-fill-policy-from-dec-reason=""
-              />
-            </label>
-            {warning ? (
-              <p className="text-sm font-medium text-navy" data-ff-fill-policy-from-dec-overwrite="">
-                {warning}
-              </p>
-            ) : null}
-            {error ? (
-              <p className="text-sm text-fit-red" data-ff-fill-policy-from-dec-error="">
-                {error}
-              </p>
-            ) : null}
+            {pending ? (
+              <WaitHold title="Working" data-ff-fill-policy-from-dec-working="" />
+            ) : (
+              <>
+                <div>
+                  <div className="text-helper text-muted-foreground">Agent</div>
+                  <div className="font-medium text-navy" data-ff-fill-policy-from-dec-agent="">
+                    {preview?.agentName ?? "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-helper text-muted-foreground">Date / time</div>
+                  <div className="font-medium text-navy" data-ff-fill-policy-from-dec-time="">
+                    {preview?.serverNow ?? "—"}
+                  </div>
+                </div>
+                {preview?.filename ? (
+                  <div>
+                    <div className="text-helper text-muted-foreground">Declaration</div>
+                    <div className="font-medium text-navy">{preview.filename}</div>
+                  </div>
+                ) : null}
+                <label className="grid gap-1" htmlFor={`fill-dec-reason-${policyId}`}>
+                  <span className="text-helper text-muted-foreground">Reason</span>
+                  <Input
+                    id={`fill-dec-reason-${policyId}`}
+                    name="reason"
+                    value={reason}
+                    required
+                    disabled={!preview}
+                    onChange={(event) => setReason(event.target.value)}
+                    data-ff-fill-policy-from-dec-reason=""
+                  />
+                </label>
+                {warning ? (
+                  <p className="text-sm font-medium text-navy" data-ff-fill-policy-from-dec-overwrite="">
+                    {warning}
+                  </p>
+                ) : null}
+                {error ? (
+                  <p className="text-sm text-fit-red" data-ff-fill-policy-from-dec-error="">
+                    {error}
+                  </p>
+                ) : null}
+              </>
+            )}
             <DialogFooter>
-              <Button type="button" variant="outline" disabled={pending} onClick={close}>
+              <Button type="button" size="sm" variant="outline" disabled={pending} onClick={close}>
                 Cancel
               </Button>
               <Button
                 type="submit"
+                size="sm"
                 disabled={pending || !preview}
                 data-ff-fill-policy-from-dec-confirm=""
               >
-                {pending ? "Working" : phase === "warn" ? "Confirm" : "Fill from declaration page"}
+                {pending ? (
+                  <ProcessingLabel>Working</ProcessingLabel>
+                ) : phase === "warn" ? (
+                  "Confirm"
+                ) : (
+                  "Fill from declaration page"
+                )}
               </Button>
             </DialogFooter>
           </form>

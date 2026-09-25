@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { correctPolicyTermDates } from "@/app/actions/policy-record";
+import { ProcessingLabel } from "@/components/desk/wait-hold";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -173,7 +174,7 @@ export function CorrectTermDatesDialog({
                 Cancel
               </Button>
               <Button type="submit" disabled={pending || !reason.trim()}>
-                {pending ? "Saving…" : "Save correction"}
+                {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save correction"}
               </Button>
             </DialogFooter>
           </form>

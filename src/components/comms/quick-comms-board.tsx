@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { completeDeskActivity, logDeskActivity } from "@/app/actions/activities-desk";
 import { touchCarrierLastContacted } from "@/app/actions/carriers-ops";
@@ -651,7 +653,7 @@ export function QuickCommsBoard({
                   disabled={!dial || callBusy}
                   onClick={() => callNow()}
                 >
-                  {callBusy ? "Opening…" : `Call ${contactName?.trim() || party}`}
+                  {callBusy ? <ProcessingLabel>Opening…</ProcessingLabel> : `Call ${contactName?.trim() || party}`}
                 </Button>
                 {!dial ? (
                   <p className="text-[11px] text-muted-foreground">Add a phone on the contact first.</p>
@@ -775,7 +777,7 @@ export function QuickCommsBoard({
               </button>
             </div>
             {templatesLoading ? (
-              <p className="text-xs text-muted-foreground">Loading templates…</p>
+              <p className="text-xs text-muted-foreground"><ProcessingLabel>Loading templates…</ProcessingLabel></p>
             ) : templates.length === 0 ? (
               <p className="text-xs text-muted-foreground">No email templates yet.</p>
             ) : (

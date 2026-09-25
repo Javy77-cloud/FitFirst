@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fillCompareFromTermRoleDocs } from "@/app/actions/renewal";
+import { ProcessingLabel } from "@/components/desk/wait-hold";
 import { Button } from "@/components/ui/button";
 import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ export function FillCompareFromDecsButton({
         onClick={run}
         data-ff-fill-compare-from-decs-run=""
       >
-        {pending ? "Extracting DECs…" : "Fill Compare from DECs"}
+        {pending ? <ProcessingLabel>Extracting DECs…</ProcessingLabel> : "Fill Compare from DECs"}
       </Button>
       {error ? (
         <p className="text-sm text-fit-red" data-ff-fill-compare-from-decs-error="">

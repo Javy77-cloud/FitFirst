@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState, useTransition } from "react";
 import {
   applyDealNoticeType,
@@ -379,7 +381,7 @@ export function NoticeTypesEditor({
                   onClick={onCompleteNotice}
                   data-ff-notice-complete=""
                 >
-                  {pending ? "Saving…" : "Complete"}
+                  {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Complete"}
                 </Button>
                 <Button
                   type="button"
@@ -389,7 +391,7 @@ export function NoticeTypesEditor({
                   onClick={onDeleteNotice}
                   data-ff-notice-delete=""
                 >
-                  {pending ? "Deleting…" : "Delete"}
+                  {pending ? <ProcessingLabel>Deleting…</ProcessingLabel> : "Delete"}
                 </Button>
               </div>
             </div>
@@ -408,7 +410,7 @@ export function NoticeTypesEditor({
             onClick={onSaveTypes}
             data-ff-notice-edit-types-save=""
           >
-            {pending ? "Saving…" : "Save types"}
+            {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save types"}
           </Button>
           <Button
             type="button"
@@ -418,7 +420,7 @@ export function NoticeTypesEditor({
             data-ff-notice-set=""
             data-ff-notice-apply=""
           >
-            {pending ? "Setting…" : "Set notice"}
+            {pending ? <ProcessingLabel>Setting…</ProcessingLabel> : "Set notice"}
           </Button>
         </DialogFooter>
       </DialogContent>

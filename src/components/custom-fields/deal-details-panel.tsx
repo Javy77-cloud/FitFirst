@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
@@ -80,7 +82,7 @@ function DealFieldImageUpload({ dealId, fieldKey }: { dealId: string; fieldKey: 
           });
         }}
       />
-      {pending ? <span className="text-xs text-muted-foreground">Uploading…</span> : null}
+      {pending ? <span className="text-xs text-muted-foreground"><ProcessingLabel>Uploading…</ProcessingLabel></span> : null}
     </div>
   );
 }

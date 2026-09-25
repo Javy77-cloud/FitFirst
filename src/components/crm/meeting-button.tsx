@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useState, useTransition, type CSSProperties } from "react";
 import { loadMeetingDefaults, scheduleDealMeeting, type MeetingDefaults } from "@/app/actions/meetings";
 import { flashAction } from "@/lib/flash-client";
@@ -206,7 +208,7 @@ export function MeetingButton({
                 </a>
               ) : null}
               <Button type="submit" size="sm" disabled={pending}>
-                {pending ? "Saving…" : "Save meeting"}
+                {pending ? <ProcessingLabel>Saving…</ProcessingLabel> : "Save meeting"}
               </Button>
             </div>
           </form>

@@ -1,5 +1,7 @@
 "use client";
 
+import { ProcessingLabel } from "@/components/desk/wait-hold";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
@@ -465,7 +467,7 @@ export function BusinessOverflowMenu({
                     }
                   }}
                 >
-                  {merging ? "Merging…" : "Merge And Archive"}
+                  {merging ? <ProcessingLabel>Merging…</ProcessingLabel> : "Merge And Archive"}
                 </Button>
               </div>
             </div>
