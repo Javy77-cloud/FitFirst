@@ -15,7 +15,7 @@ export function LobOverviewSections({
   readOnly?: boolean;
 }) {
   const family = resolveLobOverviewFamily(input);
-  if (family === "other") return null;
+  if (family === "other" || family === "auto") return null;
   const sections = buildLobOverviewSections(input);
   const familyLabel = isErrorsOmissionsProduct(input.formType, input.policySubType, input.policyType)
     ? ERRORS_OMISSIONS_SHORT

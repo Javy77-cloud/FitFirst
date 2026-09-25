@@ -111,9 +111,9 @@ export function AutoSchedulePanel({
       </div>
 
       <section className="overflow-hidden rounded-md border border-border">
-        <div className="border-b border-border px-3 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Vehicles · {counts.vehicleCount}
-        </div>
+        <h3 className="border-b border-border px-3 py-2 text-base font-semibold text-navy">
+          Vehicles in this policy ({counts.vehicleCount})
+        </h3>
         {vehicles.length === 0 ? (
           <p className="px-3 py-4 text-base text-muted-foreground">No vehicles yet.</p>
         ) : (

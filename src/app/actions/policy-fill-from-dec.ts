@@ -133,6 +133,8 @@ type PreparedFill = {
 async function prepareFill(input: {
   policyId: string;
   documentId?: string | null;
+  /** Manual auto Fill re-reads the DEC. A cached extract from before the PAP field map drops deductibles and premiums. */
+  forceExtract?: boolean;
 }): Promise<{ ok: true; prepared: PreparedFill } | { ok: false; error: string }> {
   if (!isUuid(input.policyId)) return { ok: false, error: "Policy required." };
   const [policy] = await db
@@ -187,6 +189,7 @@ async function prepareFill(input: {
   if (!doc) return { ok: false, error: "No declaration page on this policy." };
 
   const shopLine = shopLineForPolicy(policy.lineOfBusiness);
+  const familyForExtract = fillFamilyForPolicy(policy);
   const gemini = await loadGeminiRows(
     {
       docId: doc.id,
@@ -195,6 +198,7 @@ async function prepareFill(input: {
       filename: doc.filename,
       shopLine,
       docType: doc.docType || issuedPolicyDocType(shopLine),
+      force: Boolean(input.forceExtract) && familyForExtract === "auto",
     },
     {
       readStoredFile,
@@ -276,6 +280,7 @@ async function prepareFill(input: {
       lastName: driver.lastName,
       dateOfBirth: driver.dateOfBirth,
       licenseLast4: driver.licenseNumberLast4,
+      licenseState: driver.licenseState,
     })),
   });
   const classified = classifyFillFields(existing, proposed);
@@ -296,7 +301,7 @@ export async function previewFillPolicyFromDec(policyId: string): Promise<
 > {
   const session = await currentDeskSession();
   if (!session.signedIn) return { ok: false, error: "Sign in required." };
-  const prepared = await prepareFill({ policyId });
+  const prepared = await prepareFill({ policyId, forceExtract: true });
   if (!prepared.ok) return prepared;
   return {
     ok: true,
@@ -339,6 +344,7 @@ export async function fillPolicyFromDec(input: {
   const prepared = await prepareFill({
     policyId: input.policyId,
     documentId: input.documentId,
+    forceExtract: input.source === "manual",
   });
   if (!prepared.ok) return prepared;
   const { policy, doc, proposed, classified } = prepared.prepared;
@@ -520,6 +526,11 @@ export async function fillPolicyFromDec(input: {
             usage: vehicle.usage ?? null,
             garagingZip: vehicle.garagingZip ?? null,
             garagingAddress: vehicle.garagingAddress ?? null,
+            annualMiles: vehicle.annualMiles ?? null,
+            lienholder: vehicle.lienholder ?? null,
+            premium: vehicle.premium ?? null,
+            comprehensiveDeductible: vehicle.comprehensiveDeductible ?? null,
+            collisionDeductible: vehicle.collisionDeductible ?? null,
             sortOrder: nextSort,
           });
           nextSort += 1;
@@ -532,6 +543,11 @@ export async function fillPolicyFromDec(input: {
             usage?: string | null;
             garagingZip?: string | null;
             garagingAddress?: string | null;
+            annualMiles?: string | null;
+            lienholder?: string | null;
+            premium?: string | null;
+            comprehensiveDeductible?: string | null;
+            collisionDeductible?: string | null;
             updatedAt: Date;
           } = { updatedAt: new Date() };
           for (const field of vehicle.write) {
@@ -542,6 +558,11 @@ export async function fillPolicyFromDec(input: {
             if (field === "usage") set.usage = vehicle.usage ?? null;
             if (field === "garagingZip") set.garagingZip = vehicle.garagingZip ?? null;
             if (field === "garagingAddress") set.garagingAddress = vehicle.garagingAddress ?? null;
+            if (field === "annualMiles") set.annualMiles = vehicle.annualMiles ?? null;
+            if (field === "lienholder") set.lienholder = vehicle.lienholder ?? null;
+            if (field === "premium") set.premium = vehicle.premium ?? null;
+            if (field === "comprehensiveDeductible") set.comprehensiveDeductible = vehicle.comprehensiveDeductible ?? null;
+            if (field === "collisionDeductible") set.collisionDeductible = vehicle.collisionDeductible ?? null;
           }
           await tx
             .update(vehicles)
@@ -577,6 +598,7 @@ export async function fillPolicyFromDec(input: {
             firstName: driver.firstName,
             lastName: driver.lastName,
             dateOfBirth: driver.dateOfBirth ?? null,
+            licenseState: driver.licenseState ?? null,
             ...(sealed ?? {}),
             sortOrder: nextSort,
           });
@@ -586,6 +608,7 @@ export async function fillPolicyFromDec(input: {
             .update(drivers)
             .set({
               ...(driver.dateOfBirth ? { dateOfBirth: driver.dateOfBirth } : {}),
+              ...(driver.licenseState ? { licenseState: driver.licenseState } : {}),
               ...(sealed ?? {}),
               updatedAt: new Date(),
             })

@@ -1,10 +1,12 @@
 import { AdditionalInterestPanel } from "@/components/ams/additional-interest-panel";
-import { formatDay, formatMoney } from "@/lib/domain";
+import { formatMoney } from "@/lib/domain";
 import {
   allowedInterestKinds,
   canHoldInterests,
   isPersonalLinesPolicy,
 } from "@/lib/ams/additional-interests";
+import { autoCoverageExtras, autoCoverageSchedule } from "@/lib/policy/auto-coverage";
+import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import type { PolicyCoverageLine } from "@/lib/db/schema";
 
 type TermRow = {
@@ -179,7 +181,25 @@ export function PolicyCoverageTab({
     currentTerm !== undefined
       ? currentTerm
       : (terms.find((term) => term.role === "current") ?? null);
-  const schedule = buildSchedule(policy, current);
+  const auto = resolveLobOverviewFamily(policy) === "auto";
+  const termSource: ScheduleRow["source"] =
+    current?.source === "carrier_download" || current?.source === "ivans" || current?.source === "al3"
+      ? "carrier_download"
+      : current
+        ? "manual"
+        : "unknown";
+  const schedule: ScheduleRow[] = auto
+    ? autoCoverageSchedule({
+        coverageLimits: policy.coverageLimits,
+        comprehensiveDeductible: current?.comprehensiveDeductible,
+        collisionDeductible: current?.collisionDeductible,
+      }).map((row) => ({ ...row, source: termSource }))
+    : buildSchedule(policy, current);
+  const extras = auto
+    ? autoCoverageExtras({
+        coverageLimits: policy.coverageLimits,
+      })
+    : [];
   const showInterests = canHoldInterests({
     ...policy,
     contactId,
@@ -223,6 +243,16 @@ export function PolicyCoverageTab({
             </table>
           </div>
         )}
+        {extras.length > 0 ? (
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2" data-ff-auto-coverage-extras="">
+            {extras.map((row) => (
+              <div key={row.key} data-ff-auto-coverage-extra={row.key}>
+                <dt className="text-helper text-muted-foreground">{row.label}</dt>
+                <dd className="font-medium text-navy">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
       </section>
 
       {showInterests ? (
