@@ -71,7 +71,9 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/deals-lenses.tsx")).toMatch(/Clear lenses/);
     expect(source("src/components/deals/deals-lenses.tsx")).not.toMatch(/High value/);
     expect(source("src/components/deals/deals-lenses.tsx")).not.toMatch(/My hot P&C/);
-    expect(page).toMatch(/const canSeeTeam = session\.isAdmin/);
+    expect(page).toMatch(/sessionSeesAgencyBook\(session\)/);
+    expect(page).toMatch(/const canSeeTeam = sessionSeesAgencyBook\(session\)/);
+    expect(page).not.toMatch(/const canSeeTeam = session\.isAdmin/);
     expect(page).toMatch(/mineScopeForViewer/);
     expect(page).toMatch(/reassignAliasOwnedRecords/);
     expect(page).toMatch(/viewerIds: mine\.ownerIds/);
@@ -87,6 +89,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(parseDealsView("table")).toBe("list");
     expect(parseDealsView("board")).toBe("radar");
     expect(defaultDealsView({ isAdmin: false, user: { canSeeAgencyWidgets: false } as never })).toBe("stack");
+    expect(defaultDealsView({ isAdmin: false, user: { canSeeAgencyWidgets: true } as never })).toBe("radar");
     expect(defaultDealsView({ isAdmin: true, user: { canSeeAgencyWidgets: true } as never })).toBe("radar");
     expect(source("src/app/deals/page.tsx")).toMatch(/listDeals/);
     expect(source("src/app/deals/page.tsx")).not.toMatch(/listLeads/);

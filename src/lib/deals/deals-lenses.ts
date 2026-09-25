@@ -58,7 +58,7 @@ export function parseValueBand(_raw?: string | null): "high" | "mid" | "low" | n
 
 export function defaultDealScope(input: { canSeeTeam: boolean; view?: DealsViewId | null }): "mine" | "team" {
   // Same default for Radar and Stack so switching views never flips Mine/Team.
-  // Owner/Admin can see Team; land there so a stale Mine URL is the opt-in.
+  // Agency-book viewers land on Team; Mine is the opt-in.
   void input.view;
   return input.canSeeTeam ? "team" : "mine";
 }
