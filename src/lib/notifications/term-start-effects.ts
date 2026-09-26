@@ -1,19 +1,19 @@
 /**
  * Day-of term-start side effects (same sweep as Inbox renewal_term_started):
  * - Flip document term roles (renewal→current, current→prior, older priors→archive)
- * - Quietly drop Handled renewals queue rows so the policy leaves the Handled filter
+ * - Move Handled renewals queue rows to upcoming once that term has started
  */
 import { and, eq } from "drizzle-orm";
 import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { documents, renewalQueue } from "@/lib/db/schema";
+import { documents } from "@/lib/db/schema";
 import {
   planTermStartRoleFlip,
   tagsWithTermRole,
   termRoleFromTags,
 } from "@/lib/documents/document-labels";
-import { RENEWAL_HANDLED_STAGE } from "@/lib/renewal/handled";
+import { releaseClientStayingForPolicy } from "@/lib/renewal/release-handled";
 import { termStartKey } from "@/lib/notifications/term-start";
 
 export type TermStartEffectResult = {
@@ -55,29 +55,7 @@ export async function applyTermStartEffects(input: {
       .where(eq(documents.id, change.id));
   }
 
-  const handledRows = await db
-    .select({ id: renewalQueue.id })
-    .from(renewalQueue)
-    .where(
-      and(
-        eq(renewalQueue.tenantId, DEFAULT_TENANT_ID),
-        eq(renewalQueue.policyId, input.policyId),
-        eq(renewalQueue.stage, RENEWAL_HANDLED_STAGE),
-      ),
-    );
-  let clearedHandled = false;
-  if (handledRows.length > 0) {
-    await db
-      .delete(renewalQueue)
-      .where(
-        and(
-          eq(renewalQueue.tenantId, DEFAULT_TENANT_ID),
-          eq(renewalQueue.policyId, input.policyId),
-          eq(renewalQueue.stage, RENEWAL_HANDLED_STAGE),
-        ),
-      );
-    clearedHandled = true;
-  }
+  const clearedHandled = await releaseClientStayingForPolicy(input.policyId, { force: true });
 
   return { policyId: input.policyId, key, flipped: plan.length, clearedHandled };
 }

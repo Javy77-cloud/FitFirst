@@ -52,6 +52,7 @@ export function PolicyOverviewTab({
   showCommission = true,
   termView = null,
   renewalHandled = false,
+  clientStayingMarkedAt = null,
   inspectionDocs = [],
   declaration = null,
 }: {
@@ -135,6 +136,8 @@ export function PolicyOverviewTab({
   termView?: CurrentTermResolution | null;
   /** renewal_queue stage === handled ("Client staying"). */
   renewalHandled?: boolean;
+  /** When that queue row was marked. A mark before the in-force effective was for that term. */
+  clientStayingMarkedAt?: Date | string | null;
   /** Deal-library wind mit / four-point files. Ids only — the PDF stays on the deal. */
   inspectionDocs?: HomeInspectionDocument[];
   /** Policy declaration. The eye opens it in the document popup. */
@@ -193,11 +196,13 @@ export function PolicyOverviewTab({
       : [];
   const showRenewalAgreed = showRenewalAgreedStamp({
     clientStaying: renewalHandled,
-    // Stored policies.renewal_date. Swap for renewalDateFor(policy) when that helper lands.
+    // Stored policies.renewal_date. A year past the renew-into effective is the next cycle.
     renewalDate: policy.renewalDate,
     effectiveDate: termView?.current?.effective ?? termView?.bookEffective ?? policy.effectiveDate,
     expirationDate: termView?.current?.expiration ?? termView?.bookExpiration ?? policy.expirationDate,
     renewedEffectiveDate: termView?.upcoming?.effective,
+    priorExpiration: termView?.prior?.expiration,
+    handledAt: clientStayingMarkedAt,
     terms,
   });
 

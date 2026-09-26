@@ -5,28 +5,14 @@
  * still before the renewed term's effective date. Cleared on that date.
  * Computed at render time — nothing here is stored.
  *
- * The effective date prefers a stored policy renewal date. Pass
- * `renewalDateFor(policy)` in `renewalDate` once that helper is on main.
- * Derivation runs only when that field is blank.
+ * The clear date is the term the client agreed to enter. A renewal date
+ * that jumped about a year after that term started is the following cycle.
  */
 
-import { businessDateKey } from "@/lib/policies/current-term";
+import { renewalAgreedEffectiveDate } from "@/lib/policies/renewal-agreed";
 import { etDateKey } from "@/lib/time/et";
 
 export const RENEWAL_AGREED_LABEL = "Renewal agreed" as const;
-
-const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-/** Add calendar days to a `YYYY-MM-DD` key. Not an instant bucket. */
-export function addCalendarDays(dateKey: string, days: number): string | null {
-  const match = DATE_ONLY.exec(dateKey);
-  if (!match || !Number.isFinite(days)) return null;
-  const utc = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days));
-  const year = utc.getUTCFullYear();
-  const month = String(utc.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(utc.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export type RenewalAgreedInput = {
   /** renewal_queue stage === handled (Client staying). */
@@ -35,10 +21,7 @@ export type RenewalAgreedInput = {
   handled?: boolean | null;
   /** Render-time clock. Defaults to now. */
   asOf?: Date;
-  /**
-   * Stored `policies.renewal_date`. Preferred when set.
-   * Pass `renewalDateFor(policy)` here once that helper is on main.
-   */
+  /** Stored `policies.renewal_date`. Ignored when it is the cycle after the renew-into term. */
   renewalDate?: Date | string | null;
   /** Recorded effective date of the renewed / upcoming term. */
   renewedTermEffective?: Date | string | null;
@@ -50,6 +33,10 @@ export type RenewalAgreedInput = {
   termEffective?: Date | string | null;
   /** Expiration of the term being renewed (current, else the term that just ended). */
   termExpiration?: Date | string | null;
+  /** Prior term end, when the in-force effective is the term that was just entered. */
+  priorExpiration?: Date | string | null;
+  /** When Client staying was marked. */
+  handledAt?: Date | string | null;
 };
 
 function clientStaying(input: RenewalAgreedInput): boolean {
@@ -60,30 +47,26 @@ function clientStaying(input: RenewalAgreedInput): boolean {
 /**
  * Calendar day the renewed term starts.
  *
- * A stored policy renewal date wins. When that field is blank, a recorded
- * renewed-term effective date wins, then the day after the current expiration:
  * 2025-10-10 through 2026-10-09 renews effective 2026-10-10, and a Jan 1
  * through Dec 31 Marketplace, Medicare, or PNC term renews the next Jan 1.
- * If that renewed term is already current today, its effective date is today
- * and the badge clears.
+ * A future book effective is the upcoming renew-into date. Once that day
+ * is today, the badge clears.
  */
 export function renewalEffectiveDateKey(
   input: Omit<RenewalAgreedInput, "clientStaying" | "handled">,
   asOf: Date = input.asOf ?? new Date(),
 ): string | null {
-  const storedRenewal = businessDateKey(input.renewalDate);
-  if (storedRenewal) return storedRenewal;
-
-  const recorded = businessDateKey(input.renewedTermEffective ?? input.renewedEffective);
-  if (recorded) return recorded;
-
-  const today = etDateKey(asOf);
-  const currentEffective = businessDateKey(input.currentTermEffective ?? input.termEffective);
-  if (currentEffective && currentEffective === today) return currentEffective;
-
-  const expiration = businessDateKey(input.termExpiration);
-  if (!expiration) return null;
-  return addCalendarDays(expiration, 1);
+  return renewalAgreedEffectiveDate(
+    {
+      renewalDate: input.renewalDate,
+      effectiveDate: input.currentTermEffective ?? input.termEffective,
+      expirationDate: input.termExpiration,
+      renewedEffectiveDate: input.renewedTermEffective ?? input.renewedEffective,
+      priorExpiration: input.priorExpiration,
+      handledAt: input.handledAt,
+    },
+    asOf,
+  );
 }
 
 /** True only while Client staying is set and today (ET) is before the renewal effective date. */

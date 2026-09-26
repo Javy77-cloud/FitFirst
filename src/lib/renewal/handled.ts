@@ -28,7 +28,8 @@ export const RENEWAL_HANDLED_SUCCESS_DONE = "Got it" as const;
 /**
  * While Client staying / Handled is active, renewal proximity must not drive
  * Policies care bands, Events care chips, or the in-policy care banner.
- * Day-of term-start deletes the Handled queue row, so care returns naturally.
+ * When the renewed term's effective date is reached, the queue stage leaves
+ * handled for upcoming, so care returns for the next cycle.
  */
 export function renewalProximityDrivesCare(
   renewalHandled: boolean | null | undefined,

@@ -6,6 +6,7 @@ import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, documents, extractedFields, policies, policyTerms } from "@/lib/db/schema";
+import { etDateKey } from "@/lib/time/et";
 import { termRoleFromTags } from "@/lib/documents/document-labels";
 import { mintGeminiValue, normalizeMintValue } from "@/lib/policy/mint-gate";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/lib/policy/advance-current-term";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { withHistoryDefaults } from "@/lib/policy/change-log";
+import { releaseClientStayingForPolicy } from "@/lib/renewal/release-handled";
 
 export type AdvanceCurrentTermResult =
   | {
@@ -275,6 +277,11 @@ export async function advancePolicyCurrentTerm(input: {
     policyId,
     outcome: "renewal_term_advance",
   });
+
+  // The renewed term is already in force. Client staying was for entering it.
+  if (toEffective <= etDateKey(new Date())) {
+    await releaseClientStayingForPolicy(policyId, { force: true });
+  }
 
   return {
     ok: true,

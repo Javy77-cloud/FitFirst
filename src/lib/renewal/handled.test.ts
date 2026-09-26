@@ -172,8 +172,16 @@ describe("Client staying / Handled", () => {
     const page = readFileSync("src/app/policies/[id]/page.tsx", "utf8");
     expect(page).toMatch(/isRenewalHandledStageValue\(renewalQueueRow\?\.stage\)/);
     const effects = readFileSync("src/lib/notifications/term-start-effects.ts", "utf8");
-    expect(effects).toMatch(/delete\(renewalQueue\)/);
-    expect(effects).toMatch(/RENEWAL_HANDLED_STAGE/);
+    expect(effects).toMatch(/releaseClientStayingForPolicy/);
+    const release = readFileSync("src/lib/renewal/release-handled.ts", "utf8");
+    expect(release).toMatch(/CLIENT_STAYING_AFTER_RENEWAL_STAGE/);
+    expect(release).toMatch(/RENEWAL_HANDLED_STAGE/);
+    expect(readFileSync("src/lib/notifications/sync-panel.ts", "utf8")).toMatch(
+      /releaseExpiredClientStaying/,
+    );
+    expect(readFileSync("src/lib/policy/advance-current-term-apply.ts", "utf8")).toMatch(
+      /releaseClientStayingForPolicy/,
+    );
   });
 
   it("marks inside 90 days with no warning and asks to confirm outside that window", () => {
