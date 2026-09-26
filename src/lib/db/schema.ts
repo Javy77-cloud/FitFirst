@@ -3013,6 +3013,12 @@ export const agentUiPrefs = pgTable(
       hiddenPrimaryIds?: string[];
       submenus: Record<string, string[]>;
     } | null>(),
+    /** Per-agent last deal screen + product form. See deal-resume.ts. */
+    dealResume: jsonb("deal_resume").$type<{
+      version: number;
+      lastDealId: string | null;
+      deals: Record<string, { productKey: string; tab: string; at: number }>;
+    } | null>(),
     ...timestamps,
   },
   (t) => [index("agent_ui_prefs_actor_idx").on(t.tenantId, t.actorKey)],
