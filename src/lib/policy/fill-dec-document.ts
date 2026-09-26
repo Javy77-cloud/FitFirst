@@ -1,6 +1,6 @@
 /**
  * Declaration the desk Fill-from-DEC button reads.
- * Shared by the policy action and the HO3 book script so a dry-run
+ * Shared by the policy action and the book Fill-from-DEC script so a dry-run
  * names the same file the fill will open.
  */
 import { and, eq } from "drizzle-orm";
@@ -19,12 +19,15 @@ const decDocColumns = {
   docType: documents.docType,
   slot: documents.slot,
   createdAt: documents.createdAt,
+  tags: documents.tags,
 };
 
 /** Policy + declaration file only. No Gemini. */
 export async function loadFillDecDocument(input: {
   policyId: string;
   documentId?: string | null;
+  /** Book pass. Current term-role declaration, else the desk pick. */
+  preferCurrent?: boolean;
 }): Promise<
   | { ok: true; policy: typeof policies.$inferSelect; doc: DecDocLike & { storagePath?: string | null } }
   | { ok: false; error: string }
@@ -62,6 +65,7 @@ export async function loadFillDecDocument(input: {
   const doc = pickPolicyDecDocument(pool, {
     documentId: input.documentId,
     sourceDocumentId: policy.sourceDocumentId,
+    preferCurrentTerm: input.preferCurrent === true,
   });
   if (!doc) return { ok: false, error: "No declaration page on this policy." };
   return { ok: true, policy, doc };

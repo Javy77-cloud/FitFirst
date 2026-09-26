@@ -61,9 +61,13 @@ describe("HO3 book Fill-from-DEC selection", () => {
 });
 
 describe("HO3 book runner wiring", () => {
-  it("dry-runs unless --apply, and fills through fillPolicyFromDec with overwrite", () => {
-    const script = readFileSync("scripts/ff-fill-ho3-from-dec.ts", "utf8");
-    expect(script).toMatch(/isBookHo3Policy/);
+  it("delegates to the book script and still fills through fillPolicyFromDec with overwrite", () => {
+    const wrapper = readFileSync("scripts/ff-fill-ho3-from-dec.ts", "utf8");
+    expect(wrapper).toMatch(/ff-fill-book-from-dec/);
+    expect(wrapper).toMatch(/--family/);
+    expect(wrapper).toMatch(/"ho3"/);
+
+    const script = readFileSync("scripts/ff-fill-book-from-dec.ts", "utf8");
     expect(script).toMatch(/loadFillDecDocument/);
     expect(script).toMatch(/fillPolicyFromDec/);
     expect(script).toMatch(/confirmOverwrite: true/);
