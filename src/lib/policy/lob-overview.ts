@@ -6,6 +6,7 @@
 import { appointmentLine } from "@/lib/domain-ams";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { ratingOccupancyValue } from "@/lib/policy/rating-occupancy";
+import { normalizeBcegGrade, normalizeProtectionClass, normalizeUsage } from "@/lib/quote-sheet/sheet-defaults";
 import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import {
   ERRORS_OMISSIONS_SHORT,
@@ -111,6 +112,16 @@ function present(
   return row.empty ? null : row;
 }
 
+/** Sheet stores yes/no. Overview shows Yes / No. Printed None is No. */
+function alarmDisplay(raw: string | null | undefined): string | null {
+  const text = String(raw ?? "").trim();
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  if (lower === "yes" || lower === "y") return "Yes";
+  if (lower === "no" || lower === "n" || lower === "none" || lower === "n/a" || lower === "na") return "No";
+  return text;
+}
+
 function limit(limits: Record<string, string> | null | undefined, ...keys: string[]): string | null {
   if (!limits) return null;
   for (const key of keys) {
@@ -155,7 +166,12 @@ export type LobOverviewInput = {
   additionalInsuredCount?: number;
   mortgageeCount?: number;
   occupancy?: string | null;
+  usage?: string | null;
   families?: string | null;
+  protectionClass?: string | null;
+  bceg?: string | null;
+  fireAlarm?: string | null;
+  sprinkler?: string | null;
   dwellingType?: string | null;
   county?: string | null;
   dwellingReplacementCost?: string | null;
@@ -280,7 +296,16 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
               "Year of roof",
               input.roofYear != null ? String(input.roofYear) : null,
             ),
+            present("usage", "Usage", normalizeUsage(input.usage) || null),
             present("families", "Number of families", input.families),
+            present(
+              "protectionClass",
+              "Protection class",
+              normalizeProtectionClass(input.protectionClass) || null,
+            ),
+            present("bceg", "BCEG", normalizeBcegGrade(input.bceg) || null),
+            present("fireAlarm", "Fire alarm", alarmDisplay(input.fireAlarm)),
+            present("sprinkler", "Sprinkler", alarmDisplay(input.sprinkler)),
             present("dwellingType", "Dwelling type", input.dwellingType),
             present("county", "County", input.county),
             present("dwellingRc", "Dwelling replacement cost", input.dwellingReplacementCost),

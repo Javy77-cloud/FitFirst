@@ -41,7 +41,10 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   months_occupied: ["months_occupied"],
   number_of_months_occupied: ["months_occupied"],
   occupancy: ["occupancy"],
+  occupied: ["occupancy"],
+  occupied_by: ["occupancy"],
   usage: ["usage"],
+  usage_type: ["usage"],
   entity_type: ["entity_type"],
   construction: ["construction"],
   construction_type: ["construction"],
@@ -332,8 +335,11 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   mortgagee_address: ["mortgagee_address"],
   form: ["form"],
   sprinkler: ["sprinkler"],
+  automatic_sprinkler: ["sprinkler"],
+  automatic_sprinklers: ["sprinkler"],
   fire_alarm: ["central_alarm", "fire_alarm"],
   central_alarm: ["central_alarm"],
+  bceg: ["bceg_grade"],
   bceg_grade: ["bceg_grade"],
   dwelling_type: ["dwelling_type"],
   townhouse_rowhouse: ["dwelling_type", "townhouse_rowhouse"],
@@ -867,7 +873,13 @@ export function mapGeminiJsonToFields(
             geminiKey === "year_constructed" ||
             geminiKey === "construction_year" ||
             geminiKey === "yr_of_construction");
-        if (!existing || (existing.normalizedValue.trim() && !yearOfConstruction)) continue;
+        const explicitRoofYear =
+          fieldKey === "roof_year" &&
+          (geminiKey === "roof_year" ||
+            geminiKey === "year_of_roof" ||
+            geminiKey === "year_of_roof_updated" ||
+            geminiKey === "year_roof_updated");
+        if (!existing || (existing.normalizedValue.trim() && !yearOfConstruction && !explicitRoofYear)) continue;
         const letterValue = normalizeAutoPolicyValue(
           fieldKey,
           normalizeOirLetterCode(fieldKey, payload.value),

@@ -457,6 +457,7 @@ export async function fillPolicyFromDec(input: {
             protectionClass: patch.risk.protectionClass ?? null,
             roofYear: patch.risk.roofYear ?? null,
             roofCovering: patch.risk.roofCovering ?? null,
+            openingProtection: patch.risk.openingProtection ?? null,
             coverageA: patch.risk.coverageA ?? null,
           })
           .returning({ id: risks.id });

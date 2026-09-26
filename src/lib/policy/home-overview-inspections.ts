@@ -54,10 +54,15 @@ export type HomeInspectionFacts = {
   nowYear?: number;
 };
 
-/** Basic property ages already stored on risk / profile / snapshot. Not the inspection catalog. */
+/**
+ * Ages plus DEC rating roof facts (shape, opening protection).
+ * Deck, terrain, and alarm catalog stay out until an inspection file is on the deal.
+ */
 const BASIC_KEYS = [
   "roof_year",
   "roof_covering",
+  "roof_shape",
+  "opening_protection",
   "roof_install_date",
   "hvac_year",
   "water_heater_year",

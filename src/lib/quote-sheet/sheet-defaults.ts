@@ -1150,9 +1150,21 @@ export function normalizeProtectionClass(raw: string | null | undefined): string
   const text = (raw ?? "").trim();
   if (!text) return "";
   const digits = text.replace(/[^0-9]/g, "");
-  if (PROTECTION_CLASS_OPTIONS.includes(digits as (typeof PROTECTION_CLASS_OPTIONS)[number])) {
-    return digits;
-  }
+  if (!digits) return text;
+  const n = Number(digits);
+  // Southern Oak prints 02. The desk list is 1–10.
+  if (Number.isFinite(n) && n >= 1 && n <= 10) return String(n);
+  return text;
+}
+
+/** ISO BCEG, including the printed word Ungraded. */
+export function normalizeBcegGrade(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const hit = BCEG_OPTIONS.find((option) => option.toLowerCase() === text.toLowerCase());
+  if (hit) return hit;
+  const digits = text.replace(/[^0-9]/g, "");
+  if (BCEG_OPTIONS.includes(digits as (typeof BCEG_OPTIONS)[number])) return digits;
   return text;
 }
 
