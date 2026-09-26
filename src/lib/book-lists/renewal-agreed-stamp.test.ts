@@ -214,6 +214,21 @@ describe("showRenewalAgreedStamp", () => {
     ).toBe(true);
   });
 
+  it("keeps an upcoming effective until that date when renewal_date is next year", () => {
+    const atm = {
+      renewalHandled: true,
+      renewalDate: "2027-10-10",
+      termEffective: "2026-10-10",
+      termExpiration: "2027-10-10",
+      handledAt: "2026-09-23",
+    };
+    expect(
+      renewalAgreedEffectiveKey({ ...atm, asOf: new Date("2026-09-26T16:00:00.000Z") }),
+    ).toBe("2026-10-10");
+    expect(showRenewalAgreedStamp({ ...atm, asOf: new Date("2026-09-26T16:00:00.000Z") })).toBe(true);
+    expect(showRenewalAgreedStamp({ ...atm, asOf: new Date("2026-10-10T16:00:00.000Z") })).toBe(false);
+  });
+
   it("hides when no term dates are stored", () => {
     expect(showRenewalAgreedStamp({ renewalHandled: true, asOf: BEFORE })).toBe(false);
   });

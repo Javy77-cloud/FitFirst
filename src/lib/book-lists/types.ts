@@ -108,12 +108,14 @@ export type BookGlanceCard = {
    */
   renewalAgreed?: {
     handled: boolean;
-    /** policies.renewal_date. Swap the source for renewalDateFor(policy) later. */
+    /** policies.renewal_date. Ignored when it is the cycle after the renew-into term. */
     renewalDate?: string | null;
     renewedEffective?: string | null;
     termEffective?: string | null;
     termExpiration?: string | null;
     priorExpiration?: string | null;
+    /** When Client staying was marked. */
+    handledAt?: Date | string | null;
     asOf?: Date;
   } | null;
 };

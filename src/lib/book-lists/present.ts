@@ -773,8 +773,8 @@ export type PolicyListRow = {
   statusLabel?: string | null;
   offBook?: boolean;
   /**
-   * Stored policies.renewal_date. The band badge and stack stamp prefer this.
-   * Swap the caller for renewalDateFor(policy) when that helper is on main.
+   * Stored policies.renewal_date. The stamp ignores it when it is the cycle
+   * after the renew-into effective date.
    */
   renewalDate?: Date | string | null;
   /** Book term effective (current, else latest). */
@@ -828,6 +828,8 @@ export type PolicyNeedSignal = {
   missingDocs: number;
   /** renewal_queue stage === handled (Client staying). */
   renewalHandled?: boolean;
+  /** renewal_queue.updated_at while that stage is handled. */
+  clientStayingMarkedAt?: Date | string | null;
 };
 
 export function presentPolicyCard(
@@ -972,6 +974,7 @@ export function presentPolicyCard(
       termEffective: businessDateKey(row.effectiveDate),
       termExpiration: businessDateKey(row.expirationDate),
       priorExpiration: businessDateKey(row.priorExpiration),
+      handledAt: needs.clientStayingMarkedAt ?? null,
       asOf,
     },
   };

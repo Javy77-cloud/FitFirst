@@ -377,6 +377,7 @@ describe("account card glance", () => {
       termEffective: "2025-10-10",
       termExpiration: "2026-10-09",
       priorExpiration: "2025-10-09",
+      handledAt: null,
       asOf,
     });
     expect(card.why).toBe("Renews in 15d, Oct 9, 2026");

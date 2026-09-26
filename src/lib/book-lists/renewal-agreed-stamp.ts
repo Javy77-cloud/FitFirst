@@ -1,18 +1,19 @@
 /**
  * Policies stack last column — "Renewal agreed" show / clear.
  *
- * Render-time only. A stored policy renewal date wins (`policies.renewal_date`
- * today). Pass `renewalDateFor(policy)` in that slot once the shared helper
- * is on main. When the field is blank, fall back to a recorded renewed-term
- * effective, then the in-force window: a 2025-10-10 → 2026-10-09 term renews
- * effective 2026-10-10, and a Jan 1–Dec 31 Marketplace, Medicare, or PNC term
- * renews the next Jan 1.
+ * Render-time only. The clear date is the term the client agreed to enter.
+ * After that term is on the book, `policies.renewal_date` jumps about a year
+ * forward; that following cycle does not keep the stamp up. When the field
+ * is blank, fall back to a recorded renewed-term effective, then the in-force
+ * window: a 2025-10-10 → 2026-10-09 term renews effective 2026-10-10, and a
+ * Jan 1–Dec 31 Marketplace, Medicare, or PNC term renews the next Jan 1.
  *
  * Today is the America/New_York calendar day from src/lib/time/et.ts.
  * Day math stays on YYYY-MM-DD keys. Eastern today comes from etDateKey.
  */
 
 import { businessDateKey, calendarDaysBetween } from "@/lib/policies/current-term";
+import { renewalAgreedEffectiveDate } from "@/lib/policies/renewal-agreed";
 import { etDateKey } from "@/lib/time/et";
 
 export const RENEWAL_AGREED_LABEL = "Renewal agreed" as const;
@@ -32,10 +33,12 @@ export type RenewalAgreedStampInput = {
   termEffective?: Date | string | null;
   termExpiration?: Date | string | null;
   /**
-   * Prior term expiration. On the morning the renewed term is itself in force
-   * (its effective is today and is the day after this expiration), the stamp clears.
+   * Prior term expiration. When the in-force effective is the day of or the
+   * day after this end, that effective is the renew-into date.
    */
   priorExpiration?: Date | string | null;
+  /** When Client staying was marked. A mark before the in-force effective was for that term. */
+  handledAt?: Date | string | null;
   asOf?: Date;
 };
 
@@ -78,24 +81,20 @@ export function deriveNextTermStart(
 
 /**
  * The date the stamp is waiting on. Null when it cannot be known.
- * Stored renewal date first; derivation only when that field is blank.
+ * The renew-into effective wins over a renewal date that jumped a year ahead.
  */
 export function renewalAgreedEffectiveKey(input: RenewalAgreedStampInput): string | null {
-  const renewalDate = businessDateKey(input.renewalDate);
-  if (renewalDate) return renewalDate;
-
-  const stored = businessDateKey(input.renewedEffective);
-  if (stored) return stored;
-
-  const today = etDateKey(input.asOf ?? new Date());
-  const inForce = businessDateKey(input.termEffective);
-  const priorEnd = businessDateKey(input.priorExpiration);
-  if (inForce && priorEnd) {
-    const rolled = shiftCalendarDays(priorEnd, 1);
-    if (rolled && rolled === inForce && inForce === today) return inForce;
-  }
-
-  return deriveNextTermStart(input.termExpiration, input.termEffective);
+  return renewalAgreedEffectiveDate(
+    {
+      renewalDate: input.renewalDate,
+      effectiveDate: input.termEffective,
+      expirationDate: input.termExpiration,
+      renewedEffectiveDate: input.renewedEffective,
+      priorExpiration: input.priorExpiration,
+      handledAt: input.handledAt,
+    },
+    input.asOf ?? new Date(),
+  );
 }
 
 /**

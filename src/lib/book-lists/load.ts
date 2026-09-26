@@ -265,7 +265,7 @@ export async function loadPolicyNeedSignals(): Promise<Map<string, PolicyNeedSig
         .where(eq(endorsementDrafts.tenantId, tenant()))
         .catch(() => []),
       db
-        .select({ policyId: renewalQueue.policyId })
+        .select({ policyId: renewalQueue.policyId, updatedAt: renewalQueue.updatedAt })
         .from(renewalQueue)
         .where(
           and(eq(renewalQueue.tenantId, tenant()), eq(renewalQueue.stage, RENEWAL_HANDLED_STAGE)),
@@ -287,7 +287,7 @@ export async function loadPolicyNeedSignals(): Promise<Map<string, PolicyNeedSig
     }
     for (const row of handledRows) {
       if (!row.policyId) continue;
-      bump(row.policyId, { renewalHandled: true });
+      bump(row.policyId, { renewalHandled: true, clientStayingMarkedAt: row.updatedAt });
     }
   } catch {
     return out;

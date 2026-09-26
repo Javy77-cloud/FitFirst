@@ -552,6 +552,7 @@ function PolicyStackCard({
     termEffective: card.renewalAgreed?.termEffective,
     termExpiration: card.renewalAgreed?.termExpiration,
     priorExpiration: card.renewalAgreed?.priorExpiration,
+    handledAt: card.renewalAgreed?.handledAt,
     asOf: card.renewalAgreed?.asOf ?? new Date(),
   });
   const cell = (id: string) => {
