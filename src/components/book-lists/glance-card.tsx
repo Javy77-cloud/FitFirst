@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ClientStatusDot } from "@/components/contacts/client-status-dot";
+import { HandledStamp } from "@/components/renewals/handled-stamp";
 import { mailtoHref, telHref } from "@/lib/desk/contact-actions";
 import {
   RENEWAL_AGREED_LABEL,
@@ -599,12 +600,7 @@ function PolicyStackCard({
                 {cue}
               </p>
               {renewalAgreed ? (
-                <span
-                  className="ff-deal-status-stamp-ink ff-deal-notice-compact-ink ff-policy-renewal-agreed"
-                  data-ff-renewal-agreed=""
-                >
-                  {RENEWAL_AGREED_LABEL}
-                </span>
+                <HandledStamp surface="stack" label={RENEWAL_AGREED_LABEL} />
               ) : null}
             </div>
             <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
@@ -763,9 +759,7 @@ function BandCard({
         >
           {renew.lead ? <span className="ff-policy-band-renew-lead">{renew.lead}</span> : null}
           {renewalAgreed ? (
-            <span className="ff-renewal-agreed-badge" data-ff-renewal-agreed="">
-              {RENEWAL_AGREED_LABEL}
-            </span>
+            <HandledStamp surface="band" label={RENEWAL_AGREED_LABEL} />
           ) : null}
           {renew.date || renew.premium ? (
             <span className="ff-policy-band-renew-corner">

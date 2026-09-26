@@ -49,6 +49,12 @@
   --ff-yellow-bg: #fff4d1;
   --ff-red: #BF0A30;
   --ff-red-bg: #FCE8EC;
+  /* Rubber stamp for Handled / Client staying / Renewal agreed.
+     Deep coral ink on a light wash. .dark brightens the wash so the plate
+     still reads on a dark card. */
+  --ff-stamp-ink: #b42318;
+  --ff-stamp-wash: #fff1ec;
+  --ff-stamp-ring: color-mix(in srgb, #b42318 42%, transparent);
   /* Deal silence heat — glory red → orange → cooler amber → blue */
   --ff-heat-hot: var(--ff-red);
   --ff-heat-cooling: #E67E22;
@@ -1644,7 +1650,8 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 
 /* Policy overview: Renewal agreed ink beside Client staying.
    Larger than the #382 compact ink, still under the pre-#382 dossier ink.
-   Tilt stays the deal stamp's rotate(-8deg) from ff-stamp-ink-hit. */
+   Tilt stays the deal stamp's rotate(-8deg) from ff-stamp-ink-hit.
+   Ink is the shared Handled stamp token, not the green deal-done tone. */
 [data-ff-policy-links-renewal] {
   container-type: inline-size;
   overflow: visible;
@@ -1696,6 +1703,17 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   min-width: 0;
   padding: 0.36rem 1.05rem;
   border-width: 6px;
+  border-color: var(--ff-stamp-ink);
+  color: var(--ff-stamp-ink);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--ff-stamp-wash) 80%, var(--ff-stamp-ink) 20%) 0 2px,
+      var(--ff-stamp-wash) 2px 4px
+    );
+  box-shadow:
+    0 0 0 3px var(--ff-stamp-ring),
+    inset 0 0 0 2px color-mix(in srgb, var(--ff-stamp-ink) 32%, var(--ff-stamp-wash));
   font-size: 2.05rem;
   letter-spacing: 0.06em;
   line-height: 1.05;
@@ -4619,14 +4637,25 @@ tr[data-ff-activity-selected="true"] {
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
-  border-radius: 999px;
-  padding: 0.08rem 0.4rem;
-  background: color-mix(in srgb, var(--ff-green) 14%, white);
-  color: var(--ff-green);
-  font-size: 0.62rem;
-  font-weight: 750;
-  letter-spacing: 0.02em;
-  line-height: 1.35;
+  margin-inline: 0.15rem;
+  border: 2px solid var(--ff-stamp-ink);
+  border-radius: 3px;
+  padding: 0.12rem 0.45rem;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--ff-stamp-wash) 78%, var(--ff-stamp-ink) 22%) 0 1px,
+      var(--ff-stamp-wash) 1px 3px
+    );
+  box-shadow: 0 0 0 1px var(--ff-stamp-ring);
+  color: var(--ff-stamp-ink);
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", "Times New Roman", serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
 }
 @media (max-width: 22rem) {
   .ff-renewal-agreed-badge {
@@ -5021,21 +5050,22 @@ tr[data-ff-activity-selected="true"] {
   background:
     repeating-linear-gradient(
       0deg,
-      color-mix(in srgb, #f3e6c6 88%, currentColor 12%) 0 2px,
-      color-mix(in srgb, #fff8e8 82%, currentColor 8%) 2px 4px
+      color-mix(in srgb, var(--ff-stamp-wash) 78%, var(--ff-stamp-ink) 22%) 0 1px,
+      var(--ff-stamp-wash) 1px 3px
     );
-  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
-  color: #0f7a3a;
+  box-shadow: 0 0 0 1px var(--ff-stamp-ring);
+  color: var(--ff-stamp-ink);
+  border-color: var(--ff-stamp-ink);
   font-family: "Palatino Linotype", Palatino, "Book Antiqua", "Times New Roman", serif;
-  font-size: 0.62rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   line-height: 1.15;
   text-transform: uppercase;
   white-space: nowrap;
   animation: none;
-  transform: none;
-  opacity: 0.9;
+  transform: rotate(-8deg);
+  opacity: 1;
   pointer-events: none;
 }
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-stack-name {
@@ -6586,14 +6616,76 @@ tr[data-ff-activity-selected="true"] {
   color: var(--muted-foreground);
   border-style: dashed;
 }
-.ff-renewal-handled-pill {
+/* Renewals board Handled mark — in-flow rubber stamp, tilted -10°.
+   Sits above the name so the risk badge stays visible. */
+.ff-renewal-urgency-card {
+  display: flex;
+  flex-direction: column;
+}
+.ff-handled-stamp {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-self: center;
+  width: max-content;
+  max-width: calc(100% - 0.4rem);
+  justify-content: center;
+  margin: 0.55rem auto 0.85rem;
+  pointer-events: none;
+  transform: rotate(-10deg);
+}
+.ff-handled-stamp .ff-handled-stamp-ink {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  border: 1px dashed var(--border);
-  padding: 0.1rem 0.55rem;
-  font-size: 0.7rem;
-  color: var(--muted-foreground);
+  justify-content: center;
+  padding: 0.34rem 0.95rem;
+  border: 3px solid var(--ff-stamp-ink);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(
+      -12deg,
+      color-mix(in srgb, var(--ff-stamp-wash) 74%, var(--ff-stamp-ink) 26%) 0 1px,
+      var(--ff-stamp-wash) 1px 3px
+    );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ff-stamp-ink) 50%, transparent),
+    0 0 0 3px var(--ff-stamp-wash),
+    0 0 0 5px var(--ff-stamp-ink);
+  color: var(--ff-stamp-ink);
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", "Times New Roman", serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.dark {
+  --ff-stamp-ink: #8c1d14;
+  --ff-stamp-wash: #ffe4db;
+  --ff-stamp-ring: color-mix(in srgb, #ff9a8c 72%, transparent);
+}
+.dark .ff-renewals-urgency-col {
+  background: #0f1620;
+  --ff-navy: #f4efe6;
+  --ff-muted: #c5d0dc;
+  --ff-ink: #f6f1ea;
+}
+.dark .ff-renewal-urgency-card {
+  background: #121a24;
+  border-color: #314050;
+}
+.dark .ff-urgency-tone-terracotta {
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-hot) 36%, #140c0c);
+}
+.dark .ff-urgency-tone-amber {
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-cooling) 32%, #16120c);
+}
+.dark .ff-urgency-tone-navy {
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-near-cold) 30%, #101820);
+}
+.dark .ff-urgency-tone-gray {
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-cold) 26%, #101820);
 }
 .ff-client-staying-btn {
   white-space: nowrap;
