@@ -7,6 +7,7 @@ import {
   dealDetailsStoredAddresses,
   headerSheetForPinnedAddress,
   headerWithSplitInsuredAddress,
+  keepDealInsuredOffProductStreets,
   mayInsertSeparatePropertyRisk,
   pinPropertyAddresses,
   propertyRiskWriteTarget,
@@ -15,6 +16,8 @@ import {
   sheetWithProductInsuredAddress,
 } from "@/lib/deals/product-address-pin";
 import { quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
+import { resolveHomeRiskAddresses } from "@/lib/quote-sheet/home-address-fill";
+import { readFileSync } from "node:fs";
 
 /**
  * Gloria Martinez — three products, three locations, no shared insured street.
@@ -272,10 +275,11 @@ describe("Gloria product address pins", () => {
         legacyOwnerKey: "homeowners",
         locationStreet: location.street,
         dealStored: gloriaStored,
+        foreignStreets: ["16021 Northwest 79th Court"],
       },
     );
     expect(shown?.address1?.value).toMatch(/10358/);
-    expect(shown?.mailing_address?.value).toMatch(/16021/);
+    expect(shown?.mailing_address?.value).toBe("");
     expect(shown?.applicant_address?.value).toBe("8944 Adriatico Lane");
 
     const copy = headerWithSplitInsuredAddress({
@@ -328,8 +332,65 @@ describe("Gloria product address pins", () => {
     expect(details.zip).toBe("34747");
     expect(details.mailing_address).not.toMatch(/16021/);
     expect(details.mailing_same_as_insured).toBe("false");
-    expect(details.mailing_address__verify).toBeUndefined();
+    expect(details.mailing_address__verify).toBe("");
     expect(details.contact_mailing_address).toMatch(/16021/);
+
+    const isolated = dealDetailsStoredAddresses(
+      {
+        ...gloriaStored,
+        mailing_same_as_insured: "true",
+        mailing_address__verify:
+          '{"status":"confirmed","fingerprint":"16021 northwest 79th ct|miami lakes|FL|33016"}',
+      },
+      { productLocationStreets: ["10358 NW 30th TER", "16021 Northwest 79th Court"] },
+    );
+    expect(isolated.mailing_address).toBe("8944 Adriatico Lane");
+    expect(isolated.contact_mailing_address).toBe("");
+    expect(isolated.contact_mailing_city).toBe("");
+    expect(isolated.mailing_same_as_insured).toBe("false");
+    expect(isolated.mailing_address__verify).toBe("");
+    expect(isolated.mailing_address).not.toMatch(/16021|10358/);
+  });
+
+  it("does not let a product street overwrite Deal Details insured on save", () => {
+    const saved = keepDealInsuredOffProductStreets({
+      previous: {
+        ...gloriaStored,
+        mailing_same_as_insured: "true",
+      },
+      next: {
+        ...gloriaStored,
+        mailing_address: "16021 Northwest 79th Court",
+        city: "Miami Lakes",
+        zip: "33016",
+        county: "Miami-Dade",
+        mailing_same_as_insured: "true",
+      },
+      productLocationStreets: ["10358 NW 30th TER", "16021 Northwest 79th Court"],
+    });
+    expect(saved.mailing_address).toBe("8944 Adriatico Lane");
+    expect(saved.city).toBe("Kissimmee");
+    expect(saved.zip).toBe("34747");
+    expect(saved.mailing_address).not.toMatch(/16021|10358/);
+    expect(saved.contact_mailing_address).toBe("");
+    expect(saved.mailing_same_as_insured).toBe("false");
+  });
+
+  it("does not fill another product's street onto this sheet's mailing", () => {
+    const resolved = resolveHomeRiskAddresses({
+      stored: gloriaStored,
+      risk: { address1: "10358 NW 30th TER", city: "Doral", state: "FL", zip: "33172" },
+      excludeMailingStreets: ["16021 Northwest 79th Court"],
+    });
+    expect(resolved.property.street).toMatch(/10358/);
+    expect(resolved.mailing.street).toBe("8944 Adriatico Lane");
+    expect(resolved.mailing.street).not.toMatch(/16021/);
+  });
+
+  it("does not write Deal Details insured onto a product sheet", () => {
+    const source = readFileSync("src/app/actions/custom-fields.ts", "utf8");
+    expect(source).not.toMatch(/saveInstancePropertyAddress/);
+    expect(source).toMatch(/keepDealInsuredOffProductStreets/);
   });
 
   it("still lets the first product keep an unscoped risk when the home line is its own form", () => {

@@ -377,7 +377,20 @@ export default async function DealPage({
     dealProductDef(activeProduct).quotingForm,
     activeProduct,
   );
-  const pinnedSheetValues = headerSheetForPinnedAddress(activeSheet.values, activePin);
+  const productLocationStreets = [...propertyPins.values()].map((pin) => pin.address.street);
+  const foreignStreets = [...propertyPins.entries()]
+    .filter(([key]) => key !== activeInstance.key)
+    .map(([, pin]) => pin.address.street);
+  const pinnedSheetValues = sheetWithProductInsuredAddress(
+    headerSheetForPinnedAddress(activeSheet.values, activePin),
+    {
+      instanceKey: activeInstance.key,
+      legacyOwnerKey: legacyPropertyKey,
+      locationStreet: activePin?.address.street,
+      dealStored: dealValues,
+      foreignStreets,
+    },
+  );
   const headerAddresses = headerWithSplitInsuredAddress({
     instanceKey: activeInstance.key,
     legacyOwnerKey: legacyPropertyKey,
@@ -411,17 +424,9 @@ export default async function DealPage({
       })
     : null;
   const profileValues = hideCrossProductDealFacts(
-    sheetWithProductInsuredAddress(
-      activePropertyAddress && !activeOwnsPropertySheet
-        ? overlaySharedProductSheet(pinnedSheetValues, activeInstance.key, activePropertyAddress.address)
-        : pinnedSheetValues,
-      {
-        instanceKey: activeInstance.key,
-        legacyOwnerKey: legacyPropertyKey,
-        locationStreet: activePin?.address.street,
-        dealStored: dealValues,
-      },
-    ),
+    activePropertyAddress && !activeOwnsPropertySheet
+      ? overlaySharedProductSheet(pinnedSheetValues, activeInstance.key, activePropertyAddress.address)
+      : pinnedSheetValues,
     productInstances.length > 1,
     { includeAddress: activeInstance.key !== legacyPropertyKey },
   );
@@ -1088,7 +1093,7 @@ export default async function DealPage({
                           ...mergeDealSystemValues(
                             deal,
                             lead,
-                            dealDetailsStoredAddresses(dealValues),
+                            dealDetailsStoredAddresses(dealValues, { productLocationStreets }),
                             dealFields,
                           ),
                           ...(deal.accountKind === "commercial" && !dealValues.business_name

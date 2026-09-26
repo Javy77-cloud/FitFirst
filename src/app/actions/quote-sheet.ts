@@ -1269,6 +1269,18 @@ export async function runFillFromDealDetails(
     fresh = cleared.values;
     clearedKeys = cleared.clearedKeys;
   }
+  if (multiProduct && dealRow) {
+    const instances = instancesFromDeal(dealRow);
+    const legacyKey = legacyPropertyOwnerKey(instances);
+    const activeKey = opened.instanceKey || legacyKey;
+    const riskRows = await listDealRisks(dealId);
+    input.blockedMailingStreets = riskRows
+      .filter((row) => {
+        const key = String(row.productKey ?? "").trim() || legacyKey;
+        return Boolean(key && key !== activeKey && row.address1?.trim());
+      })
+      .map((row) => row.address1);
+  }
   const applied = fillSheetFromDealDetails(input, fresh);
   if (!applied.filledKeys.length && clearedKeys.length === 0) {
     return {

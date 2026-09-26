@@ -7,6 +7,7 @@ import {
   parseAddressVerifyMeta,
   serializeAddressVerifyMeta,
   verifyMetaForAddressKey,
+  verifyMetaForCurrentAddress,
 } from "./verify-state";
 
 const harbor = {
@@ -34,6 +35,25 @@ describe("FedEx address confirmation persist", () => {
     ).toContain("confirmed");
     expect(metaMatchesAddress(meta, harbor)).toBe(true);
     expect(metaMatchesAddress(meta, { ...harbor, zip: "32901" })).toBe(false);
+    expect(
+      verifyMetaForCurrentAddress("mailing_address", {
+        mailing_address: "8944 Adriatico Lane",
+        city: "Kissimmee",
+        state: "FL",
+        zip: "34747",
+        mailing_address__verify:
+          '{"status":"confirmed","fingerprint":"16021 northwest 79th ct|miami lakes|FL|33016"}',
+      }),
+    ).toBe("");
+    expect(
+      verifyMetaForCurrentAddress("mailing_address", {
+        mailing_address: harbor.street,
+        city: harbor.city,
+        state: harbor.state,
+        zip: harbor.zip,
+        mailing_address__verify: serializeAddressVerifyMeta(meta),
+      }),
+    ).toContain("confirmed");
 
     const form = new FormData();
     form.set("field_mailing_address__verify", serializeAddressVerifyMeta(meta));

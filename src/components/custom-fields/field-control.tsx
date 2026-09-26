@@ -18,7 +18,7 @@ import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { siblingPatchFromAddress } from "@/lib/address/fill";
 import { addressFillNames, isStreetAddressField } from "@/lib/address/keys";
-import { verifyMetaForAddressKey } from "@/lib/address/verify-state";
+import { verifyMetaForCurrentAddress } from "@/lib/address/verify-state";
 import { isMailingAddressFieldKey, isMailingSameAsInsured } from "@/lib/custom-fields/mailing-same";
 import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
 import {
@@ -402,7 +402,7 @@ function TypedControl({
         form={form}
         fill={fill}
         className="mt-1 h-8"
-        verifyMeta={verifyMetaForAddressKey(field.key, values)}
+        verifyMeta={verifyMetaForCurrentAddress(field.key, values)}
         skipVerify={isMailingAddressFieldKey(field.key) && isMailingSameAsInsured(values)}
         onChange={onValueChange}
         onConfirm={(address) => {

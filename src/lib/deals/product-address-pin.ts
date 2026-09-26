@@ -427,6 +427,12 @@ export function headerWithSplitInsuredAddress<
  * Applicant on the open sheet is the insured person, not the risk and not
  * another product's street. Display only — does not write the sheet.
  */
+const SHEET_MAILING_KEYS = ["mailing_address", "mailing_city", "mailing_state", "mailing_zip"] as const;
+
+function blankSheetCell(current: { value?: string | null } | null | undefined) {
+  return current ? { ...current, value: "" } : { value: "" };
+}
+
 export function sheetWithProductInsuredAddress(
   values: SheetValues,
   input: {
@@ -434,22 +440,34 @@ export function sheetWithProductInsuredAddress(
     legacyOwnerKey: string | null;
     locationStreet: string | null | undefined;
     dealStored?: Record<string, string | null | undefined> | null;
+    /** Other products' risk streets. They must not sit on this sheet as mailing or applicant. */
+    foreignStreets?: readonly (string | null | undefined)[];
   },
 ): SheetValues {
   if (!values) return values;
-  if (!input.legacyOwnerKey || input.instanceKey !== input.legacyOwnerKey) return values;
-  if (!propertyStreetKey(input.locationStreet)) return values;
+  let next = values;
+  const mailing = cell(next, "mailing_address");
+  if (
+    streetIsProductLocation(mailing, input.foreignStreets, input.locationStreet) &&
+    !propertyStreetsMatch(mailing, addressFromInsuredFields(input.dealStored).street)
+  ) {
+    next = { ...next };
+    for (const key of SHEET_MAILING_KEYS) {
+      next[key] = blankSheetCell(next[key]);
+    }
+  }
+  if (!input.legacyOwnerKey || input.instanceKey !== input.legacyOwnerKey) return next;
+  if (!propertyStreetKey(input.locationStreet)) return next;
   const insured = addressFromInsuredFields(input.dealStored);
-  if (!insured.street || propertyStreetsMatch(input.locationStreet, insured.street)) return values;
-  const applicant = cell(values, "applicant_address");
-  if (!applicant || propertyStreetsMatch(applicant, insured.street)) return values;
-  if (propertyStreetsMatch(applicant, input.locationStreet)) return values;
-  const current = values.applicant_address;
+  if (!insured.street || propertyStreetsMatch(input.locationStreet, insured.street)) return next;
+  const applicant = cell(next, "applicant_address");
+  if (!applicant || propertyStreetsMatch(applicant, insured.street)) return next;
+  if (propertyStreetsMatch(applicant, input.locationStreet)) return next;
+  if (!streetIsProductLocation(applicant, input.foreignStreets, insured.street)) return next;
+  const current = next.applicant_address;
   return {
-    ...values,
-    applicant_address: current
-      ? { ...current, value: insured.street }
-      : { value: insured.street },
+    ...next,
+    applicant_address: current ? { ...current, value: insured.street } : { value: insured.street },
   };
 }
 
@@ -468,20 +486,61 @@ export function headerSheetForPinnedAddress(
   return next;
 }
 
+const CONTACT_MAILING_KEYS = [
+  "contact_mailing_address",
+  "contact_mailing_unit",
+  "contact_mailing_city",
+  "contact_mailing_state",
+  "contact_mailing_zip",
+  "contact_mailing_county",
+  "contact_mailing_address__verify",
+] as const;
+
+const DEAL_INSURED_PART_KEYS = [
+  "mailing_address",
+  "mailing_unit",
+  "city",
+  "state",
+  "zip",
+  "county",
+  "mailing_address__verify",
+] as const;
+
+function streetIsProductLocation(
+  street: string | null | undefined,
+  productLocationStreets: readonly (string | null | undefined)[] | undefined,
+  exceptStreet?: string | null,
+): boolean {
+  if (!propertyStreetKey(street)) return false;
+  return (productLocationStreets ?? []).some(
+    (row) => propertyStreetsMatch(row, street) && !propertyStreetsMatch(row, exceptStreet),
+  );
+}
+
 /**
  * Deal Details insured address is the deal field (`mailing_address`), not the
  * active product's risk and not the mailing street. A same-as flag or a verify
  * fingerprint for a different street must not present mailing as insured.
+ * A contact-mailing street that is another product's location is cleared so
+ * "mailing same as insured" cannot paint that product onto the insured field.
  */
 export function dealDetailsStoredAddresses(
   stored: Record<string, string | null | undefined> | null | undefined,
+  options?: { productLocationStreets?: readonly (string | null | undefined)[] },
 ): Record<string, string> {
   const next: Record<string, string> = {};
   for (const [key, value] of Object.entries(stored ?? {})) {
     if (value != null) next[key] = String(value);
   }
   const insuredStreet = next.mailing_address ?? "";
-  const mailingStreet = next.contact_mailing_address ?? "";
+  let mailingStreet = next.contact_mailing_address ?? "";
+  if (
+    streetIsProductLocation(mailingStreet, options?.productLocationStreets, insuredStreet)
+  ) {
+    for (const key of CONTACT_MAILING_KEYS) next[key] = "";
+    mailingStreet = "";
+    next.mailing_same_as_insured = "false";
+  }
   if (insuredStreet && mailingStreet && !propertyStreetsMatch(insuredStreet, mailingStreet)) {
     next.mailing_same_as_insured = "false";
   }
@@ -495,9 +554,40 @@ export function dealDetailsStoredAddresses(
     country: "US",
   });
   if (meta?.fingerprint && insuredFingerprint && meta.fingerprint !== insuredFingerprint) {
-    delete next.mailing_address__verify;
+    next.mailing_address__verify = "";
   }
   return next;
+}
+
+/**
+ * A Deal Details save must not replace the insured street with another
+ * product's location (16021 or 10358 over 8944). Mailing is never copied
+ * onto insured.
+ */
+export function keepDealInsuredOffProductStreets(input: {
+  previous: Record<string, string | null | undefined> | null | undefined;
+  next: Record<string, string>;
+  productLocationStreets?: readonly (string | null | undefined)[];
+}): Record<string, string> {
+  const previous = input.previous ?? {};
+  const prevStreet = String(previous.mailing_address ?? "");
+  const nextStreet = input.next.mailing_address ?? "";
+  if (!propertyStreetKey(prevStreet) || propertyStreetsMatch(prevStreet, nextStreet)) {
+    return dealDetailsStoredAddresses(input.next, {
+      productLocationStreets: input.productLocationStreets,
+    });
+  }
+  const hitsProduct = streetIsProductLocation(nextStreet, input.productLocationStreets, prevStreet);
+  const guarded = { ...input.next };
+  if (hitsProduct) {
+    for (const key of DEAL_INSURED_PART_KEYS) {
+      guarded[key] = String(previous[key] ?? "");
+    }
+    guarded.mailing_address__verify = "";
+  }
+  return dealDetailsStoredAddresses(guarded, {
+    productLocationStreets: input.productLocationStreets,
+  });
 }
 
 /** A later product must not insert a second risk on the unscoped building. */
