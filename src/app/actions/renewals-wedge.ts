@@ -7,7 +7,7 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, formatDay, formatMoney } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
-import { alerts, policies, policyTerms } from "@/lib/db/schema";
+import { alerts, policies, policyTerms, renewalCompareLogs, renewalQueue } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { sendDeskEmail } from "@/app/actions/comms";
 import {
@@ -24,6 +24,10 @@ import { loadPartyHealth } from "@/lib/health/load";
 import type { HealthChipView } from "@/lib/health/model";
 import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
 import { deskNow } from "@/lib/home/as-of";
+import { latestRenewalAgreedSnapshot } from "@/lib/renewal/agreed-snapshot";
+import { daysToRenewal } from "@/lib/renewal/days-to-renewal";
+import { isRenewalHandledStageValue } from "@/lib/renewal/handled";
+import { selectPolicyCompareTerms } from "@/lib/policy/compare-entry";
 import { CHASE_EVENT, CHASE_MARK, chaseTemplateFor } from "@/lib/renewal/chase";
 import { REVIEW_EVENT, REVIEW_SKIP_EVENT } from "@/lib/renewal/chase";
 import { renewalUrgencyBand } from "@/lib/renewal/urgency";
@@ -62,6 +66,11 @@ export type RenewalCompareDrawerPayload = {
   note: GeminiDiffNote;
   clientHealth: HealthChipView | null;
   policyHealth: HealthChipView | null;
+  baselineLabel: string;
+  renewalLabel: string;
+  /** True when the rows come from the renewal-agreed freeze, not live roles. */
+  frozen: boolean;
+  renewalHandled: boolean;
 };
 
 export async function loadRenewalCompareDrawer(
@@ -77,33 +86,60 @@ export async function loadRenewalCompareDrawer(
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
   if (!policy) return { ok: false, error: "Policy not found." };
 
-  const terms = await db
-    .select()
-    .from(policyTerms)
-    .where(and(eq(policyTerms.tenantId, DEFAULT_TENANT_ID), eq(policyTerms.policyId, policyId)));
-  const current = terms.find((row) => row.role === "current");
-  const proposed = terms.find((row) => row.role === "proposed");
-  const currentPremium = current?.premium ?? policy.premium ?? "—";
-  const proposedPremium = proposed?.premium ?? "—";
-  const curMoney = parseMoney(current?.premium ?? policy.premium);
-  const nextMoney = parseMoney(proposed?.premium);
+  const [terms, queueRows, logs] = await Promise.all([
+    db
+      .select()
+      .from(policyTerms)
+      .where(and(eq(policyTerms.tenantId, DEFAULT_TENANT_ID), eq(policyTerms.policyId, policyId))),
+    db
+      .select({ stage: renewalQueue.stage })
+      .from(renewalQueue)
+      .where(and(eq(renewalQueue.tenantId, DEFAULT_TENANT_ID), eq(renewalQueue.policyId, policyId))),
+    db
+      .select()
+      .from(renewalCompareLogs)
+      .where(
+        and(eq(renewalCompareLogs.tenantId, DEFAULT_TENANT_ID), eq(renewalCompareLogs.policyId, policyId)),
+      ),
+  ]);
+  const renewalHandled = isRenewalHandledStageValue(queueRows[0]?.stage);
+  const frozenSnapshot = latestRenewalAgreedSnapshot(logs);
+  const selected = selectPolicyCompareTerms(terms, renewalHandled);
+  const current = frozenSnapshot ? null : selected.baseline;
+  const proposed = frozenSnapshot ? null : selected.renewal;
+  const currentPremium = frozenSnapshot
+    ? frozenSnapshot.currentPremium
+    : (current?.premium ?? (selected.pair.kind === "current-proposed" ? policy.premium : null) ?? "—");
+  const proposedPremium = frozenSnapshot ? frozenSnapshot.proposedPremium : (proposed?.premium ?? "—");
+  const liveCurrentPremium =
+    current?.premium ?? (selected.pair.kind === "current-proposed" ? policy.premium : null);
+  const curMoney = parseMoney(frozenSnapshot ? frozenSnapshot.currentPremium : liveCurrentPremium);
+  const nextMoney = parseMoney(frozenSnapshot ? frozenSnapshot.proposedPremium : proposed?.premium);
   const bothSides = curMoney != null && nextMoney != null;
   const change = bothSides && curMoney != null && nextMoney != null ? premiumChange(curMoney, nextMoney) : null;
   const deductibleDefs = deductiblesForLine(policy.lineOfBusiness);
-  const coverage = toneCoverageRows(coverageRows(current?.coverages, proposed?.coverages));
+  const coverage = toneCoverageRows(
+    frozenSnapshot ? frozenSnapshot.coverageRows : coverageRows(current?.coverages, proposed?.coverages),
+  );
+  const termCurrent = frozenSnapshot?.currentTermEffective
+    ? `${formatDay(frozenSnapshot.currentTermEffective)} → ${formatDay(frozenSnapshot.currentTermExpiration)}`
+    : current
+      ? `${formatDay(current.termEffective)} → ${formatDay(current.termExpiration)}`
+      : "—";
+  const termProposed = frozenSnapshot?.proposedTermEffective
+    ? `${formatDay(frozenSnapshot.proposedTermEffective)} → ${formatDay(frozenSnapshot.proposedTermExpiration)}`
+    : proposed
+      ? `${formatDay(proposed.termEffective)} → ${formatDay(proposed.termExpiration)}`
+      : "—";
   const rows = [
     {
       key: "term",
       label: "Term",
-      currentValue: current
-        ? `${formatDay(current.termEffective)} → ${formatDay(current.termExpiration)}`
-        : "—",
-      proposedValue: proposed
-        ? `${formatDay(proposed.termEffective)} → ${formatDay(proposed.termExpiration)}`
-        : "—",
+      currentValue: termCurrent,
+      proposedValue: termProposed,
       tone: compareLineTone({
-        currentValue: current ? "set" : "—",
-        proposedValue: proposed ? "set" : "—",
+        currentValue: termCurrent === "—" ? "—" : "set",
+        proposedValue: termProposed === "—" ? "—" : "set",
         kind: "term",
       }),
     },
@@ -119,14 +155,18 @@ export async function loadRenewalCompareDrawer(
       }),
     },
     ...deductibleDefs.map((field) => {
-      const left = current?.[field.key] ?? "—";
-      const right = proposed?.[field.key] ?? "—";
+      const left = frozenSnapshot
+        ? (frozenSnapshot.currentDeductibles?.[field.key] ?? "—")
+        : (current?.[field.key] ?? "—");
+      const right = frozenSnapshot
+        ? (frozenSnapshot.proposedDeductibles?.[field.key] ?? "—")
+        : (proposed?.[field.key] ?? "—");
       return {
         key: field.key,
         label: field.label,
-        currentValue: left,
-        proposedValue: right,
-        tone: compareLineTone({ currentValue: left, proposedValue: right, kind: "deductible" }),
+        currentValue: left || "—",
+        proposedValue: right || "—",
+        tone: compareLineTone({ currentValue: left || "—", proposedValue: right || "—", kind: "deductible" }),
       };
     }),
     ...coverage,
@@ -143,7 +183,24 @@ export async function loadRenewalCompareDrawer(
     contactId: policy.contactId,
     accountId: policy.accountId,
     policyId: policy.id,
-    daysUntil: (() => {
+    daysUntil: daysToRenewal(
+      {
+        status: policy.status,
+        effectiveDate: policy.effectiveDate,
+        expirationDate: policy.expirationDate,
+        renewalDate: policy.renewalDate,
+        premium: policy.premium,
+        lineOfBusiness: policy.lineOfBusiness,
+        terms: terms.map((term) => ({
+          id: term.id,
+          role: term.role,
+          effective: term.termEffective,
+          expiration: term.termExpiration,
+          premium: term.premium,
+        })),
+      },
+      deskNow(),
+    ) ?? (() => {
       const exp = expirationDay(policy.expirationDate);
       return exp ? daysUntilExpiration(exp, deskNow()) : null;
     })(),
@@ -168,6 +225,10 @@ export async function loadRenewalCompareDrawer(
     note,
     clientHealth: health.client,
     policyHealth: health.policy,
+    baselineLabel: frozenSnapshot?.baselineLabel || selected.pair.baselineLabel,
+    renewalLabel: frozenSnapshot?.renewalLabel || selected.pair.renewalLabel,
+    frozen: Boolean(frozenSnapshot),
+    renewalHandled,
   };
 }
 

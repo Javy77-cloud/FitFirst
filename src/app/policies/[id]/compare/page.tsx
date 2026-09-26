@@ -5,6 +5,7 @@ import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { getRenewalQueueForPolicy } from "@/lib/ams/queries";
 import { getPolicyWorkspace } from "@/lib/db/queries";
 import { selectPolicyCompareTerms } from "@/lib/policy/compare-entry";
+import { latestRenewalAgreedSnapshot } from "@/lib/renewal/agreed-snapshot";
 import { isRenewalHandledStageValue } from "@/lib/renewal/handled";
 
 export const dynamic = "force-dynamic";
@@ -26,10 +27,10 @@ export default async function PolicyComparePage({
 
   const { policy, contact, carrier, terms, compareLogs } = workspace;
   const renewalHandled = isRenewalHandledStageValue(renewalQueueRow?.stage);
+  const frozenSnapshot = latestRenewalAgreedSnapshot(compareLogs);
   const selected = selectPolicyCompareTerms(terms, renewalHandled);
   const current = selected.roleCurrent;
   const proposed = selected.roleProposed;
-  const renewedPair = selected.pair.kind === "prior-current";
   const title = `Compare renewal · ${policy.policyNumber}`;
   const policyLabel = policy.policyNumber?.trim() || "Policy";
 
@@ -63,11 +64,12 @@ export default async function PolicyComparePage({
         current={current}
         proposed={proposed}
         logs={compareLogs}
-        compareBaseline={renewedPair ? selected.baseline : undefined}
-        compareRenewal={renewedPair ? selected.renewal : undefined}
-        baselineLabel={renewedPair ? selected.pair.baselineLabel : undefined}
-        renewalLabel={renewedPair ? selected.pair.renewalLabel : undefined}
+        compareBaseline={selected.baseline}
+        compareRenewal={selected.renewal}
+        baselineLabel={selected.pair.baselineLabel}
+        renewalLabel={selected.pair.renewalLabel}
         renewalHandled={renewalHandled}
+        frozenSnapshot={frozenSnapshot}
       />
     </AppShell>
   );

@@ -125,16 +125,18 @@ describe("renewal desk filters", () => {
 });
 
 describe("handled collection filter", () => {
-  it("excludes handled from All shopping and shows them on Handled pipeline", () => {
+  it("keeps in-window handled cards on All for Compare, and shows every handled row on Handled", () => {
     const rows = [
       card({ stage: "upcoming", lineOfBusiness: "HO3", policyNumber: "HO-1" }),
-      card({ stage: "handled", lineOfBusiness: "HO3", policyNumber: "HO-H" }),
+      card({ stage: "handled", lineOfBusiness: "HO3", policyNumber: "HO-H", daysUntil: 14 }),
+      card({ stage: "handled", lineOfBusiness: "HO3", policyNumber: "HO-FAR", daysUntil: 379 }),
     ];
     expect(filterRenewalCards(rows, {}, DEFAULT_DESK_LINE_SETTINGS).map((r) => r.policyNumber)).toEqual([
       "HO-1",
+      "HO-H",
     ]);
     expect(
       filterRenewalCards(rows, { pipeline: "handled" }, DEFAULT_DESK_LINE_SETTINGS).map((r) => r.policyNumber),
-    ).toEqual(["HO-H"]);
+    ).toEqual(["HO-H", "HO-FAR"]);
   });
 });

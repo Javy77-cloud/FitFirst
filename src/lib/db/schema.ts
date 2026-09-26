@@ -140,6 +140,13 @@ export type RenewalCompareSnapshot = {
     proposedValue: string;
     changed: boolean;
   }[];
+  /** Set on the renewal-agreed freeze so Compare can reopen after roles flip. */
+  currentTermEffective?: string | null;
+  currentTermExpiration?: string | null;
+  proposedTermEffective?: string | null;
+  proposedTermExpiration?: string | null;
+  baselineLabel?: string;
+  renewalLabel?: string;
 };
 
 const tenantCol = () =>
@@ -3005,6 +3012,12 @@ export const agentUiPrefs = pgTable(
       primaryOrder: string[];
       hiddenPrimaryIds?: string[];
       submenus: Record<string, string[]>;
+    } | null>(),
+    /** Per-agent last deal screen + product form. See deal-resume.ts. */
+    dealResume: jsonb("deal_resume").$type<{
+      version: number;
+      lastDealId: string | null;
+      deals: Record<string, { productKey: string; tab: string; at: number }>;
     } | null>(),
     ...timestamps,
   },

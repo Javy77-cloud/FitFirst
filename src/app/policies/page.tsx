@@ -221,7 +221,6 @@ export default async function PoliciesPage({
           billingFrequency: policy.billingFrequency,
           premiumFrequency: policy.premiumFrequency,
           expirationDate: resolved.bookExpiration ?? policy.expirationDate,
-          // Stored policies.renewal_date. Swap for renewalDateFor(policy) when that helper lands.
           renewalDate: policy.renewalDate,
           effectiveDate: resolved.bookEffective,
           renewedEffective: resolved.upcoming?.effective ?? null,

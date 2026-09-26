@@ -17,6 +17,7 @@ import {
   type CurrentTermResolution,
 } from "@/lib/policies/current-term";
 import { renewalDaysPhrase } from "@/lib/renewal/urgency";
+import { renewalClock } from "@/lib/renewal/days-to-renewal";
 import { showPolicyCompareTerms } from "@/lib/policy/compare-entry";
 import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
 import { floodRatingFromLimits } from "@/lib/policy/flood-coverage";
@@ -52,6 +53,7 @@ export function PolicyOverviewTab({
   showCommission = true,
   termView = null,
   renewalHandled = false,
+  clientStayingMarkedAt = null,
   inspectionDocs = [],
   declaration = null,
 }: {
@@ -135,6 +137,8 @@ export function PolicyOverviewTab({
   termView?: CurrentTermResolution | null;
   /** renewal_queue stage === handled ("Client staying"). */
   renewalHandled?: boolean;
+  /** When that queue row was marked. A mark before the in-force effective was for that term. */
+  clientStayingMarkedAt?: Date | string | null;
   /** Deal-library wind mit / four-point files. Ids only — the PDF stays on the deal. */
   inspectionDocs?: HomeInspectionDocument[];
   /** Policy declaration. The eye opens it in the document popup. */
@@ -193,16 +197,34 @@ export function PolicyOverviewTab({
       : [];
   const showRenewalAgreed = showRenewalAgreedStamp({
     clientStaying: renewalHandled,
-    // Stored policies.renewal_date. Swap for renewalDateFor(policy) when that helper lands.
+    // Stored policies.renewal_date. A year past the renew-into effective is the next cycle.
     renewalDate: policy.renewalDate,
     effectiveDate: termView?.current?.effective ?? termView?.bookEffective ?? policy.effectiveDate,
     expirationDate: termView?.current?.expiration ?? termView?.bookExpiration ?? policy.expirationDate,
     renewedEffectiveDate: termView?.upcoming?.effective,
+    priorExpiration: termView?.prior?.expiration,
+    handledAt: clientStayingMarkedAt,
     terms,
   });
+  const renewalDays = renewalClock({
+    status: policy.status,
+    effectiveDate: policy.effectiveDate,
+    expirationDate: policy.expirationDate,
+    renewalDate: policy.renewalDate,
+    premium: policy.premium,
+    lineOfBusiness: policy.lineOfBusiness,
+    terms: terms.map((term) => ({
+      id: term.id,
+      role: term.role,
+      effective: term.termEffective,
+      expiration: term.termExpiration,
+      premium: term.premium,
+    })),
+  }).days;
   const showCompareTerms = showPolicyCompareTerms({
     inForce,
     renewalAgreed: showRenewalAgreed,
+    daysUntilRenewal: renewalDays,
   });
 
   return (
@@ -233,9 +255,6 @@ export function PolicyOverviewTab({
         <div className="ff-links-renewal-copy space-y-3">
           <div className="ff-links-renewal-heading">
             <h2 className="text-base font-semibold text-navy">Links & renewal</h2>
-            {showRenewalAgreed ? (
-              <CompareTermsLink policyId={policy.id} persistent />
-            ) : null}
           </div>
           <p className="text-sm text-muted-foreground" data-ff-policy-renewal-status="">
             Renewal status · {renewalLine}
@@ -255,10 +274,10 @@ export function PolicyOverviewTab({
           {deal ? (
             <RecordLink href={`/deals/${deal.id}?fromPolicy=${policy.id}`}>Deal {deal.title}</RecordLink>
           ) : null}
-          {showCompareTerms && inForce && !showRenewalAgreed ? (
-            <CompareTermsLink policyId={policy.id} />
+          {showCompareTerms ? (
+            <CompareTermsLink policyId={policy.id} persistent={Boolean(renewalHandled)} />
           ) : null}
-            {inForce ? (
+            {inForce && !renewalHandled ? (
               <span className="ff-links-renewal-staying">
                 <ClientStayingButton policyId={policy.id} renewalDate={stayingDate} size="sm" />
               </span>

@@ -13,6 +13,7 @@ import { PANEL_SIGNAL_KINDS, type PanelCard } from "@/lib/notifications/panel";
 import { migrateOrphanCommitments } from "@/lib/notifications/load-commitments";
 import { applyTermStartEffects } from "@/lib/notifications/term-start-effects";
 import { TERM_START_KIND } from "@/lib/notifications/term-start";
+import { releaseExpiredClientStaying } from "@/lib/renewal/release-handled";
 
 export function panelAlertBody(why: string, key: string): string {
   return `<!--ff-panel:${key}-->\n\n${why}`;
@@ -52,6 +53,7 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
 
 async function syncPanelSignalsOnce(): Promise<PanelCard[]> {
   await migrateOrphanCommitments().catch(() => 0);
+  await releaseExpiredClientStaying().catch(() => 0);
   const cards = (await loadPanelCards()).filter((card) => shouldEnqueueUserNotification(card.kind));
 
   // Sole insert path for cold chase (episode suppress + coalesce). Panel never

@@ -5,6 +5,7 @@ import {
 import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
 import { isPcSubLine } from "@/lib/desk/policy-line";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
+import { inRenewalCompareWindow } from "@/lib/renewal/days-to-renewal";
 
 export const RENEWAL_SHOPPING_STAGES = ["upcoming", "contacted", "quoted"] as const;
 export const RENEWAL_WON_LOST_STAGES = ["bound", "lost"] as const;
@@ -27,6 +28,14 @@ export type RenewalDeskFilter = {
 /** Shopping = not parking. Custom admin stages stay on All / LOB boards. */
 export function isRenewalShoppingStage(slug: string): boolean {
   return !WON_LOST.has(slug) && !ARCHIVE.has(slug) && !HANDLED.has(slug);
+}
+
+/**
+ * Handled leaves the chase columns, but Compare stays on the board for the
+ * whole renewal window. Far-out handled rows stay on the Handled pipeline only.
+ */
+export function handledCompareStaysOnBoard(card: { stage: string; daysUntil: number }): boolean {
+  return isRenewalHandledStage(card.stage) && inRenewalCompareWindow(card.daysUntil);
 }
 
 export function isRenewalWonLostStage(slug: string): boolean {
@@ -81,7 +90,7 @@ export function filterRenewalCards(
   return cards.filter((card) => {
     if (filter.stage && card.stage !== filter.stage) return false;
     if (!pipeline) {
-      return isRenewalShoppingStage(card.stage);
+      return isRenewalShoppingStage(card.stage) || handledCompareStaysOnBoard(card);
     }
     if (pipeline === "won-lost") {
       return isRenewalWonLostStage(card.stage);
@@ -93,7 +102,7 @@ export function filterRenewalCards(
       return isRenewalHandledStage(card.stage);
     }
     if (pipeline === "p-c" || pipeline === "health" || pipeline === "life") {
-      if (!isRenewalShoppingStage(card.stage)) return false;
+      if (!isRenewalShoppingStage(card.stage) && !handledCompareStaysOnBoard(card)) return false;
       const family = renewalLobFamily(
         card.lineOfBusiness,
         card.policySubType,

@@ -19,6 +19,7 @@ import {
 } from "@/lib/policy/advance-current-term";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { withHistoryDefaults } from "@/lib/policy/change-log";
+import { releaseClientStayingForPolicy } from "@/lib/renewal/release-handled";
 
 export type AdvanceCurrentTermResult =
   | {
@@ -275,6 +276,10 @@ export async function advancePolicyCurrentTerm(input: {
     policyId,
     outcome: "renewal_term_advance",
   });
+
+  // Release only once Eastern today is on or after the renewed term effective.
+  // A renewal_date that jumped past 90 days does not release on its own.
+  await releaseClientStayingForPolicy(policyId, { renewedEffective: toEffective });
 
   return {
     ok: true,

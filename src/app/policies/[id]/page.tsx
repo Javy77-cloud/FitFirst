@@ -453,6 +453,7 @@ export default async function PolicyDetailPage({
             showCommission={viewer.commissionBreakdown.read}
             termView={termView}
             renewalHandled={renewalHandled}
+            clientStayingMarkedAt={renewalHandled ? renewalQueueRow?.updatedAt : null}
             inspectionDocs={inspectionDocs}
           />
         ) : null}
