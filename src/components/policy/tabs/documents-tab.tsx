@@ -29,6 +29,7 @@ export function PolicyDocumentsTab({
   isAdmin = false,
   renewalHandled = false,
   uploadMode = { onVercel: false, directBlob: false },
+  presetDocType,
 }: {
   policy: {
     id: string;
@@ -60,6 +61,8 @@ export function PolicyDocumentsTab({
   isAdmin?: boolean;
   renewalHandled?: boolean;
   uploadMode?: { onVercel: boolean; directBlob: boolean };
+  /** `?docType=` on the policy Documents tab. AOR collect uses `aor`. */
+  presetDocType?: string | null;
 }) {
   const showManualRenewalHelp = shouldShowManualRenewalHelp({
     expirationDate: policy.expirationDate,
@@ -103,9 +106,11 @@ export function PolicyDocumentsTab({
         <h2 className="text-base font-semibold text-navy">Policy documents</h2>
 
         <PolicyDocumentsAttach
+          key={presetDocType ?? "policy_dec"}
           policyId={policy.id}
           dealId={policy.dealId}
           uploadMode={uploadMode}
+          presetDocType={presetDocType}
         />
         {canFillCompare && !showManualRenewalHelp ? (
           <div className="my-3 flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/20 p-3">

@@ -9,6 +9,7 @@ import {
 } from "@/lib/ams/checklist";
 import type { PacketTask } from "@/lib/ams/packet-tasks";
 import { SERVICING_DOC_KEYS, SERVICING_DOC_LABELS, type ServicingDocKey } from "@/lib/domain-ams";
+import { optionalServicingPacketDocumentsHref } from "@/lib/policy/policy-documents-href";
 
 export function ServicingChecklistCard({
   policyId,
@@ -177,9 +178,9 @@ export function ServicingChecklistCard({
               </div>
               {!onFile ? (
                 <Link
-                  href={`/policies/${policyId}?tab=documents`}
+                  href={optionalServicingPacketDocumentsHref(policyId, key)}
                   className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                  data-ff-optional-packet-docs=""
+                  data-ff-optional-packet-docs={key}
                 >
                   Documents
                 </Link>

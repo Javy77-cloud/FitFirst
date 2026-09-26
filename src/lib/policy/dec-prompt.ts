@@ -55,7 +55,7 @@ export type GeminiDecLookInput = {
 
 export function isDeclarationDocType(docType?: string | null): boolean {
   const type = (docType ?? "").trim().toLowerCase();
-  if (!type) return false;
+  if (!type || type === "aor") return false;
   return (
     type === "dec" ||
     type === "declaration" ||
