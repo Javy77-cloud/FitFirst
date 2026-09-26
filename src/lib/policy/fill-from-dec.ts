@@ -1387,9 +1387,7 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
     formatDecDeductible(rawCell(rows, "contents_deductible", "coverage_c_deductible")),
   );
 
-  const lossDisplay = floodPrintedLimit(
-    rawCell(rows, "loss_of_use", "additional_living_expense", "coverage_d"),
-  );
+  const lossDisplay = floodPrintedLimit(rawCell(rows, "loss_of_use", "coverage_d"));
   if (lossDisplay) put(out, "floodLossOfUse", lossDisplay);
   put(
     out,
@@ -1465,8 +1463,15 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
     out,
     "floodTemporaryLiving",
     "floodTemporaryLivingPremium",
-    rawCell(rows, "temporary_living_expenses", "temporary_living_expense"),
-    rawCell(rows, "temporary_living_expenses_premium"),
+    rawCell(
+      rows,
+      "temporary_living_expenses",
+      "temporary_living_expense",
+      "temporary_living",
+      "i_temporary_living_expenses",
+      "additional_living_expense",
+    ),
+    rawCell(rows, "temporary_living_expenses_premium", "additional_living_expense_premium"),
     totalPremium,
   );
   putFloodPair(
@@ -1477,6 +1482,30 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
     rawCell(rows, "replacement_cost_on_building_premium"),
     totalPremium,
   );
+  putFloodPair(
+    out,
+    "floodOutdoorTrees",
+    "floodOutdoorTreesPremium",
+    rawCell(
+      rows,
+      "outdoor_trees_shrubs_plants",
+      "outdoor_trees_shrubs_and_plants",
+      "trees_shrubs_and_plants",
+      "trees_shrubs_plants",
+      "outdoor_trees",
+      "coverage_m",
+    ),
+    rawCell(rows, "outdoor_trees_shrubs_plants_premium"),
+    totalPremium,
+  );
+  if (
+    out.floodTemporaryLiving &&
+    out.floodLossOfUse &&
+    sameMoney(out.floodTemporaryLiving, out.floodLossOfUse)
+  ) {
+    delete out.floodLossOfUse;
+    delete out.floodLossOfUsePremium;
+  }
 
   const policyDeductible = formatDecDeductible(rawCell(rows, "flood_deductible", "deductible"));
   const policyDeductiblePremium = floodLinePremium(
@@ -2050,6 +2079,8 @@ export function groupAppliedFill(
     ["floodUnattachedStructuresPremium", "flood_unattached_structures_premium"],
     ["floodTemporaryLiving", "flood_temporary_living"],
     ["floodTemporaryLivingPremium", "flood_temporary_living_premium"],
+    ["floodOutdoorTrees", "flood_outdoor_trees"],
+    ["floodOutdoorTreesPremium", "flood_outdoor_trees_premium"],
     ["floodReplacementCostBuilding", "flood_replacement_cost_building"],
     ["floodReplacementCostBuildingPremium", "flood_replacement_cost_building_premium"],
     ["floodDeductible", "flood_deductible"],

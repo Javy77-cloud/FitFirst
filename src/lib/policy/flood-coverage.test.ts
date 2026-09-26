@@ -11,6 +11,8 @@ import {
   geminiKeysForShopLine,
 } from "@/lib/extraction/gemini/prompt";
 import {
+  FLOOD_PREMISES_SCHEDULE_STAMP,
+  FLOOD_PREMISES_SCHEDULE_VERSION,
   floodCoverageLimitsAfterFill,
   floodCoverageSchedule,
   floodFormCodeFromText,
@@ -241,10 +243,16 @@ describe("flood extract prompt", () => {
     expect(system).toMatch(/Neptune/);
     expect(system).toMatch(/sandbags_supplies_labor/);
     expect(system).toMatch(/temporary_living_expenses/);
+    expect(system).toMatch(/outdoor_trees_shrubs_plants/);
+    expect(system).toMatch(/Yes stays Yes/);
+    expect(system).toMatch(/no Annual Premium column/);
     expect(system).toMatch(/flood zone alone is not/i);
     expect(system).not.toMatch(/one extra coverage only/i);
     expect(user).toMatch(/A flood zone alone is not enough/);
     expect(user).toMatch(/keep a credit negative/);
+    expect(user).toMatch(/Outdoor Trees, Shrubs, and Plants/);
+    expect(user).toMatch(/never loss_of_use/);
+    expect(user).toMatch(/leave the premium null/);
 
     const home = buildGeminiUserPrompt("dec", "home");
     expect(home).toMatch(/coverage_b/);
@@ -315,6 +323,31 @@ describe("flood extract prompt", () => {
             normalizedValue: "SINGLE-FAMILY HOME",
             rawValue: "SINGLE-FAMILY HOME",
             confidence: 0.9,
+            flagged: false,
+          },
+        ],
+        newestAt: new Date("2026-09-26T00:00:00.000Z"),
+        now: new Date("2026-09-26T00:10:00.000Z"),
+        reuseFresh: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldForceFloodDecReread({
+        manualFlood: true,
+        rows: [
+          ...zoneOnly,
+          {
+            fieldKey: "building_occupancy",
+            normalizedValue: "SINGLE-FAMILY HOME",
+            rawValue: "SINGLE-FAMILY HOME",
+            confidence: 0.9,
+            flagged: false,
+          },
+          {
+            fieldKey: FLOOD_PREMISES_SCHEDULE_STAMP,
+            normalizedValue: FLOOD_PREMISES_SCHEDULE_VERSION,
+            rawValue: FLOOD_PREMISES_SCHEDULE_VERSION,
+            confidence: 1,
             flagged: false,
           },
         ],
@@ -556,5 +589,149 @@ describe("Zoila Neptune flood fill", () => {
     expect(dwelling.formType).toBe("DP3");
     expect(dwelling.coverageB).toBe("$32,100");
     expect(dwelling.floodSandbags).toBeUndefined();
+  });
+});
+
+const robertRows = [
+  { fieldKey: "policy_number", normalizedValue: "ASR4409531" },
+  { fieldKey: "building_limit", normalizedValue: "225000" },
+  { fieldKey: "contents_limit", normalizedValue: "70000" },
+  { fieldKey: "debris_removal", normalizedValue: "Included" },
+  { fieldKey: "sandbags_supplies_labor", normalizedValue: "1000" },
+  { fieldKey: "property_removed_to_safety", normalizedValue: "1000" },
+  { fieldKey: "increased_cost_of_compliance", normalizedValue: "30000" },
+  { fieldKey: "replacement_cost_on_contents", normalizedValue: "Yes" },
+  { fieldKey: "basement_contents", normalizedValue: "0" },
+  { fieldKey: "pool_repair_and_refill", normalizedValue: "0" },
+  { fieldKey: "unattached_structures", normalizedValue: "0" },
+  { fieldKey: "temporary_living_expenses", normalizedValue: "30000" },
+  { fieldKey: "outdoor_trees_shrubs_plants", normalizedValue: "0" },
+  { fieldKey: "flood_deductible", normalizedValue: "1000" },
+  { fieldKey: "flood_zone", normalizedValue: "X" },
+  { fieldKey: "building_occupancy", normalizedValue: "Single Family" },
+];
+
+describe("Robert De Swartz Neptune limits-only schedule", () => {
+  it("keeps printed limits, Yes, and Temporary living expenses without inventing premiums", () => {
+    const proposed = proposeFillFromDec({ family: "flood", rows: robertRows });
+    expect(proposed.floodBuilding).toBe("$225,000");
+    expect(proposed.floodBuildingPremium).toBeUndefined();
+    expect(proposed.floodContents).toBe("$70,000");
+    expect(proposed.floodContentsPremium).toBeUndefined();
+    expect(proposed.floodDebris).toBe("Included");
+    expect(proposed.floodDebrisPremium).toBeUndefined();
+    expect(proposed.floodSandbags).toBe("$1,000");
+    expect(proposed.floodSandbagsPremium).toBeUndefined();
+    expect(proposed.floodPropertyRemoved).toBe("$1,000");
+    expect(proposed.floodPropertyRemovedPremium).toBeUndefined();
+    expect(proposed.floodIcc).toBe("$30,000");
+    expect(proposed.floodIccPremium).toBeUndefined();
+    expect(proposed.floodReplacementCostContents).toBe("Yes");
+    expect(proposed.floodReplacementCostContentsPremium).toBeUndefined();
+    expect(proposed.floodBasementContents).toBe("$0");
+    expect(proposed.floodBasementContentsPremium).toBeUndefined();
+    expect(proposed.floodPoolRepair).toBe("$0");
+    expect(proposed.floodUnattachedStructures).toBe("$0");
+    expect(proposed.floodTemporaryLiving).toBe("$30,000");
+    expect(proposed.floodTemporaryLivingPremium).toBeUndefined();
+    expect(proposed.floodLossOfUse).toBeUndefined();
+    expect(proposed.floodOutdoorTrees).toBe("$0");
+    expect(proposed.floodOutdoorTreesPremium).toBeUndefined();
+    expect(proposed.floodBuildingDeductible).toBe("$1,000");
+    expect(proposed.floodContentsDeductible).toBe("$1,000");
+    expect(proposed.floodDeductible).toBe("$1,000");
+    expect(proposed.floodDeductiblePremium).toBeUndefined();
+    expect(proposed.floodReplacementCostBuilding).toBeUndefined();
+    expect(proposed.coverageB).toBeUndefined();
+    expect(proposed.floodZone).toBe("X");
+    expect(proposed.floodBuildingOccupancy).toBe("Single Family");
+
+    const doubled = proposeFillFromDec({
+      family: "flood",
+      rows: [
+        { fieldKey: "loss_of_use", normalizedValue: "30000" },
+        { fieldKey: "temporary_living_expenses", normalizedValue: "30000" },
+      ],
+    });
+    expect(doubled.floodTemporaryLiving).toBe("$30,000");
+    expect(doubled.floodLossOfUse).toBeUndefined();
+
+    const patch = groupAppliedFill(proposed, Object.keys(proposed));
+    const schedule = floodCoverageSchedule({ coverageLimits: patch.coverageLimits });
+    expect(schedule.map((row) => row.label)).toEqual([
+      "Building",
+      "Contents",
+      "Debris removal",
+      "Sandbags, supplies, and labor",
+      "Property removed to safety",
+      "Increased cost of compliance",
+      "Replacement cost on contents",
+      "Basement contents",
+      "Pool repair and refill",
+      "Unattached structures",
+      "Temporary living expenses",
+      "Outdoor trees, shrubs, and plants",
+      "Deductible",
+    ]);
+    expect(schedule.find((row) => row.label === "Temporary living expenses")).toMatchObject({
+      limit: "$30,000",
+      premium: "—",
+    });
+    expect(schedule.find((row) => row.label === "Replacement cost on contents")?.limit).toBe("Yes");
+    expect(schedule.find((row) => row.label === "Outdoor trees, shrubs, and plants")?.limit).toBe("$0");
+    expect(schedule.find((row) => row.label === "Deductible")).toMatchObject({
+      limit: "—",
+      deductible: "$1,000",
+      premium: "—",
+    });
+    expect(schedule.some((row) => row.label === "Loss of use")).toBe(false);
+
+    const html = renderToStaticMarkup(
+      createElement(PolicyCoverageTab, {
+        policy: {
+          id: "robert",
+          coverageA: patch.policy.coverageA ?? null,
+          coverageLimits: patch.coverageLimits,
+          faceAmount: null,
+          lineOfBusiness: "FLOOD",
+          formType: "Flood",
+          policyType: "Flood",
+          policySubType: "Flood",
+        },
+        terms: [],
+        currentTerm: null,
+      }),
+    );
+    expect(html).toContain("Temporary living expenses");
+    expect(html).toContain("Outdoor trees, shrubs, and plants");
+    expect(html).toContain("Yes");
+    expect(html).toContain("$30,000");
+    expect(html).not.toContain("Loss of use");
+  });
+
+  it("maps letter M and does not send Temporary Living Expenses to loss of use", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        building_limit: "225000",
+        additional_living_expense: "30000",
+        coverage_m: "0",
+        replacement_cost_on_contents: "Yes",
+        debris_removal: "Included",
+      },
+      "dec",
+      "flood",
+    );
+    const byKey = Object.fromEntries(mapped.fields.map((field) => [field.fieldKey, field.normalizedValue]));
+    expect(byKey.temporary_living_expenses).toBe("30000");
+    expect(byKey.loss_of_use).toBeUndefined();
+    expect(byKey.coverage_d).toBeUndefined();
+    expect(byKey.outdoor_trees_shrubs_plants).toBe("0");
+    expect(byKey.replacement_cost_on_contents).toBe("Yes");
+    expect(byKey.debris_removal).toBe("Included");
+    expect(byKey[FLOOD_PREMISES_SCHEDULE_STAMP]).toBe(FLOOD_PREMISES_SCHEDULE_VERSION);
+
+    const home = mapGeminiJsonToFields({ additional_living_expense: "5000" }, "dec", "home");
+    expect(home.fields.find((field) => field.fieldKey === "coverage_d")?.normalizedValue).toBe("$5,000");
+    expect(home.fields.find((field) => field.fieldKey === FLOOD_PREMISES_SCHEDULE_STAMP)).toBeUndefined();
   });
 });

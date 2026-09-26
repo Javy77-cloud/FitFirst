@@ -14,6 +14,10 @@ import {
   formatHomeDollarAmount,
 } from "@/lib/extraction/gemini/home-dollar";
 
+/** Older flood extracts lack this stamp, so the next manual Fill re-reads the dec. */
+export const FLOOD_PREMISES_SCHEDULE_STAMP = "flood_premises_schedule";
+export const FLOOD_PREMISES_SCHEDULE_VERSION = "2";
+
 export type FloodPolicyIdentity = {
   lineOfBusiness?: string | null;
   policyType?: string | null;
@@ -230,7 +234,7 @@ const FLOOD_SCHEDULE_SPECS: ScheduleSpec[] = [
   {
     key: "loss_of_use",
     label: "Loss of use",
-    limitKeys: ["flood_loss_of_use", "loss_of_use", "additional_living_expense", "ale", "coverage_d"],
+    limitKeys: ["flood_loss_of_use", "loss_of_use", "ale", "coverage_d"],
     premiumKeys: ["flood_loss_of_use_premium", "loss_of_use_premium", "coverage_d_premium"],
     deductibleKeys: ["flood_loss_of_use_deductible", "loss_of_use_deductible"],
   },
@@ -298,7 +302,12 @@ const FLOOD_SCHEDULE_SPECS: ScheduleSpec[] = [
   {
     key: "temporary_living",
     label: "Temporary living expenses",
-    limitKeys: ["flood_temporary_living", "temporary_living_expenses", "temporary_living_expense"],
+    limitKeys: [
+      "flood_temporary_living",
+      "temporary_living_expenses",
+      "temporary_living_expense",
+      "additional_living_expense",
+    ],
     premiumKeys: ["flood_temporary_living_premium", "temporary_living_expenses_premium"],
     deductibleKeys: [],
   },
@@ -307,6 +316,20 @@ const FLOOD_SCHEDULE_SPECS: ScheduleSpec[] = [
     label: "Replacement cost on building",
     limitKeys: ["flood_replacement_cost_building", "replacement_cost_on_building"],
     premiumKeys: ["flood_replacement_cost_building_premium", "replacement_cost_on_building_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "outdoor_trees",
+    label: "Outdoor trees, shrubs, and plants",
+    limitKeys: [
+      "flood_outdoor_trees",
+      "outdoor_trees_shrubs_plants",
+      "outdoor_trees_shrubs_and_plants",
+      "trees_shrubs_and_plants",
+      "trees_shrubs_plants",
+      "outdoor_trees",
+    ],
+    premiumKeys: ["flood_outdoor_trees_premium", "outdoor_trees_shrubs_plants_premium"],
     deductibleKeys: [],
   },
   {

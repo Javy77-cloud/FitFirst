@@ -1,4 +1,8 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
+import {
+  FLOOD_PREMISES_SCHEDULE_STAMP,
+  FLOOD_PREMISES_SCHEDULE_VERSION,
+} from "@/lib/policy/flood-coverage";
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
 import { normalizeNamedInsured } from "@/lib/people/named-insured";
@@ -102,7 +106,15 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   unattached_structures_premium: ["unattached_structures_premium"],
   temporary_living_expenses: ["temporary_living_expenses"],
   temporary_living_expense: ["temporary_living_expenses"],
+  temporary_living: ["temporary_living_expenses"],
+  i_temporary_living_expenses: ["temporary_living_expenses"],
   temporary_living_expenses_premium: ["temporary_living_expenses_premium"],
+  outdoor_trees_shrubs_plants: ["outdoor_trees_shrubs_plants"],
+  outdoor_trees_shrubs_and_plants: ["outdoor_trees_shrubs_plants"],
+  trees_shrubs_and_plants: ["outdoor_trees_shrubs_plants"],
+  trees_shrubs_plants: ["outdoor_trees_shrubs_plants"],
+  outdoor_trees: ["outdoor_trees_shrubs_plants"],
+  outdoor_trees_shrubs_plants_premium: ["outdoor_trees_shrubs_plants_premium"],
   replacement_cost_on_contents: ["replacement_cost_on_contents"],
   replacement_cost_on_contents_premium: ["replacement_cost_on_contents_premium"],
   replacement_cost_on_building: ["replacement_cost_on_building"],
@@ -631,7 +643,11 @@ const FLOOD_SHEET_KEY_OVERRIDE: Record<string, string[]> = {
   coverage_c_premium: ["contents_premium"],
   loss_of_use: ["loss_of_use"],
   loss_of_use_premium: ["loss_of_use_premium"],
-  additional_living_expense: ["loss_of_use"],
+  additional_living_expense: ["temporary_living_expenses"],
+  temporary_living: ["temporary_living_expenses"],
+  i_temporary_living_expenses: ["temporary_living_expenses"],
+  coverage_m: ["outdoor_trees_shrubs_plants"],
+  outdoor_trees_shrubs_and_plants: ["outdoor_trees_shrubs_plants"],
   replacement_cost_contents: ["replacement_cost_on_contents"],
   personal_property_replacement_cost: ["replacement_cost_on_contents"],
   replacement_cost_contents_premium: ["replacement_cost_on_contents_premium"],
@@ -1059,6 +1075,30 @@ export function mapGeminiJsonToFields(
 
   enforceAutoPhysDam(fields, shopLine);
   enforceHomeDecDollars(fields, shopLine);
+  if (
+    floodLine &&
+    fields.some(
+      (field) => field.fieldKey !== FLOOD_PREMISES_SCHEDULE_STAMP && field.normalizedValue.trim(),
+    )
+  ) {
+    const stamp = fields.find((field) => field.fieldKey === FLOOD_PREMISES_SCHEDULE_STAMP);
+    if (stamp) {
+      stamp.rawValue = FLOOD_PREMISES_SCHEDULE_VERSION;
+      stamp.normalizedValue = FLOOD_PREMISES_SCHEDULE_VERSION;
+    } else {
+      fields.push({
+        fieldKey: FLOOD_PREMISES_SCHEDULE_STAMP,
+        label: "flood premises schedule",
+        rawValue: FLOOD_PREMISES_SCHEDULE_VERSION,
+        normalizedValue: FLOOD_PREMISES_SCHEDULE_VERSION,
+        confidence: 1,
+        flagged: false,
+        source: "inferred",
+        sourceDocTag,
+        matchPath: "gemini",
+      });
+    }
+  }
 
   const glanceRequired = fields.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0;
   return {
