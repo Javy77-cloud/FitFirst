@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ClientStayingButton } from "@/components/renewals/client-staying-button";
+import { CompareTermsLink } from "@/components/policy/compare-terms-link";
 import { RenewalAgreedStamp } from "@/components/policy/renewal-agreed-stamp";
 import { PolicyInformationCard } from "@/components/policy/policy-information";
 import { LobOverviewSections } from "@/components/policy/lob-overview-sections";
@@ -8,8 +9,6 @@ import { RecordLink } from "@/components/record-links";
 import { VehiclesList } from "@/components/desk-ams-panels";
 import { TermHistoryPanel } from "@/components/ams/term-history-panel";
 import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain";
 import { isInForceStatus, isOffBookStatus, policyStatusLabel } from "@/lib/policy/status";
 import {
@@ -18,6 +17,7 @@ import {
   type CurrentTermResolution,
 } from "@/lib/policies/current-term";
 import { renewalDaysPhrase } from "@/lib/renewal/urgency";
+import { showPolicyCompareTerms } from "@/lib/policy/compare-entry";
 import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
 import { floodRatingFromLimits } from "@/lib/policy/flood-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
@@ -200,6 +200,10 @@ export function PolicyOverviewTab({
     renewedEffectiveDate: termView?.upcoming?.effective,
     terms,
   });
+  const showCompareTerms = showPolicyCompareTerms({
+    inForce,
+    renewalAgreed: showRenewalAgreed,
+  });
 
   return (
     <div className="space-y-4" data-ff-policy-tab="overview">
@@ -227,7 +231,12 @@ export function PolicyOverviewTab({
       <section className="ff-card relative p-4" data-ff-policy-links-renewal="">
         {showRenewalAgreed ? <RenewalAgreedStamp /> : null}
         <div className="ff-links-renewal-copy space-y-3">
-          <h2 className="text-base font-semibold text-navy">Links & renewal</h2>
+          <div className="ff-links-renewal-heading">
+            <h2 className="text-base font-semibold text-navy">Links & renewal</h2>
+            {showRenewalAgreed ? (
+              <CompareTermsLink policyId={policy.id} persistent />
+            ) : null}
+          </div>
           <p className="text-sm text-muted-foreground" data-ff-policy-renewal-status="">
             Renewal status · {renewalLine}
             {inForce ? " · Active term" : ""}
@@ -246,19 +255,8 @@ export function PolicyOverviewTab({
           {deal ? (
             <RecordLink href={`/deals/${deal.id}?fromPolicy=${policy.id}`}>Deal {deal.title}</RecordLink>
           ) : null}
-          {inForce ? (
-            <Link
-              href={`/policies/${policy.id}/compare`}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "ff-compare-terms-btn",
-              )}
-              title="Opens current vs upcoming comparison — does not bind"
-              aria-label="Compare terms — opens current vs upcoming comparison, does not bind"
-              data-ff-compare-terms=""
-            >
-              Compare terms
-            </Link>
+          {showCompareTerms && inForce && !showRenewalAgreed ? (
+            <CompareTermsLink policyId={policy.id} />
           ) : null}
             {inForce ? (
               <span className="ff-links-renewal-staying">

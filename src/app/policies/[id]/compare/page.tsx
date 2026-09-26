@@ -2,7 +2,10 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { ComparePanel } from "@/components/policy/compare-panel";
 import { DeskPageTrail } from "@/components/desk/desk-page-trail";
+import { getRenewalQueueForPolicy } from "@/lib/ams/queries";
 import { getPolicyWorkspace } from "@/lib/db/queries";
+import { selectPolicyCompareTerms } from "@/lib/policy/compare-entry";
+import { isRenewalHandledStageValue } from "@/lib/renewal/handled";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +18,18 @@ export default async function PolicyComparePage({
 }) {
   const { id } = await params;
   const { error, filed } = await searchParams;
-  const workspace = await getPolicyWorkspace(id);
+  const [workspace, renewalQueueRow] = await Promise.all([
+    getPolicyWorkspace(id),
+    getRenewalQueueForPolicy(id),
+  ]);
   if (!workspace) notFound();
 
   const { policy, contact, carrier, terms, compareLogs } = workspace;
-  const current = terms.find((term) => term.role === "current");
-  const proposed = terms.find((term) => term.role === "proposed");
+  const renewalHandled = isRenewalHandledStageValue(renewalQueueRow?.stage);
+  const selected = selectPolicyCompareTerms(terms, renewalHandled);
+  const current = selected.roleCurrent;
+  const proposed = selected.roleProposed;
+  const renewedPair = selected.pair.kind === "prior-current";
   const title = `Compare renewal · ${policy.policyNumber}`;
   const policyLabel = policy.policyNumber?.trim() || "Policy";
 
@@ -49,7 +58,17 @@ export default async function PolicyComparePage({
         {policy.lineOfBusiness}.
       </p>
 
-      <ComparePanel policy={policy} current={current} proposed={proposed} logs={compareLogs} />
+      <ComparePanel
+        policy={policy}
+        current={current}
+        proposed={proposed}
+        logs={compareLogs}
+        compareBaseline={renewedPair ? selected.baseline : undefined}
+        compareRenewal={renewedPair ? selected.renewal : undefined}
+        baselineLabel={renewedPair ? selected.pair.baselineLabel : undefined}
+        renewalLabel={renewedPair ? selected.pair.renewalLabel : undefined}
+        renewalHandled={renewalHandled}
+      />
     </AppShell>
   );
 }
