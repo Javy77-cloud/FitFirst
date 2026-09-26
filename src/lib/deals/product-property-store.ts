@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, sql } from "@/lib/db";
 import { risks, type Risk } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { propertyStreetsMatch } from "@/lib/deals/product-address-pin";
 import {
   autoVehicleRiskKey,
   tabRiskForInstance,
@@ -139,6 +140,17 @@ async function insertProductRisk(input: {
   `;
 }
 
+async function claimUnscopedRisk(riskId: string, productKey: string): Promise<void> {
+  const hasColumn = await risksProductKeyColumnExists();
+  if (!hasColumn) return;
+  await sql`
+    update risks
+    set product_key = ${productKey}, updated_at = now()
+    where id = ${riskId}
+      and (product_key is null or btrim(product_key) = '')
+  `;
+}
+
 async function updateRiskAddress(riskId: string, address: PropertyAddress): Promise<void> {
   await db
     .update(risks)
@@ -248,6 +260,17 @@ export async function saveInstancePropertyAddress(input: {
   instanceKey: string;
   address: PropertyAddress;
   legacyOwnerKey?: string | null;
+  /**
+   * The unscoped row's street is this product's building (a sibling form
+   * was stored on the first product's line). Claim that row instead of
+   * cloning it.
+   */
+  claimMatchingUnscoped?: boolean;
+  /**
+   * The unscoped row is another product's building. A different street
+   * inserts a keyed row and leaves the unscoped row alone.
+   */
+  preserveUnscoped?: boolean;
 }): Promise<void> {
   const tenantId = input.tenantId || DEFAULT_TENANT_ID;
   const rows = await listDealRisks(input.dealId, tenantId);
@@ -257,10 +280,16 @@ export async function saveInstancePropertyAddress(input: {
     await updateRiskAddress(keyed.id, input.address);
     return;
   }
-  if (legacyKey && input.instanceKey === legacyKey) {
-    const legacy = rows.find((row) => !String(row.productKey ?? "").trim());
-    if (legacy) {
-      await updateRiskAddress(legacy.id, input.address);
+  const unscoped = rows.find((row) => !String(row.productKey ?? "").trim());
+  const sameUnscoped = Boolean(unscoped && propertyStreetsMatch(unscoped.address1, input.address.street));
+  if (unscoped && input.claimMatchingUnscoped && sameUnscoped && input.instanceKey !== legacyKey) {
+    await claimUnscopedRisk(unscoped.id, input.instanceKey);
+    await updateRiskAddress(unscoped.id, input.address);
+    return;
+  }
+  if (legacyKey && input.instanceKey === legacyKey && unscoped) {
+    if (!(input.preserveUnscoped && !sameUnscoped)) {
+      await updateRiskAddress(unscoped.id, input.address);
       return;
     }
   }

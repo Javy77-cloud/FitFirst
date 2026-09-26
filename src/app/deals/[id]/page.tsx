@@ -77,24 +77,24 @@ import {
   attemptLogMatchesInstance,
   resolveActiveProductInstance,
   resolveVisibleProductInstances,
-  storageLineForInstance,
 } from "@/lib/deals/product-instances";
 import { hideCrossProductDealFacts } from "@/lib/quote-sheet/product-fact-scope";
 import {
+  boundStorageLineForInstance,
+  pinPropertyAddresses,
+  quotingFormForProductSheet,
+  unscopedRiskInstanceKey,
+} from "@/lib/deals/product-address-pin";
+import {
   headerAddressesForProductTab,
-  headerRiskOwnerKey,
   instanceOwnsSheet,
-  insuredAddressForProductTab,
   insuredFieldsFromAddress,
   isPropertyCoveringProduct,
   legacyPropertyOwnerKey,
   overlaySharedProductSheet,
   resolveProductPropertyAddress,
 } from "@/lib/deals/product-property";
-import {
-  listDealRisks,
-  riskForInstance,
-} from "@/lib/deals/product-property-store";
+import { listDealRisks } from "@/lib/deals/product-property-store";
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
@@ -339,18 +339,37 @@ export default async function DealPage({
       quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
       lineOfBusiness: deal.lineOfBusiness,
     });
-  const storageLine = storageLineForInstance(activeInstance, productInstances);
+  const sheetRefs = sheets.map((row) => ({ line: row.line, values: row.values }));
+  const storageLine = boundStorageLineForInstance(activeInstance, productInstances, sheetRefs);
   const activeSheet =
     sheets.find((row) => row.line === storageLine) ?? (await ensureQuoteSheet(deal.id, storageLine));
   const sheetsForProperties = sheets.some((row) => row.id === activeSheet.id)
     ? sheets
     : [...sheets, activeSheet];
+  const propertySheetRefs = sheetsForProperties.map((row) => ({ line: row.line, values: row.values }));
   const propertyRiskRows = await listDealRisks(deal.id, deal.tenantId);
+  const propertyPins = pinPropertyAddresses({
+    instances: productInstances,
+    sheets: propertySheetRefs,
+    risks: propertyRiskRows,
+    storedDeal: dealValues,
+  });
+  const activePin = propertyPins.get(activeInstance.key) ?? null;
   const legacyPropertyKey = legacyPropertyOwnerKey(productInstances);
   const activeOwnsPropertySheet = instanceOwnsSheet(activeInstance, productInstances);
-  const activePropertyRisk = isPropertyCoveringProduct(activeProduct)
-    ? riskForInstance(propertyRiskRows, activeInstance.key, legacyPropertyKey)
-    : null;
+  const activePropertyRisk = (() => {
+    if (!isPropertyCoveringProduct(activeProduct)) return null;
+    const keyed = propertyRiskRows.find((row) => (row.productKey ?? "").trim() === activeInstance.key);
+    if (keyed) return keyed;
+    const unscoped = propertyRiskRows.find((row) => !String(row.productKey ?? "").trim());
+    if (
+      unscoped &&
+      unscopedRiskInstanceKey(unscoped, productInstances, propertySheetRefs) === activeInstance.key
+    ) {
+      return unscoped;
+    }
+    return null;
+  })();
   const headerDwellingFire = isDwellingFireProduct(
     dealProductDef(activeProduct).quotingForm,
     activeProduct,
@@ -359,7 +378,14 @@ export default async function DealPage({
     instanceKey: activeInstance.key,
     ownsSheet: activeOwnsPropertySheet,
     sheetValues: activeSheet.values,
-    ownRisk: riskForInstance(propertyRiskRows, activeInstance.key, headerRiskOwnerKey(productInstances)),
+    ownRisk: activePin?.address.street
+      ? {
+          address1: activePin.address.street,
+          city: activePin.address.city,
+          state: activePin.address.state,
+          zip: activePin.address.zip,
+        }
+      : null,
     dwellingFire: headerDwellingFire,
     dealStored: dealValues,
   });
@@ -385,13 +411,15 @@ export default async function DealPage({
     activePropertyAddress && activeInstance.key !== legacyPropertyKey
       ? insuredFieldsFromAddress(activePropertyAddress.address)
       : null;
-  const lineForm = resolveLineQuotingForm({
-    sheetValues: activeSheet.values,
-    sheetLine,
-    dealQuotingForm: deal.quotingForm,
-    dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
-    dealLineOfBusiness: deal.lineOfBusiness,
-  });
+  const lineForm =
+    quotingFormForProductSheet(activeProduct, activeSheet.values) ??
+    resolveLineQuotingForm({
+      sheetValues: activeSheet.values,
+      sheetLine,
+      dealQuotingForm: deal.quotingForm,
+      dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
+      dealLineOfBusiness: deal.lineOfBusiness,
+    });
   const lineQuotingForm = quotingFormById(lineForm);
   const activeLob = SHOP_LINE_TO_LOB[sheetLine] ?? deal.lineOfBusiness;
   const isPrimaryPackageLine = !packageLines.length || packageLines[0] === sheetLine;
@@ -438,8 +466,13 @@ export default async function DealPage({
   const sheetFilled = sheetHasMarketFacts(profileValues);
   const marketsUseSheet = !isLifeHealthShopLine(sheetLine);
   const sheetReady = marketsUseSheet && sheetFilled;
-  const scoringRisk =
-    activePropertyRisk ?? (activeInstance.key === legacyPropertyKey ? risk : null);
+  const legacyRiskForTab =
+    risk &&
+    !String((risk as { productKey?: string | null }).productKey ?? "").trim() &&
+    unscopedRiskInstanceKey(risk, productInstances, propertySheetRefs) === activeInstance.key
+      ? risk
+      : null;
+  const scoringRisk = activePropertyRisk ?? legacyRiskForTab;
   const evalMarkets = Boolean(scoringRisk && sheetReady);
   const rawMatches =
     evalMarkets && scoringRisk
@@ -512,18 +545,11 @@ export default async function DealPage({
     ]),
   );
   const instanceLabelRows = productInstances.map((instance) => {
-    const line = storageLineForInstance(instance, productInstances);
+    const line = boundStorageLineForInstance(instance, productInstances, propertySheetRefs);
     const sheet = sheetsForProperties.find((row) => row.line === line) ?? null;
-    const owns = instanceOwnsSheet(instance, productInstances);
     const property = isPropertyCoveringProduct(instance.productId);
-    const insured = property
-      ? insuredAddressForProductTab({
-          instanceKey: instance.key,
-          ownsSheet: owns,
-          sheetValues: sheet?.values,
-          ownRisk: riskForInstance(propertyRiskRows, instance.key, legacyPropertyKey),
-        })
-      : null;
+    const pin = propertyPins.get(instance.key);
+    const insured = property ? pin?.address ?? null : null;
     const sheetFacts = addressFactsFromSheetValues(sheet?.values);
     const facts = insured
       ? {
@@ -949,21 +975,16 @@ export default async function DealPage({
                 )}
                 formLabels={Object.fromEntries(
                   productInstances.map((instance) => {
-                    const line = storageLineForInstance(instance, productInstances);
-                    const sheet = sheets.find((row) => row.line === line);
-                    const fromSheet =
-                      quotingFormFromSheet(sheet?.values) ??
-                      resolveLineQuotingForm({
-                        sheetValues: sheet?.values,
-                        sheetLine: sheetLine,
-                        dealQuotingForm: deal.quotingForm,
-                        dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
-                        dealLineOfBusiness: deal.lineOfBusiness,
-                      });
+                    const line = boundStorageLineForInstance(
+                      instance,
+                      productInstances,
+                      propertySheetRefs,
+                    );
+                    const sheet = sheetsForProperties.find((row) => row.line === line);
+                    const fromSheet = quotingFormForProductSheet(instance.productId, sheet?.values);
                     return [
                       instance.key,
-                      sheetFormForProduct(instance.productId, fromSheet) ??
-                        dealProductDef(instance.productId).quotingForm,
+                      fromSheet ?? dealProductDef(instance.productId).quotingForm,
                     ];
                   }),
                 )}
@@ -1073,10 +1094,7 @@ export default async function DealPage({
                     ) : id === "documents" ? (
                       <DocumentsPanel
                         dealId={deal.id}
-                        riskId={
-                          activePropertyRisk?.id ??
-                          (activeInstance.key === legacyPropertyKey ? risk.id : "")
-                        }
+                        riskId={activePropertyRisk?.id ?? legacyRiskForTab?.id ?? ""}
                         docs={docs}
                         fields={fields}
                         jobs={jobs}

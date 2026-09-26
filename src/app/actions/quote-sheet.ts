@@ -13,9 +13,11 @@ import {
   requireStorageLine,
 } from "@/lib/deals/product-instances";
 import { dealProductDef } from "@/lib/deals/deal-products";
+import { propertyRiskWriteTarget } from "@/lib/deals/product-address-pin";
 import {
   addressFromSheetSubmission,
   addressFromSheetValues,
+  addressHasLocation,
   instanceOwnsSheet,
   isPropertyCoveringProduct,
   legacyAutoOwnerKey,
@@ -368,6 +370,11 @@ export async function persistQuoteSheetValues(
           characteristicSource: submitted,
         });
       }
+      const writeTarget = propertyRiskWriteTarget({
+        instances,
+        storageLine: opened.storageLine,
+        values,
+      });
       await saveInstancePropertyAddress({
         dealId,
         tenantId: deal.tenantId,
@@ -375,6 +382,8 @@ export async function persistQuoteSheetValues(
         instanceKey: instance.key,
         address: ownsSheet ? addressFromSheetValues(values, instance.key, true) : submittedAddress,
         legacyOwnerKey: legacyKey,
+        claimMatchingUnscoped: writeTarget?.instanceKey === instance.key && writeTarget.claimMatchingUnscoped,
+        preserveUnscoped: writeTarget?.preserveUnscoped ?? false,
       });
       const ownRows = await listDealRisks(dealId, deal.tenantId);
       const own = ownRows.find((row) => (row.productKey ?? "").trim() === instance.key);
@@ -478,7 +487,11 @@ export async function applySavedSheetToDeal(dealId: string, line: string) {
       instanceKey: opened.instanceKey,
     });
   } else if (!opened?.instanceKey) {
-    await syncRiskFromSheet(dealId, sheet.values, "save");
+    await syncRiskFromSheet(dealId, sheet.values, "save", {
+      shopLine: opened?.shopLine,
+      storageLine,
+      instanceKey: opened?.instanceKey,
+    });
     await syncHeaderFromSheet(dealId, sheet.values, "save");
   }
   await restoreDealSourceDocuments(dealId).catch(() => null);
@@ -908,7 +921,11 @@ export async function runFillFromPropertyRecords(
     ],
   });
   if (!opened.instanceKey) {
-    await syncRiskFromSheet(dealId, withCoast.values, "fill");
+    await syncRiskFromSheet(dealId, withCoast.values, "fill", {
+      shopLine: opened.shopLine,
+      storageLine: opened.storageLine,
+      instanceKey: opened.instanceKey,
+    });
     await syncHeaderFromSheet(dealId, withCoast.values, "fill");
   }
   const zoneXNoBfe = isZoneXNoBfe(bundle.facts ?? []);
@@ -1016,7 +1033,14 @@ export async function runComputeMilesToCoast(input: {
     .update(quoteSheets)
     .set({ values, updatedAt: new Date() })
     .where(eq(quoteSheets.id, sheet.id));
-  if (!parseStorageLine(lineRaw)?.instanceKey) await syncRiskFromSheet(dealId, values, "save");
+  if (!parseStorageLine(lineRaw)?.instanceKey) {
+    const openedLine = parseStorageLine(lineRaw);
+    await syncRiskFromSheet(dealId, values, "save", {
+      shopLine: openedLine?.shopLine,
+      storageLine: openedLine?.storageLine ?? lineRaw,
+      instanceKey: openedLine?.instanceKey,
+    });
+  }
   revalidatePath(`/deals/${dealId}`);
   return { ok: true, miles: cell.value };
 }
@@ -1114,7 +1138,13 @@ export async function runFillFromVinDecode(
   }
   if (bundle.filledKeys.length || overlaid.changed) {
     await persistSheetValues(sheet.id, bundle.values);
-    if (!opened?.instanceKey) await syncRiskFromSheet(dealId, bundle.values, "fill");
+    if (!opened?.instanceKey) {
+      await syncRiskFromSheet(dealId, bundle.values, "fill", {
+        shopLine: opened?.shopLine,
+        storageLine: opened?.storageLine,
+        instanceKey: opened?.instanceKey,
+      });
+    }
   }
   await logExtractionJob({
     dealId,
@@ -1262,7 +1292,11 @@ export async function runFillFromDealDetails(
     message: "Copied deal details into blank master-sheet fields (CHECK).",
   });
   if (!opened.instanceKey) {
-    await syncRiskFromSheet(dealId, applied.values, "fill");
+    await syncRiskFromSheet(dealId, applied.values, "fill", {
+      shopLine: opened.shopLine,
+      storageLine: opened.storageLine,
+      instanceKey: opened.instanceKey,
+    });
     await syncHeaderFromSheet(dealId, applied.values, "fill");
   }
   return { filledKeys: applied.filledKeys, skippedKeys: applied.skippedKeys };
@@ -2358,7 +2392,11 @@ export async function runFillQuoteSheet(
       if (!propertyOwnsHeader) await syncHeaderFromSheet(dealId, values, "fill");
     }
   } else if (!opened.instanceKey) {
-    await syncRiskFromSheet(dealId, values, "fill");
+    await syncRiskFromSheet(dealId, values, "fill", {
+      shopLine: opened.shopLine,
+      storageLine: opened.storageLine,
+      instanceKey: opened.instanceKey,
+    });
     await syncHeaderFromSheet(dealId, values, "fill");
   }
   // Batch Fill can vPIC here. A single photo (documentId) leaves VIN to the
@@ -2531,6 +2569,41 @@ async function syncRiskFromSheet(
 ) {
   const rows = await listDealRisks(dealId);
   const risk = rows.find((row) => !String(row.productKey ?? "").trim());
+  if (options?.storageLine && options.shopLine !== "auto") {
+    const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+    if (deal) {
+      const instances = instancesFromDeal(deal);
+      const target = propertyRiskWriteTarget({
+        instances,
+        storageLine: options.storageLine,
+        values,
+      });
+      if (target) {
+        const legacyKey = legacyPropertyOwnerKey(instances);
+        const address = addressFromSheetValues(values, target.instanceKey, true);
+        if (addressHasLocation(address)) {
+          await saveInstancePropertyAddress({
+            dealId,
+            tenantId: deal.tenantId,
+            contactId: deal.contactId,
+            instanceKey: target.instanceKey,
+            address,
+            legacyOwnerKey: legacyKey,
+            claimMatchingUnscoped: target.claimMatchingUnscoped,
+            preserveUnscoped: target.preserveUnscoped,
+          });
+        }
+        const fresh = await listDealRisks(dealId);
+        const keyed = fresh.find((row) => (row.productKey ?? "").trim() === target.instanceKey);
+        const unscoped = fresh.find((row) => !String(row.productKey ?? "").trim());
+        const row =
+          keyed ??
+          (target.claimMatchingUnscoped || target.preserveUnscoped ? null : unscoped);
+        if (row) await applySheetToRiskRow(row, values, mode);
+        return;
+      }
+    }
+  }
   if (options?.shopLine === "auto") {
     const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
     if (deal) {
