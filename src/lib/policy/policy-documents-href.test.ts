@@ -64,6 +64,8 @@ describe("policy documents attach preset", () => {
     expect(presetPolicyAttachDocType("renewal_docs")).toBe("renewal_docs");
     expect(presetPolicyAttachDocType("inspection")).toBe("inspection");
     expect(presetPolicyAttachDocType("endorsement")).toBe("endorsement");
+    expect(presetPolicyAttachDocType("roof_docs")).toBe("roof_docs");
+    expect(presetPolicyAttachDocType("loss_runs")).toBe("loss_runs");
 
     const html = renderToStaticMarkup(
       createElement(ServicingChecklistCard, {
@@ -99,6 +101,7 @@ describe("policy documents attach preset", () => {
       mortgagee: "/policies/pol-1?tab=documents&amp;docType=endorsement",
       inspection: "/policies/pol-1?tab=documents&amp;docType=inspection",
       renewal_docs: "/policies/pol-1?tab=documents&amp;docType=renewal_docs",
+      roof_docs: "/policies/pol-1?tab=documents&amp;docType=roof_docs",
       aor: "/policies/pol-1?tab=documents&amp;docType=aor",
       id_card: "/policies/pol-1?tab=documents&amp;docType=policy_id",
     };
@@ -106,11 +109,11 @@ describe("policy documents attach preset", () => {
       expect(hrefForChecklistDocuments(html, key), key).toBe(href);
       expect(html.includes(`data-ff-checklist-mark="${key}"`), key).toBe(false);
     }
-    expect(hrefForChecklistDocuments(html, "roof_docs")).toBeNull();
-    expect(html).toContain('data-ff-checklist-mark="roof_docs"');
-    expect(html).toContain("Mark Complete");
-    expect(html).not.toContain('data-ff-checklist-mark="dec"');
-    expect(html).not.toContain('data-ff-checklist-mark="next_task"');
+    expect(html).toContain('data-ff-checklist-item="roof_docs"');
+    expect(html).toContain('data-ff-checklist-status="Missing"');
+    expect(html).not.toMatch(/data-ff-checklist-mark=/);
+    expect(html).not.toContain("Mark Complete");
+    expect(html).not.toContain(">Reopen<");
 
     const auto = renderToStaticMarkup(
       createElement(ServicingChecklistCard, {
@@ -135,6 +138,61 @@ describe("policy documents attach preset", () => {
     expect(auto).toContain('data-ff-checklist-status="On file"');
     expect(auto).toContain('data-ff-checklist-status="Complete"');
     expect(auto).toContain('data-ff-checklist-status="Missing"');
+
+    const homeFiled = renderToStaticMarkup(
+      createElement(ServicingChecklistCard, {
+        policyId: "pol-george",
+        checklist: buildServicingChecklist({
+          files: [{ docType: "roof_docs" }],
+          expirationDate: "2026-10-01",
+          nextTask: null,
+          lineOfBusiness: "HO3",
+          checks: [{ key: "roof_docs", status: "incomplete" }],
+          asOf: DESK_AS_OF,
+        }),
+      }),
+    );
+    expect(hrefForChecklistDocuments(homeFiled, "roof_docs")).toBe(
+      "/policies/pol-george?tab=documents&amp;docType=roof_docs",
+    );
+    expect(homeFiled).toContain('data-ff-checklist-status="On file"');
+    expect(homeFiled).not.toMatch(/data-ff-checklist-mark=/);
+
+    const commercial = renderToStaticMarkup(
+      createElement(ServicingChecklistCard, {
+        policyId: "pol-1",
+        checklist: buildServicingChecklist({
+          files: [],
+          expirationDate: null,
+          nextTask: null,
+          lineOfBusiness: "GL",
+          asOf: DESK_AS_OF,
+        }),
+      }),
+    );
+    expect(hrefForChecklistDocuments(commercial, "loss_runs")).toBe(
+      "/policies/pol-1?tab=documents&amp;docType=loss_runs",
+    );
+    expect(commercial).not.toContain('data-ff-checklist-mark="loss_runs"');
+
+    const life = renderToStaticMarkup(
+      createElement(ServicingChecklistCard, {
+        policyId: "pol-1",
+        checklist: buildServicingChecklist({
+          files: [],
+          expirationDate: null,
+          nextTask: null,
+          lineOfBusiness: "LIFE",
+          checks: [{ key: "beneficiary", status: "incomplete" }],
+          asOf: DESK_AS_OF,
+        }),
+      }),
+    );
+    expect(life).toContain('data-ff-checklist-mark="beneficiary"');
+    expect(life).toContain('data-ff-checklist-mark="medical_exam"');
+    expect(life).toContain('data-ff-checklist-mark="underwriting"');
+    expect(life).toContain("Mark Complete");
+    expect(life).not.toContain('data-ff-checklist-mark="renewal_docs"');
   });
 
   it("preselects AOR packet on Policy Documents attach and keeps the issued DEC default", () => {
@@ -147,6 +205,18 @@ describe("policy documents attach preset", () => {
     const dec = renderToStaticMarkup(createElement(PolicyDocumentsAttach, { policyId: "pol-1" }));
     expect(selectedOptionValue(dec, "docType")).toBe("policy_dec");
     expect(dec).toContain("Issued declaration page");
+
+    const roof = renderToStaticMarkup(
+      createElement(PolicyDocumentsAttach, { policyId: "pol-1", presetDocType: "roof_docs" }),
+    );
+    expect(selectedOptionValue(roof, "docType")).toBe("roof_docs");
+    expect(roof).toContain("Roof docs");
+
+    const loss = renderToStaticMarkup(
+      createElement(PolicyDocumentsAttach, { policyId: "pol-1", presetDocType: "loss_runs" }),
+    );
+    expect(selectedOptionValue(loss, "docType")).toBe("loss_runs");
+    expect(loss).toContain("Loss runs");
   });
 
   it("preselects Category on the policy file attach when a preset is passed", () => {
@@ -193,6 +263,8 @@ describe("policy documents attach preset", () => {
     expect(attachDocTypeConfirmLabel("endorsement")).toBe("ENDORSEMENT");
     expect(attachDocTypeConfirmLabel("renewal_docs")).toBe("RENEWAL DOCS");
     expect(attachDocTypeConfirmLabel("coi")).toBe("COI");
+    expect(attachDocTypeConfirmLabel("roof_docs")).toBe("ROOF DOCS");
+    expect(attachDocTypeConfirmLabel("loss_runs")).toBe("LOSS RUNS");
 
     const html = renderToStaticMarkup(
       createElement(AttachDocTypeConfirmCopy, { docTypes: ["aor", "inspection"] }),
