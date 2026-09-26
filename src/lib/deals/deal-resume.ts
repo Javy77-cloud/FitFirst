@@ -1,18 +1,15 @@
-import {
-  AGENT_DEAL_TAB_LABELS,
-  AGENT_DEAL_TABS,
-  isAgentDealTab,
-  parseAgentDealTab,
-  type AgentDealTab,
-} from "@/lib/deals/tabs";
+import { isAgentDealTab, parseAgentDealTab, type AgentDealTab } from "@/lib/deals/tabs";
 
 export type { AgentDealTab };
 
 /**
- * Per-agent deal resume.
+ * Per-agent deal resume. Last action wins.
  *
  * Layer 1 is the deal screen (Details, Documents, Markets, Quotes).
  * Layer 2 is the product / insurance form on that deal (instance key).
+ * Form progress never overrides that pair. A form that is ready to bind
+ * does not win over the form the agent opened last, even if the last form
+ * is only on Documents.
  *
  * Stored on `agent_ui_prefs.deal_resume` for the signed-in user
  * (`actor_key = user:<id>`), so a refresh or leaving the deal still
@@ -36,8 +33,6 @@ export type DealResumeMemory = {
   deals: Record<string, DealResumePlace>;
 };
 
-export type DealStepCompletion = Record<AgentDealTab, boolean>;
-
 export type ResumeProductFallback = {
   missingProductKey: string;
   openedKey: string;
@@ -49,10 +44,6 @@ export function emptyDealResumeMemory(): DealResumeMemory {
 
 function hasText(value: string | null | undefined): boolean {
   return Boolean(String(value ?? "").trim());
-}
-
-export function emptyStepCompletion(): DealStepCompletion {
-  return { details: false, documents: false, markets: false, quotes: false };
 }
 
 export function parseDealResumeMemory(raw: unknown): DealResumeMemory {
@@ -121,49 +112,30 @@ export function dealResumePlaceUnchanged(
   return current.productKey === input.productKey && current.tab === input.tab;
 }
 
-/** First incomplete screen. When every screen is done, Quotes stays open. */
-export function furthestUnfinishedDealTab(completion: DealStepCompletion): AgentDealTab {
-  for (const tab of AGENT_DEAL_TABS) {
-    if (!completion[tab]) return tab;
-  }
-  return "quotes";
-}
-
 export type ResumeScreenChoice = {
   tab: AgentDealTab;
-  source: "explicit" | "remembered" | "furthest-unfinished" | "default";
+  source: "explicit" | "remembered" | "default";
 };
 
 /**
- * Screen restore for one product.
+ * Screen restore. Last screen wins.
  *
- * No memory → `default` (the deal’s existing entry tab, including `ff_work_tab`).
- * An in-progress remembered screen wins, even when it is later than the
- * inferred next step (Details and Risk Profile done, sitting on Markets).
- * A remembered screen that is already complete yields to the furthest
- * unfinished later screen so a teammate’s stage advance is not replayed.
- * Anything that is not a deal tab becomes that furthest unfinished screen.
+ * No memory, or a stored value that is not a deal screen → `default`
+ * (today’s entry tab, including `ff_work_tab`). A remembered deal screen
+ * is restored even when that step is already complete and even when
+ * another form on the deal is closer to bind.
  */
 export function selectResumeTab(input: {
   explicitTab?: string | null;
   rememberedTab?: string | null;
-  completion: DealStepCompletion;
   defaultTab: AgentDealTab;
 }): ResumeScreenChoice {
   if (hasText(input.explicitTab)) {
     return { tab: parseAgentDealTab(input.explicitTab), source: "explicit" };
   }
   const remembered = String(input.rememberedTab ?? "").trim();
-  if (!remembered) return { tab: input.defaultTab, source: "default" };
-  if (!isAgentDealTab(remembered)) {
-    return { tab: furthestUnfinishedDealTab(input.completion), source: "furthest-unfinished" };
-  }
-  if (!input.completion[remembered]) {
-    return { tab: remembered, source: "remembered" };
-  }
-  const furthest = furthestUnfinishedDealTab(input.completion);
-  if (AGENT_DEAL_TABS.indexOf(furthest) > AGENT_DEAL_TABS.indexOf(remembered)) {
-    return { tab: furthest, source: "furthest-unfinished" };
+  if (!remembered || !isAgentDealTab(remembered)) {
+    return { tab: input.defaultTab, source: "default" };
   }
   return { tab: remembered, source: "remembered" };
 }
@@ -177,9 +149,12 @@ export type ResumeProductChoice = {
 };
 
 /**
- * Product restore. Explicit `product` or `line` wins.
- * A remembered key that is no longer on the deal opens the first remaining
- * form and sets `fallback` so the workspace can say so.
+ * Product restore. Last form wins.
+ *
+ * Explicit `product` or `line` wins over memory. Otherwise the remembered
+ * instance key is opened. Progress, stage, and “nearest to bind” are not
+ * inputs. A remembered key that is no longer on the deal opens the first
+ * remaining form and sets `fallback` so the workspace can say so.
  */
 export function selectResumeProduct(input: {
   explicitProduct?: string | null;
@@ -231,8 +206,4 @@ export function deletedProductNotice(missingProductKey: string, openedLabel: str
   const missing = missingProductKey.trim() || "That product";
   const opened = openedLabel.trim() || "the first product still on this deal";
   return `${missing} is no longer on this deal. Opened ${opened} so this is not the form you last worked.`;
-}
-
-export function advancedStepNotice(tab: AgentDealTab): string {
-  return `That step is already finished. Opened ${AGENT_DEAL_TAB_LABELS[tab]}.`;
 }

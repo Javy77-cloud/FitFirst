@@ -6,28 +6,18 @@ import { DealResumeNotice } from "@/components/deal/deal-resume-notice";
 import {
   DEAL_RESUME_DEAL_LIMIT,
   GLORIA_MARTINEZ_DEAL_ID,
-  advancedStepNotice,
   dealResumePlaceUnchanged,
   deletedProductNotice,
   emptyDealResumeMemory,
-  furthestUnfinishedDealTab,
   parseDealResumeMemory,
   rememberDealPlace,
   selectResumeProduct,
   selectResumeTab,
   shouldPersistDealResume,
-  type DealStepCompletion,
 } from "./deal-resume";
 
 /** Gloria Martinez property file: HO3, DP3, and a second HO3. */
 const GLORIA_PRODUCTS = ["homeowners", "landlord", "homeowners~88uvyj"] as const;
-
-const MID_MARKETS: DealStepCompletion = {
-  details: true,
-  documents: true,
-  markets: false,
-  quotes: false,
-};
 
 describe("deal resume — Markets mid-flow", () => {
   it("reopens Markets when Details and Risk Profile are done and markets are not chosen", () => {
@@ -43,14 +33,12 @@ describe("deal resume — Markets mid-flow", () => {
     });
     const screen = selectResumeTab({
       rememberedTab: memory.deals[GLORIA_MARTINEZ_DEAL_ID]?.tab,
-      completion: MID_MARKETS,
       defaultTab: "details",
     });
     expect(product.productParam).toBe("landlord");
     expect(product.fallback).toBeNull();
     expect(screen).toEqual({ tab: "markets", source: "remembered" });
     expect(screen.tab).not.toBe("details");
-    expect(furthestUnfinishedDealTab(MID_MARKETS)).toBe("markets");
   });
 
   it("keeps an explicit Markets click ahead of a stuck Details default", () => {
@@ -58,7 +46,6 @@ describe("deal resume — Markets mid-flow", () => {
       selectResumeTab({
         explicitTab: "markets",
         rememberedTab: "details",
-        completion: { details: false, documents: false, markets: false, quotes: false },
         defaultTab: "details",
       }),
     ).toEqual({ tab: "markets", source: "explicit" });
@@ -86,7 +73,6 @@ describe("deal resume — Gloria multi-product", () => {
     });
     const screen = selectResumeTab({
       rememberedTab: "markets",
-      completion: MID_MARKETS,
       defaultTab: "details",
     });
     expect(product).toEqual({
@@ -161,45 +147,65 @@ describe("deal resume — deleted product", () => {
   });
 });
 
-describe("deal resume — first visit and stage advance", () => {
+describe("deal resume — last action wins over progress", () => {
   it("uses the current default entry when there is no memory", () => {
     expect(
       selectResumeProduct({ instanceKeys: GLORIA_PRODUCTS }),
     ).toEqual({ productParam: undefined, ignoreLine: false, fallback: null });
-    expect(
-      selectResumeTab({
-        completion: { details: false, documents: false, markets: false, quotes: false },
-        defaultTab: "details",
-      }),
-    ).toEqual({ tab: "details", source: "default" });
+    expect(selectResumeTab({ defaultTab: "details" })).toEqual({ tab: "details", source: "default" });
     expect(shouldPersistDealResume({})).toBe(false);
     expect(parseDealResumeMemory(null).deals).toEqual({});
     expect(parseDealResumeMemory("{")).toEqual(emptyDealResumeMemory());
   });
 
-  it("moves to the furthest unfinished step when the remembered step is already complete", () => {
-    const screen = selectResumeTab({
-      rememberedTab: "markets",
-      completion: { details: true, documents: true, markets: true, quotes: false },
-      defaultTab: "details",
+  it("restores Gloria form B on Documents after form A is ready to bind", () => {
+    const readyToBind = rememberDealPlace(emptyDealResumeMemory(), {
+      dealId: GLORIA_MARTINEZ_DEAL_ID,
+      productKey: "homeowners",
+      tab: "quotes",
+      at: 1,
     });
-    expect(screen).toEqual({ tab: "quotes", source: "furthest-unfinished" });
-    expect(advancedStepNotice("quotes")).toContain("Opened Quotes");
-    const html = renderToString(
-      createElement(DealResumeNotice, { advancedTab: "quotes" }),
-    );
-    expect(html).toContain('data-ff-deal-resume-advanced="quotes"');
-    expect(html).toContain("Opened Quotes");
+    const lastAction = rememberDealPlace(readyToBind, {
+      dealId: GLORIA_MARTINEZ_DEAL_ID,
+      productKey: "landlord",
+      tab: "documents",
+      at: 2,
+    });
+    const place = lastAction.deals[GLORIA_MARTINEZ_DEAL_ID];
+    const product = selectResumeProduct({
+      rememberedProductKey: place?.productKey,
+      instanceKeys: GLORIA_PRODUCTS,
+    });
+    const screen = selectResumeTab({
+      rememberedTab: place?.tab,
+      defaultTab: "quotes",
+    });
+    expect(product.productParam).toBe("landlord");
+    expect(product.productParam).not.toBe("homeowners");
+    expect(screen).toEqual({ tab: "documents", source: "remembered" });
   });
 
-  it("never returns a tab that is not a deal screen", () => {
+  it("keeps the last screen when that step is already complete", () => {
+    expect(
+      selectResumeTab({
+        rememberedTab: "documents",
+        defaultTab: "quotes",
+      }),
+    ).toEqual({ tab: "documents", source: "remembered" });
+    expect(
+      selectResumeTab({
+        rememberedTab: "markets",
+        defaultTab: "quotes",
+      }),
+    ).toEqual({ tab: "markets", source: "remembered" });
+  });
+
+  it("does not invent a later screen when the stored tab is not a deal screen", () => {
     const screen = selectResumeTab({
       rememberedTab: "master-risk",
-      completion: MID_MARKETS,
       defaultTab: "details",
     });
-    expect(screen.tab).toBe("markets");
-    expect(screen.source).toBe("furthest-unfinished");
+    expect(screen).toEqual({ tab: "details", source: "default" });
   });
 
   it("drops the oldest deals once the memory cap is hit", () => {
@@ -225,6 +231,10 @@ describe("deal resume scope", () => {
     expect(dealPage).toMatch(/selectResumeTab/);
     expect(dealPage).toMatch(/saveDealResumePlace/);
     expect(dealPage).toMatch(/DealResumeNotice/);
+    expect(dealPage).not.toMatch(/furthest-unfinished|furthestUnfinished|nearest to bind/);
+    const resume = readFileSync("src/lib/deals/deal-resume.ts", "utf8");
+    expect(resume).not.toMatch(/furthest-unfinished|furthestUnfinished/);
+    expect(resume).toMatch(/Last action wins/);
     for (const file of [
       "src/app/policies/[id]/page.tsx",
       "src/app/policies/page.tsx",

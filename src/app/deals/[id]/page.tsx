@@ -177,7 +177,6 @@ import {
   selectResumeProduct,
   selectResumeTab,
   shouldPersistDealResume,
-  type DealStepCompletion,
 } from "@/lib/deals/deal-resume";
 import { loadDealResume, saveDealResumePlace } from "@/lib/deals/deal-resume-store";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
@@ -597,16 +596,9 @@ export default async function DealPage({
     saved: shopFlowLive,
     line: storageLine,
   });
-  const resumeCompletion: DealStepCompletion = {
-    details: flowCompletion.isComplete("details"),
-    documents: flowCompletion.isComplete("documents"),
-    markets: flowCompletion.isComplete("markets"),
-    quotes: flowCompletion.isComplete("quotes"),
-  };
   const resumeTab = selectResumeTab({
     explicitTab: tab,
     rememberedTab: rememberedPlace?.tab,
-    completion: resumeCompletion,
     defaultTab,
   });
   const activeTab = resumeTab.tab;
@@ -1029,7 +1021,6 @@ export default async function DealPage({
             <DealResumeNotice
               missingProductKey={resumeProduct.fallback?.missingProductKey}
               openedLabel={activeInstanceLabel}
-              advancedTab={resumeTab.source === "furthest-unfinished" ? activeTab : null}
             />
           }
           sidePanel={
