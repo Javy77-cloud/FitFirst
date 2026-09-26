@@ -40,14 +40,16 @@ describe("deals pipeline stage editor + Lost/Archive layout", () => {
     const bar = source("src/components/deals/deal-workspace-bar.tsx");
     expect(bar).toMatch(/data-ff-closed-under-strip/);
     expect(bar).toMatch(/data-testid="deal-closed-filters"/);
-    expect(bar).toMatch(/PipelineViewDefaultStar/);
+    expect(bar).toMatch(/PipelineViewChips/);
     expect(bar).toMatch(/PipelineViewsMenu/);
     const closedAt = bar.indexOf("deal-closed-filters");
     const viewsAt = bar.indexOf("deal-pipeline-views");
-    const starAt = bar.lastIndexOf("<PipelineViewDefaultStar");
+    const chipsAt = bar.indexOf("<PipelineViewChips");
+    const menuAt = bar.indexOf("<PipelineViewsMenu");
     expect(closedAt).toBeGreaterThan(-1);
     expect(closedAt).toBeLessThan(viewsAt);
-    expect(starAt).toBeGreaterThan(viewsAt);
+    expect(chipsAt).toBeGreaterThan(viewsAt);
+    expect(menuAt).toBeGreaterThan(chipsAt);
     expect(bar).toMatch(/ml-auto \$\{FF_CHIP_TAB_GROUP\}/);
   });
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
-import { PipelineViewDefaultStar } from "@/components/deals/pipeline-view-default-star";
+import { PipelineViewChips } from "@/components/deals/pipeline-view-chips";
 import { PipelineViewsMenu } from "@/components/deals/pipeline-views-menu";
 import type { PipelineStageBoard, PipelineStageView } from "@/lib/wire/pipeline-cards";
 import {
@@ -183,21 +183,20 @@ export function DealWorkspaceBar({
           data-testid="deal-pipeline-views"
           aria-label={isRenewals ? "Board Stack List" : "Stack Radar List"}
         >
-          {viewRows.map(([id, label]) => (
-            <Link
-              key={id}
-              href={hrefBuilder({
+          <PipelineViewChips
+            chips={viewRows.map(([id, label]) => ({
+              id,
+              label,
+              href: hrefBuilder({
                 ...extras,
                 pipeline: pipeline || (isRenewals ? boardWhenNoPipeline : pipeline),
                 view: id,
-              })}
-              className={chipTabClass(parsedView === id)}
-              data-active={parsedView === id ? "true" : "false"}
-            >
-              {label}
-            </Link>
-          ))}
-          <PipelineViewDefaultStar currentView={parsedView} defaultView={defaultView ?? null} cookieKey={cookieKey} />
+              }),
+              active: parsedView === id,
+            }))}
+            defaultView={defaultView ?? null}
+            cookieKey={cookieKey}
+          />
           <PipelineViewsMenu
             pipelineId={stagePipelineId}
             stages={stageRows}
