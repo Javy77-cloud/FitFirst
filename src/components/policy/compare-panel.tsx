@@ -7,7 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDay, formatMoney } from "@/lib/domain";
-import type { Policy, PolicyCoverageLine, PolicyTerm, RenewalCompareLog } from "@/lib/db/schema";
+import type {
+  Policy,
+  PolicyCoverageLine,
+  PolicyTerm,
+  RenewalCompareLog,
+  RenewalCompareSnapshot,
+} from "@/lib/db/schema";
 import {
   coverageRows,
   deductiblesForLine,
@@ -38,6 +44,7 @@ export function ComparePanel({
   baselineLabel = "Current term",
   renewalLabel = "Proposed term",
   renewalHandled = false,
+  frozenSnapshot = null,
 }: {
   policy: Policy;
   current: PolicyTerm | undefined;
@@ -51,17 +58,22 @@ export function ComparePanel({
   renewalLabel?: string;
   /** Client staying already pushed — do not show the chase control again. */
   renewalHandled?: boolean;
+  /** Old vs new frozen when Client staying was pushed. Wins over live roles. */
+  frozenSnapshot?: RenewalCompareSnapshot | null;
 }) {
-  const baseline = compareBaseline ?? current;
-  const renewal = compareRenewal ?? proposed;
-  const currentPremium = parseMoney(baseline?.premium);
-  const proposedPremium = parseMoney(renewal?.premium);
+  const frozen = frozenSnapshot ?? null;
+  const baseline = frozen ? undefined : (compareBaseline ?? current);
+  const renewal = frozen ? undefined : (compareRenewal ?? proposed);
+  const shownBaselineLabel = frozen?.baselineLabel || baselineLabel;
+  const shownRenewalLabel = frozen?.renewalLabel || renewalLabel;
+  const currentPremium = parseMoney(frozen ? frozen.currentPremium : baseline?.premium);
+  const proposedPremium = parseMoney(frozen ? frozen.proposedPremium : renewal?.premium);
   const change =
     currentPremium != null && proposedPremium != null
       ? premiumChange(currentPremium, proposedPremium)
       : null;
   const deductibleDefs = deductiblesForLine(policy.lineOfBusiness);
-  const rows = coverageRows(baseline?.coverages, renewal?.coverages);
+  const rows = frozen ? frozen.coverageRows : coverageRows(baseline?.coverages, renewal?.coverages);
 
   return (
     <div className="space-y-4">
@@ -72,7 +84,7 @@ export function ComparePanel({
         )}
 
       </section>
-      {change ? <PremiumChangeSummary change={change} /> : baselineLabel === "Prior term" ? (
+      {change ? <PremiumChangeSummary change={change} /> : shownBaselineLabel === "Prior term" || shownBaselineLabel === "Old term" ? (
         <section className="ff-card p-4 text-base text-muted-foreground">
           Prior term and current term are open for compare. Premium change shows once both
           terms have a premium. FitFirst does not rate this policy.
@@ -84,37 +96,51 @@ export function ComparePanel({
         </section>
       )}
 
-      <section className="ff-card overflow-x-auto">
+      {frozen ? (
+        <p className="text-sm text-muted-foreground" data-ff-compare-frozen-note="">
+          Frozen when Client staying was pushed. Compare reopens this old-vs-new snapshot after
+          the prior term flips.
+        </p>
+      ) : null}
+      <section className="ff-card overflow-x-auto" data-ff-compare-frozen={frozen ? "true" : "false"}>
         <table className="ff-table">
           <thead>
             <tr>
               <th>Item</th>
-              <th>{baselineLabel}</th>
-              <th>{renewalLabel}</th>
+              <th>{shownBaselineLabel}</th>
+              <th>{shownRenewalLabel}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td className="font-medium">Term</td>
               <td>
-                {baseline
-                  ? `${formatDay(baseline.termEffective)} → ${formatDay(baseline.termExpiration)}`
-                  : "—"}
+                {frozen?.currentTermEffective
+                  ? `${formatDay(frozen.currentTermEffective)} → ${formatDay(frozen.currentTermExpiration)}`
+                  : baseline
+                    ? `${formatDay(baseline.termEffective)} → ${formatDay(baseline.termExpiration)}`
+                    : "—"}
               </td>
               <td>
-                {renewal
-                  ? `${formatDay(renewal.termEffective)} → ${formatDay(renewal.termExpiration)}`
-                  : "—"}
+                {frozen?.proposedTermEffective
+                  ? `${formatDay(frozen.proposedTermEffective)} → ${formatDay(frozen.proposedTermExpiration)}`
+                  : renewal
+                    ? `${formatDay(renewal.termEffective)} → ${formatDay(renewal.termExpiration)}`
+                    : "—"}
               </td>
             </tr>
             <tr className={change && change.direction !== "flat" ? "bg-fit-flag-bg/40" : undefined}>
               <td className="font-medium">Premium</td>
-              <td>{formatMoney(baseline?.premium)}</td>
-              <td className="font-semibold">{formatMoney(renewal?.premium)}</td>
+              <td>{formatMoney(frozen ? frozen.currentPremium : baseline?.premium)}</td>
+              <td className="font-semibold">{formatMoney(frozen ? frozen.proposedPremium : renewal?.premium)}</td>
             </tr>
             {deductibleDefs.map((field) => {
-              const left = baseline?.[field.key] ?? "—";
-              const right = renewal?.[field.key] ?? "—";
+              const left = frozen
+                ? (frozen.currentDeductibles?.[field.key] || "—")
+                : (baseline?.[field.key] ?? "—");
+              const right = frozen
+                ? (frozen.proposedDeductibles?.[field.key] || "—")
+                : (renewal?.[field.key] ?? "—");
               const changed = left !== right;
               return (
                 <tr key={field.key} className={cn(changed && "bg-fit-flag-bg/40")}>

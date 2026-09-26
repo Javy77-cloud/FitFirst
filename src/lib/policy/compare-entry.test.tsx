@@ -15,6 +15,15 @@ describe("Compare terms stays after the renewal-agreed stamp", () => {
     expect(showPolicyCompareTerms({ inForce: false, renewalAgreed: true })).toBe(true);
     expect(showPolicyCompareTerms({ inForce: true, renewalAgreed: false })).toBe(true);
     expect(showPolicyCompareTerms({ inForce: false, renewalAgreed: false })).toBe(false);
+    expect(
+      showPolicyCompareTerms({ inForce: false, renewalAgreed: true, daysUntilRenewal: 14 }),
+    ).toBe(true);
+    expect(
+      showPolicyCompareTerms({ inForce: false, renewalAgreed: false, daysUntilRenewal: 14 }),
+    ).toBe(true);
+    expect(
+      showPolicyCompareTerms({ inForce: false, renewalAgreed: false, daysUntilRenewal: 379 }),
+    ).toBe(false);
   });
 
   it("renders the persistent Compare control to the policy compare page", () => {
@@ -25,7 +34,7 @@ describe("Compare terms stays after the renewal-agreed stamp", () => {
     expect(html).toContain('href="/policies/atm-205086/compare"');
     expect(html).toContain("data-ff-compare-terms");
     expect(html).toContain("data-ff-compare-terms-persistent");
-    expect(html).toContain("prior term vs current term");
+    expect(html).toContain("prior/current vs renewal proposal");
   });
 
   it("leaves the unstamped Compare control on current vs upcoming", () => {
@@ -50,8 +59,12 @@ describe("Compare terms stays after the renewal-agreed stamp", () => {
         hasPrior: true,
         hasCurrent: true,
         hasProposed: true,
-      }).kind,
-    ).toBe("current-proposed");
+      }),
+    ).toEqual({
+      kind: "current-proposed",
+      baselineLabel: "Prior / current",
+      renewalLabel: "Renewal proposal",
+    });
     expect(
       policyComparePair({
         renewalHandled: true,
@@ -95,10 +108,11 @@ describe("Compare terms stays after the renewal-agreed stamp", () => {
     const section = overview.slice(sectionStart, sectionEnd);
     expect(section).toContain("ff-links-renewal-heading");
     expect(section).toContain("<CompareTermsLink");
-    expect(section).toMatch(/showRenewalAgreed \? \(\s*<CompareTermsLink[\s\S]*?persistent/);
-    expect(section).toMatch(/inForce && !showRenewalAgreed \? \(\s*<CompareTermsLink/);
+    expect(section).toMatch(/showCompareTerms \? \(\s*<CompareTermsLink[\s\S]*?persistent=\{Boolean\(renewalHandled\)\}/);
+    expect(section).not.toMatch(/!showRenewalAgreed \? \(\s*<CompareTermsLink/);
+    expect(section).not.toMatch(/!renewalHandled \? \(\s*<CompareTermsLink/);
     expect(section).toMatch(
-      /\{inForce \? \(\s*<span className="ff-links-renewal-staying">\s*<ClientStayingButton/,
+      /\{inForce && !renewalHandled \? \(\s*<span className="ff-links-renewal-staying">\s*<ClientStayingButton/,
     );
     expect(readFileSync("src/components/policy/compare-panel.tsx", "utf8")).toMatch(
       /renewalHandled \? null : \(\s*<ClientStayingButton/,

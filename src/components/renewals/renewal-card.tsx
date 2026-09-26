@@ -164,6 +164,7 @@ export function RenewalBoardCardView({
             open={compareOpen}
             onOpenChange={setCompareOpen}
             hideTrigger
+            renewalHandled={card.stage === "handled"}
             clientHealth={card.clientHealth}
             policyHealth={card.policyHealth}
           />
@@ -227,7 +228,7 @@ export function RenewalBoardCardView({
       <p className="ff-renewal-why" title={why}>
         {why}
       </p>
-      {action === "chase" ? (
+      {card.stage === "handled" ? null : action === "chase" ? (
         <form action={sendRenewalChase} className="ff-renewal-chase" data-ff-no-compare="">
           <input type="hidden" name="policyId" value={card.policyId} />
           {card.contactId ? <input type="hidden" name="contactId" value={card.contactId} /> : null}

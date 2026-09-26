@@ -14,6 +14,7 @@ import {
   emailTemplates,
   policies,
   policyTerms,
+  renewalCompareLogs,
   renewalQueue,
 } from "@/lib/db/schema";
 import {
@@ -229,13 +230,7 @@ export async function markClientStaying(
   if (!policy) throw new Error("Policy not found.");
 
   const terms = await db
-    .select({
-      id: policyTerms.id,
-      role: policyTerms.role,
-      effective: policyTerms.termEffective,
-      expiration: policyTerms.termExpiration,
-      premium: policyTerms.premium,
-    })
+    .select()
     .from(policyTerms)
     .where(and(eq(policyTerms.tenantId, DEFAULT_TENANT_ID), eq(policyTerms.policyId, policyId)));
 
@@ -249,7 +244,19 @@ export async function markClientStaying(
   } = await import("@/lib/renewal/handled");
   const { deskNow } = await import("@/lib/home/as-of");
   const { resolveCurrentTerm } = await import("@/lib/policies/current-term");
-  const resolved = resolveCurrentTerm({ ...policy, terms }, deskNow());
+  const resolved = resolveCurrentTerm(
+    {
+      ...policy,
+      terms: terms.map((term) => ({
+        id: term.id,
+        role: term.role,
+        effective: term.termEffective,
+        expiration: term.termExpiration,
+        premium: term.premium,
+      })),
+    },
+    deskNow(),
+  );
   const confirmEarly = confirmEarlyClientStayingRequested(formData.get("confirmEarlyClientStaying"));
   const anchor = resolved.renewalAnchor ?? policy.renewalDate;
   const now = deskNow();
@@ -302,6 +309,29 @@ export async function markClientStaying(
     outcome: RENEWAL_HANDLED_EVENT,
   });
 
+  // Freeze old vs new before roles advance. Missing premiums skip the log; the stamp still lands.
+  const oldTerm = terms.find((term) => term.role === "current");
+  const newTerm = terms.find((term) => term.role === "proposed");
+  if (oldTerm && newTerm) {
+    const { renewalAgreedCompareValues } = await import("@/lib/renewal/agreed-snapshot");
+    const frozen = renewalAgreedCompareValues({ policyId, oldTerm, newTerm });
+    if (frozen) {
+      await db.insert(renewalCompareLogs).values({
+        tenantId: DEFAULT_TENANT_ID,
+        policyId: frozen.policyId,
+        currentTermId: frozen.currentTermId,
+        proposedTermId: frozen.proposedTermId,
+        eventType: frozen.eventType,
+        currentPremium: frozen.currentPremium,
+        proposedPremium: frozen.proposedPremium,
+        delta: frozen.delta,
+        pct: frozen.pct,
+        summary: frozen.summary,
+        snapshot: frozen.snapshot,
+      });
+    }
+  }
+
   // When a Current-term DEC is already on the policy, advance book dates + term history
   // so Policies → Current shows days left (not the expired prior term).
   const { advancePolicyCurrentTerm } = await import("@/lib/policy/advance-current-term-apply");
@@ -316,6 +346,7 @@ export async function markClientStaying(
 
   void renewalQueueLine(policy.policyNumber ?? "policy", RENEWAL_HANDLED_STAGE);
   refreshBoard(policyId);
+  revalidatePath(`/policies/${policyId}/compare`);
   revalidatePath("/notifications");
   revalidatePath("/");
   revalidatePath("/policies");

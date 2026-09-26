@@ -1,5 +1,6 @@
 import { formatMoney } from "@/lib/domain";
 import { formatSignedMoney } from "@/lib/renewal/compare";
+import type { RenewalClockAnchor } from "@/lib/renewal/days-to-renewal";
 
 export const RENEWAL_URGENCY_BANDS = ["under30", "30to60", "60to90", "90plus"] as const;
 export type RenewalUrgencyBand = (typeof RENEWAL_URGENCY_BANDS)[number];
@@ -67,6 +68,18 @@ export function renewalDaysPhrase(daysUntil: number): string {
   return `Expires in ${daysUntil} days`;
 }
 
+/** Board why-line. Renew-into dates say "Renews", in-force expirations say "Expires". */
+export function renewalClockPhrase(days: number, anchor: RenewalClockAnchor): string {
+  if (anchor !== "renew_into_effective") return renewalDaysPhrase(days);
+  if (days < 0) {
+    const overdue = Math.abs(days);
+    return overdue === 1 ? "Renewed 1 day ago" : `Renewed ${overdue} days ago`;
+  }
+  if (days === 0) return "Renews today";
+  if (days === 1) return "Renews in 1 day";
+  return `Renews in ${days} days`;
+}
+
 export function renewalDeltaPhrase(premiumDelta: number | null | undefined): string | null {
   if (premiumDelta == null || !Number.isFinite(premiumDelta)) return null;
   if (premiumDelta > 0) return `premium up ${formatSignedMoney(premiumDelta)}`;
@@ -79,8 +92,11 @@ export function renewalWhyLine(input: {
   daysUntil: number;
   premiumDelta?: number | null;
   whyExtra?: string | null;
+  clockAnchor?: RenewalClockAnchor;
 }): string {
-  const days = renewalDaysPhrase(input.daysUntil);
+  const days = input.clockAnchor
+    ? renewalClockPhrase(input.daysUntil, input.clockAnchor)
+    : renewalDaysPhrase(input.daysUntil);
   const delta = renewalDeltaPhrase(input.premiumDelta);
   const extra = input.whyExtra?.trim() || null;
   return [days, delta, extra].filter(Boolean).join(" · ");
