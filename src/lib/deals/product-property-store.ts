@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, sql } from "@/lib/db";
 import { risks, type Risk } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { propertyStreetsMatch } from "@/lib/deals/product-address-pin";
+import { mayInsertSeparatePropertyRisk, propertyStreetsMatch } from "@/lib/deals/product-address-pin";
 import {
   autoVehicleRiskKey,
   tabRiskForInstance,
@@ -292,6 +292,17 @@ export async function saveInstancePropertyAddress(input: {
       await updateRiskAddress(unscoped.id, input.address);
       return;
     }
+  }
+  if (
+    !mayInsertSeparatePropertyRisk({
+      instanceKey: input.instanceKey,
+      legacyOwnerKey: legacyKey,
+      addressStreet: input.address.street,
+      unscopedStreet: unscoped?.address1,
+      claimMatchingUnscoped: input.claimMatchingUnscoped,
+    })
+  ) {
+    return;
   }
   await insertProductRisk({
     dealId: input.dealId,

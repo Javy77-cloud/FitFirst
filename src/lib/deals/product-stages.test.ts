@@ -496,12 +496,12 @@ describe("per-product stages", () => {
       ],
     });
     expect(gloriaDecOnHomeLine.map((chip) => chip.label)).toEqual([
-      "HO3",
-      "DP3 10358 Northwest 30th",
+      "HO3 10358 Northwest 30th",
+      "DP3",
       "HO3 16021 Northwest 79th",
     ]);
-    expect(gloriaDecOnHomeLine[0]?.label).not.toMatch(/16021|10358/);
-    expect(gloriaDecOnHomeLine[1]?.label).not.toMatch(/16021/);
+    expect(gloriaDecOnHomeLine[0]?.label).not.toMatch(/16021|8944/);
+    expect(gloriaDecOnHomeLine[1]?.label).not.toMatch(/16021|10358/);
     expect(gloriaDecOnHomeLine[2]?.label).not.toMatch(/10358/);
     const heather = listProductStageChips({
       shopProducts: ["homeowners", "auto", "flood"],
