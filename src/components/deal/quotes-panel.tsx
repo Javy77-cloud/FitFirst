@@ -26,6 +26,7 @@ import {
   quoteMatchesShopLine,
   shopLineLabel,
 } from "@/lib/deals/shop-flow";
+import { presentProductLabel } from "@/lib/deals/product-chip-label";
 import { displayAttemptWhy } from "@/lib/deals/product-instances";
 import { isShopLine, type ShopLine } from "@/lib/domain";
 import type { Carrier, Document, DocumentVersion, Quote, QuoteAttemptLog, QuoteNote } from "@/lib/db/schema";
@@ -262,6 +263,8 @@ export function QuotesPanel({
       ]),
   );
   const lineLabel = activeLine ? shopLineLabel(activeLine) : null;
+  const visibleProduct =
+    presentProductLabel(productLabel) || presentProductLabel(shopLine) || lineLabel || "";
   const manualQuoteCarriers = marketCarriersForManualQuote(
     logs.map((row) => ({
       carrierId: row.log.carrierId,
@@ -305,7 +308,7 @@ export function QuotesPanel({
           {quotesHead}
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">
-              {productLabel ? `Quotes · ${productLabel}` : "Quotes"}
+              {visibleProduct ? `Quotes · ${visibleProduct}` : "Quotes"}
             </h3>
           </div>
           {outsideOverride ? (
@@ -413,11 +416,7 @@ export function QuotesPanel({
           {issueControl}
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">
-              {productLabel
-                ? `Quotes · ${productLabel}`
-                : lineLabel
-                  ? `Current ${lineLabel} quotes`
-                  : "Current quotes"}
+              {visibleProduct ? `Quotes · ${visibleProduct}` : "Current quotes"}
             </h3>
           </div>
           <p className="text-sm text-muted-foreground">No current quotes yet.</p>

@@ -11,6 +11,7 @@ import { PaidApiWall } from "@/components/deal/paid-api-wall";
 import type { CarrierMatch } from "@/lib/appetite/match";
 import { isAppointedMatch } from "@/lib/appetite/present";
 import { bucketForMatch, hasMarketLookupData, marketBucketLabel } from "@/lib/deals/manual-markets";
+import { presentProductLabel } from "@/lib/deals/product-chip-label";
 import { asList } from "@/lib/safe-list";
 
 export function MarketsPanel({
@@ -47,6 +48,7 @@ export function MarketsPanel({
   outsideOverride?: boolean;
   outsideOverrideDetail?: import("@/lib/deals/outside-stage-override").OutsideStageOverride | null;
 }) {
+  const visibleProduct = presentProductLabel(productLabel);
   const [selected, setSelected] = useState<string[]>(() =>
     lastRequestCarrierIds.map((id) => id.trim()).filter(Boolean),
   );
@@ -114,7 +116,7 @@ export function MarketsPanel({
       <div className="space-y-3" data-ff-deal-markets="" data-ff-markets-empty="">
         <div className="ff-card space-y-3 p-4">
           <h3 className="text-sm font-semibold text-navy">
-            {productLabel ? `Markets · ${productLabel}` : "Markets"}
+            {visibleProduct ? `Markets · ${visibleProduct}` : "Markets"}
           </h3>
           {outsideOverride ? (
             <OutsideFitFirstStamp
@@ -178,7 +180,7 @@ export function MarketsPanel({
     </>
   );
 
-  const marketsLead = productLabel ? `Markets · ${productLabel}` : null;
+  const marketsLead = visibleProduct ? `Markets · ${visibleProduct}` : null;
 
   return (
     <div className="space-y-3" data-ff-deal-markets="">

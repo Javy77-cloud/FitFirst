@@ -9,6 +9,10 @@ import {
   coverageGapAlertsHiddenWhere,
   coverageGapUnreadCountExclusion,
 } from "@/lib/coverage/notification-flag";
+import {
+  quoteStatusAlertsHiddenWhere,
+  quoteStatusUnreadCountExclusion,
+} from "@/lib/notifications/quote-status-policy";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { displayDealTitle } from "@/lib/deals/deal-title";
 import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
@@ -2334,9 +2338,10 @@ export const listAlerts = cache(async function listAlerts(unreadOnly = false) {
   /** Future createdAt = scheduled in-app reminder (not due yet). Hide until fire time. */
   const due = lte(alerts.createdAt, new Date());
   const hideCoverageGaps = coverageGapAlertsHiddenWhere();
+  const hideQuoteStatus = quoteStatusAlertsHiddenWhere();
   const where = unreadOnly
-    ? and(visible, due, isNull(alerts.readAt), hideCoverageGaps)
-    : and(visible, due, hideCoverageGaps);
+    ? and(visible, due, isNull(alerts.readAt), hideCoverageGaps, hideQuoteStatus)
+    : and(visible, due, hideCoverageGaps, hideQuoteStatus);
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
 });
 
@@ -2665,7 +2670,7 @@ export async function dashboardStats() {
         sessionSeesAgencyBook(session) || !session.userId
           ? sql``
           : sql` and (user_id is null or user_id = ${session.userId})`
-      }${coverageGapUnreadCountExclusion()})`,
+      }${coverageGapUnreadCountExclusion()}${quoteStatusUnreadCountExclusion()})`,
     })
     .from(tenants)
     .where(eq(tenants.id, tenant()));

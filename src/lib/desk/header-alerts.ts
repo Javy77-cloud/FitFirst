@@ -1,4 +1,5 @@
-import { displayNoticeBody, noticeHrefFromAlert } from "@/lib/coverage/notices";
+import { noticeHrefFromAlert } from "@/lib/coverage/notices";
+import { formatNotificationBody, formatNotificationTitle } from "@/lib/notifications/copy";
 import { coldChaseHref, isDealColdChaseKind } from "@/lib/deals/cold-chase";
 import { followUpLeadHref, notificationWhen } from "@/lib/desk/notifications";
 import { inboxMailDeepLink } from "@/lib/desk/inbox-assign";
@@ -64,8 +65,8 @@ export function toHeaderAlert(row: {
 }): HeaderAlert {
   return {
     id: row.id,
-    title: row.title,
-    body: displayNoticeBody(row.body),
+    title: formatNotificationTitle(row.title),
+    body: formatNotificationBody(row.body),
     severity: row.severity,
     kind: row.kind,
     read: Boolean(row.readAt),

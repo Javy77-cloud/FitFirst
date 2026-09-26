@@ -5,26 +5,22 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
   activityLogs,
-  carriers,
   contacts,
   deals,
   documents,
   policies,
-  quotes,
 } from "@/lib/db/schema";
 import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
 import { resolveCurrentTerm } from "@/lib/policies/current-term";
 import { docExpiryWarning, isExpiringDocType } from "@/lib/policy/document-depth";
 import { partyLabel } from "@/lib/desk/policy-name";
+import { formatPanelEntityLine } from "@/lib/notifications/copy";
 import {
   commitmentNudgeUrgency,
   commitmentNudgeWhy,
-  isOvernightDecline,
   isRenewalSilenceWindow,
   isRenewalSilent,
-  quoteDeclinedUrgency,
-  quoteDeclinedWhy,
   renewalSilenceUrgency,
   renewalSilenceWhy,
   sortPanelCards,
@@ -41,92 +37,17 @@ import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 const OUTREACH_KINDS = ["call", "email", "sms", "meeting"] as const;
 
 function entityLine(name: string, product: string | null | undefined): string {
-  const line = (product ?? "").trim();
-  return line ? `${name} · ${line}` : name;
+  return formatPanelEntityLine(name, product);
 }
 
+/**
+ * Quote declines, approvals, and API returns are visible on the Quotes tab.
+ * This loader used to bell overnight declines (`Declined by Stand · home~…`).
+ * It no longer emits those cards.
+ */
 export async function loadQuoteDeclinedSignals(asOf = deskNow()): Promise<PanelCard[]> {
-  const since = new Date(asOf.getTime() - 18 * 60 * 60 * 1000);
-  const declined = await db
-    .select({
-      quoteId: quotes.id,
-      dealId: quotes.dealId,
-      createdAt: quotes.createdAt,
-      shopLine: quotes.shopLine,
-      carrierName: carriers.name,
-      dealTitle: deals.title,
-      dealStage: deals.pipelineStage,
-      contactFirst: contacts.firstName,
-      contactLast: contacts.lastName,
-    })
-    .from(quotes)
-    .innerJoin(deals, eq(quotes.dealId, deals.id))
-    .innerJoin(carriers, eq(quotes.carrierId, carriers.id))
-    .leftJoin(contacts, eq(deals.contactId, contacts.id))
-    .where(
-      and(
-        eq(quotes.tenantId, DEFAULT_TENANT_ID),
-        eq(quotes.riskOutcome, "declined"),
-        gte(quotes.createdAt, since),
-        isNull(deals.archivedAt),
-      ),
-    );
-
-  const overnight = declined.filter((row) => isOvernightDecline(row.createdAt, asOf));
-  if (overnight.length === 0) return [];
-
-  const dealIds = [...new Set(overnight.map((row) => row.dealId))];
-  const siblings = await db
-    .select({
-      dealId: quotes.dealId,
-      riskOutcome: quotes.riskOutcome,
-      bindable: quotes.bindable,
-    })
-    .from(quotes)
-    .where(and(eq(quotes.tenantId, DEFAULT_TENANT_ID), inArray(quotes.dealId, dealIds)));
-
-  const remainingByDeal = new Map<string, number>();
-  for (const row of siblings) {
-    const dead = row.riskOutcome === "declined" || row.riskOutcome === "no_market";
-    if (dead) continue;
-    remainingByDeal.set(row.dealId, (remainingByDeal.get(row.dealId) ?? 0) + 1);
-  }
-
-  return overnight.map((row) => {
-    const remaining = remainingByDeal.get(row.dealId) ?? 0;
-    const name =
-      partyLabel(
-        row.contactFirst || row.contactLast
-          ? { firstName: row.contactFirst ?? "", lastName: row.contactLast ?? "" }
-          : null,
-        null,
-      ) || row.dealTitle;
-    return {
-      key: `quote_declined:${row.quoteId}`,
-      kind: "quote_declined" as const,
-      urgency: quoteDeclinedUrgency(remaining),
-      entityLine: entityLine(name, row.shopLine || "Quote"),
-      why: quoteDeclinedWhy({
-        carrierName: row.carrierName,
-        declinedAt: row.createdAt,
-        remainingMarkets: remaining,
-      }),
-      primary: {
-        id: "retry_markets",
-        label: remaining > 0 ? "Retry carriers" : "Open Markets",
-        href: `/deals/${row.dealId}?tab=markets`,
-        action: "retry_markets",
-      },
-      href: `/deals/${row.dealId}?tab=markets`,
-      entityType: "deal",
-      entityId: row.dealId,
-      deadline: row.createdAt,
-      source: "live" as const,
-      dealId: row.dealId,
-      quoteId: row.quoteId,
-      remainingMarkets: remaining,
-    };
-  });
+  void asOf;
+  return [];
 }
 
 export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<PanelCard[]> {

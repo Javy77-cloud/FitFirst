@@ -1,7 +1,7 @@
 "use client";
 
 import { NotificationChecklist } from "@/components/desk/notification-checklist";
-import { displayNoticeBody } from "@/lib/coverage/notices";
+import { formatNotificationBody, formatNotificationTitle } from "@/lib/notifications/copy";
 import { alertRecordHref } from "@/lib/desk/header-alerts";
 import {
   NOTIFICATION_EMPTY_BOARD,
@@ -32,8 +32,8 @@ export function NotificationBoard({ rows }: { rows: BoardAlert[] }) {
           empty={NOTIFICATION_EMPTY_BOARD}
           alerts={rows.map((alert) => ({
             id: alert.id,
-            title: alert.title,
-            body: displayNoticeBody(alert.body),
+            title: formatNotificationTitle(alert.title),
+            body: formatNotificationBody(alert.body),
             kind: alert.kind,
             read: Boolean(alert.readAt),
             href: notificationHref(alertRecordHref(alert)),

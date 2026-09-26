@@ -14,6 +14,7 @@ import {
   productCodeLabel,
   type VehicleLabelFact,
 } from "@/lib/deals/product-instance-label";
+import { presentProductLabel } from "@/lib/deals/product-chip-label";
 import {
   productChipBound,
   productChipLabel,
@@ -119,9 +120,10 @@ export function DealLineSwitcher({
     const theme = themeForProduct(productId);
     const def = dealProductDef(productId);
     const facts = labelFacts?.[product];
-    const label =
+    const label = presentProductLabel(
       labels[product] ??
-      productChipLabel({ product: productId, quotingForm: formLabels[product] ?? formLabels[productId] });
+        productChipLabel({ product: productId, quotingForm: formLabels[product] ?? formLabels[productId] }),
+    );
     const labelInput = {
       code: productCodeLabel({
         productId,
