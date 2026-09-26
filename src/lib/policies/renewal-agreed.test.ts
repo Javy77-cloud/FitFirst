@@ -228,7 +228,8 @@ describe("renewal agreed stamp", () => {
 
   it("places a larger centered stamp beside Client staying in Links & renewal", () => {
     const overview = readFileSync("src/components/policy/tabs/overview-tab.tsx", "utf8");
-    const stamp = readFileSync("src/components/policy/renewal-agreed-stamp.tsx", "utf8");
+    const agreed = readFileSync("src/components/policy/renewal-agreed-stamp.tsx", "utf8");
+    const stamp = readFileSync("src/components/renewals/handled-stamp.tsx", "utf8");
     const css = readFileSync("src/app/globals.css", "utf8");
     const sectionStart = overview.indexOf('data-ff-policy-links-renewal=""');
     const sectionEnd = overview.indexOf("<PremiumChangeSummary");
@@ -240,11 +241,14 @@ describe("renewal agreed stamp", () => {
     expect(section).not.toMatch(/justify-center|py-5/);
     expect(overview).toMatch(/showRenewalAgreedStamp/);
     expect(overview).toMatch(/renewalDate:\s*policy\.renewalDate/);
+    expect(agreed).toMatch(/HandledStamp/);
+    expect(agreed).toMatch(/surface="dossier"/);
+    expect(agreed).toMatch(/RENEWAL_AGREED_LABEL/);
     expect(stamp).toMatch(/ff-deal-status-stamp/);
     expect(stamp).toMatch(/ff-deal-status-stamp-ink/);
     expect(stamp).toMatch(/data-ff-deal-status-stamp="done"/);
     expect(stamp).toMatch(/data-ff-renewal-agreed-stamp/);
-    expect(stamp).toMatch(/RENEWAL_AGREED_LABEL/);
+    expect(stamp).toMatch(/ff-handled-stamp-ink/);
     expect(section).toContain("ff-links-renewal-staying");
     expect(css).toMatch(/\.ff-renewal-agreed-stamp\s*\{[^}]*position:\s*absolute/);
     expect(css).toMatch(/anchor\(right\) \+ 12px/);

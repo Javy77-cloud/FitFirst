@@ -11,6 +11,7 @@ import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import { RenewalMiniReview } from "@/components/renewals/renewal-mini-review";
 import { Button } from "@/components/ui/button";
 import { ClientStayingButton } from "@/components/renewals/client-staying-button";
+import { RenewalBoardHandledStamp } from "@/components/renewals/handled-stamp";
 import {
   formatBoardPremiumDelta,
   PREMIUM_LAPSE_RISK_LABEL,
@@ -135,7 +136,9 @@ export function RenewalBoardCardView({
       data-ff-renewal-draggable={canDrag ? "true" : "false"}
       data-ff-urgency-card={band}
       data-ff-risk={risk}
+      data-ff-renewal-handled={card.stage === "handled" ? "" : undefined}
     >
+      {card.stage === "handled" ? <RenewalBoardHandledStamp /> : null}
       <div className="flex min-w-0 items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1">
           <button
@@ -274,9 +277,7 @@ export function RenewalBoardCardView({
         <div className="ff-renewal-card-footer-actions" data-ff-no-compare="">
           {card.stage !== "handled" ? (
             <ClientStayingButton policyId={card.policyId} renewalDate={card.renewalDate} />
-          ) : (
-            <span className="ff-renewal-handled-pill" data-ff-renewal-handled="">Handled</span>
-          )}
+          ) : null}
           <Button
             type="button"
             size="xs"
