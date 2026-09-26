@@ -11,7 +11,8 @@ import { enforceAutoPhysDam, formatAutoDollarDeductible, isAutoDeductibleField }
 import { enforceHomeDecDollars } from "./home-dollar";
 import { expandAutoDecLayout } from "./auto-layout";
 import { readGeminiDocumentKind, sanitizeGeminiPreview } from "./preview";
-import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_FLOOD_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
+import { commercialSheetKey, isCommercialShopLine } from "@/lib/policy/commercial-coverage";
+import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_COMMERCIAL_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_FLOOD_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
 
 /** Gemini JSON key → one or more sheet / extract field keys. */
 export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
@@ -627,6 +628,8 @@ export function sheetKeysForGeminiKey(geminiKey: string): string[] {
   if (mapped.length > 0) return mapped;
   // vehicle_2_annual_miles and the other repeatable Auto columns are real sheet keys.
   if (isRepeatableSheetKey(normalized)) return [normalized];
+  const commercial = commercialSheetKey(normalized);
+  if (commercial) return [commercial];
   return [];
 }
 
@@ -903,6 +906,12 @@ function moneyDigits(raw: string): string {
   return match ? match[0] : cleaned;
 }
 
+/** Commercial certificates keep the printed business name. Auto still title-cases people. */
+function normalizeExtractedValue(fieldKey: string, raw: string, shopLine?: string | null): string {
+  if (isCommercialShopLine(shopLine)) return raw.trim();
+  return normalizeAutoPolicyValue(fieldKey, raw);
+}
+
 export function normalizeAutoPolicyValue(fieldKey: string, raw: string): string {
   if (fieldKey === "current_premium" || fieldKey === "premium") return moneyDigits(raw);
   if (fieldKey === "years_with_carrier") {
@@ -970,6 +979,7 @@ export function mapGeminiJsonToFields(
         ...GEMINI_AUTO_EXTRACT_JSON_KEYS,
         ...GEMINI_LETTER_EXTRACT_JSON_KEYS,
         ...GEMINI_FLOOD_EXTRACT_JSON_KEYS,
+        ...GEMINI_COMMERCIAL_EXTRACT_JSON_KEYS,
       ]);
       if (!knownKeys.has(geminiKey)) {
         unmappedLabels.push({ sourceLabel: geminiKey, rawValue: payload.value });
@@ -995,9 +1005,10 @@ export function mapGeminiJsonToFields(
             geminiKey === "year_of_roof_updated" ||
             geminiKey === "year_roof_updated");
         if (!existing || (existing.normalizedValue.trim() && !yearOfConstruction && !explicitRoofYear)) continue;
-        const letterValue = normalizeAutoPolicyValue(
+        const letterValue = normalizeExtractedValue(
           fieldKey,
           normalizeOirLetterCode(fieldKey, payload.value),
+          shopLine,
         );
         existing.rawValue = payload.value;
         existing.normalizedValue = printedYearValue(fieldKey, letterValue);
@@ -1009,9 +1020,10 @@ export function mapGeminiJsonToFields(
         continue;
       }
       seen.add(fieldKey);
-      const letterValue = normalizeAutoPolicyValue(
+      const letterValue = normalizeExtractedValue(
         fieldKey,
         normalizeOirLetterCode(fieldKey, payload.value),
+        shopLine,
       );
       fields.push({
         fieldKey,

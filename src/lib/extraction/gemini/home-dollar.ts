@@ -289,7 +289,9 @@ function upsertForm(fields: ExtractedField[], value: string) {
  */
 export function enforceHomeDecDollars(fields: ExtractedField[], shopLine?: string | null): void {
   const line = (shopLine ?? "").trim().toLowerCase();
-  if (isAutoShopLine(shopLine) || line === "flood") return;
+  if (isAutoShopLine(shopLine) || line === "flood" || line === "workers_comp" || line === "general_liability" || line === "commercial") {
+    return;
+  }
   for (const field of fields) {
     if (!field.normalizedValue.trim()) continue;
     if (HOME_COVERAGE_LINE_PREMIUM_KEYS.has(field.fieldKey)) {

@@ -156,13 +156,29 @@ export function canonicalStoredListLabel(listKey: string, label: string): string
 }
 
 const RETRO_KEY = /retro|prior[_\s-]?acts/i;
-const DEDUCTIBLE_KEYS = ["deductible", "Deductible", "aopDeductible", "aop_deductible"];
+const DEDUCTIBLE_KEYS = [
+  "deductible",
+  "Deductible",
+  "aopDeductible",
+  "aop_deductible",
+  "gl_deductible",
+  "pl_per_claim_deductible",
+];
 
 export function liabilityLimitText(
   limits: Record<string, string> | null | undefined,
 ): string | null {
   if (!limits) return null;
-  const preferred = ["generalAggregate", "eachOccurrence", "general_aggregate", "each_occurrence"];
+  const preferred = [
+    "generalAggregate",
+    "eachOccurrence",
+    "general_aggregate",
+    "each_occurrence",
+    "gl_general_aggregate",
+    "gl_each_occurrence",
+    "pl_per_claim",
+    "pl_aggregate",
+  ];
   for (const key of preferred) {
     const hit = limits[key]?.trim();
     if (hit) return hit;

@@ -25,10 +25,12 @@ import { readStoredFile } from "@/lib/files/object-store";
 import { isUuid } from "@/lib/ids";
 import { loadFillDecDocument } from "@/lib/policy/fill-dec-document";
 import { issuedPolicyDocType } from "@/lib/policy/issued-upload";
+import { commercialCoverageLimitsAfterFill } from "@/lib/policy/commercial-coverage";
 import { floodCoverageLimitsAfterFill } from "@/lib/policy/flood-coverage";
 import {
   loadGeminiRows,
   shouldForceAutoDecReread,
+  shouldForceCommercialDecReread,
   shouldForceFloodDecReread,
   shouldForceHomeDecReread,
   type GeminiMintRow,
@@ -78,6 +80,23 @@ export type FillPolicyFromDecResult =
 function shopLineForPolicy(lineOfBusiness: string | null | undefined): string | null {
   const lob = appointmentLine(lineOfBusiness ?? "");
   return shopLineFromLob(lob) ?? (lob === "HO" ? "home" : lob === "AUTO" ? "auto" : null);
+}
+
+/** WC, GL, and E&O share one commercial prompt. Home, auto, and flood stay on their own. */
+function shopLineForFill(policy: {
+  lineOfBusiness?: string | null;
+  policyType?: string | null;
+  insuranceType?: string | null;
+  policySubType?: string | null;
+  formType?: string | null;
+}): string | null {
+  const family = fillFamilyForPolicy(policy);
+  if (family === "commercial") {
+    const lob = appointmentLine(policy.lineOfBusiness ?? "");
+    return lob === "WC" ? "workers_comp" : "general_liability";
+  }
+  if (family === "flood") return shopLineForPolicy(policy.lineOfBusiness) ?? "flood";
+  return shopLineForPolicy(policy.lineOfBusiness);
 }
 
 async function readCachedExtract(docId: string): Promise<{ rows: GeminiMintRow[]; newestAt: Date | null }> {
@@ -156,7 +175,7 @@ async function prepareFill(input: {
   if (!loaded.ok) return loaded;
   const { policy, doc } = loaded;
 
-  const shopLine = shopLineForPolicy(policy.lineOfBusiness);
+  const shopLine = shopLineForFill(policy);
   const familyForExtract = fillFamilyForPolicy(policy);
   const snapshotPromise = Promise.all([
     policy.riskId
@@ -230,6 +249,13 @@ async function prepareFill(input: {
     }) ||
     shouldForceFloodDecReread({
       manualFlood: Boolean(input.forceExtract) && familyForExtract === "flood",
+      rows: cached.rows,
+      newestAt: cached.newestAt,
+      now,
+      reuseFresh,
+    }) ||
+    shouldForceCommercialDecReread({
+      manualCommercial: Boolean(input.forceExtract) && familyForExtract === "commercial",
       rows: cached.rows,
       newestAt: cached.newestAt,
       now,
@@ -412,11 +438,17 @@ export async function fillPolicyFromDec(input: {
     if (patch.policy.policyType) policySet.policyType = patch.policy.policyType;
     if (patch.policy.policySubType) policySet.policySubType = patch.policy.policySubType;
     if (patch.policy.premium) policySet.premium = patch.policy.premium;
+    if (patch.policy.policyNumber) policySet.policyNumber = patch.policy.policyNumber;
     if (patch.policy.effectiveDate) policySet.effectiveDate = patch.policy.effectiveDate;
     if (patch.policy.expirationDate) policySet.expirationDate = patch.policy.expirationDate;
     if (patch.policy.termMonths != null) policySet.termMonths = patch.policy.termMonths;
     if (fillFamilyForPolicy(policy) === "flood") {
       policySet.coverageLimits = floodCoverageLimitsAfterFill(
+        policy.coverageLimits,
+        patch.coverageLimits,
+      );
+    } else if (fillFamilyForPolicy(policy) === "commercial") {
+      policySet.coverageLimits = commercialCoverageLimitsAfterFill(
         policy.coverageLimits,
         patch.coverageLimits,
       );

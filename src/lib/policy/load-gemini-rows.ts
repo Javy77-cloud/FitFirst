@@ -1,4 +1,5 @@
 import { MISSING_GEMINI_KEY_MESSAGE } from "@/lib/extraction/gemini/key";
+import { commercialDecCacheSupportsFill, isCommercialShopLine } from "@/lib/policy/commercial-coverage";
 import {
   FLOOD_PREMISES_SCHEDULE_STAMP,
   FLOOD_PREMISES_SCHEDULE_VERSION,
@@ -296,6 +297,27 @@ export function floodDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boole
   });
 }
 
+/** Manual commercial Fill re-reads a homeowners cache that never captured a WC / GL / E&O limit. */
+export function shouldForceCommercialDecReread(input: {
+  manualCommercial: boolean;
+  rows: readonly GeminiMintRow[];
+  newestAt: Date | null;
+  now: Date;
+  reuseFresh: boolean;
+}): boolean {
+  if (!input.manualCommercial) return false;
+  if (commercialDecCacheSupportsFill(input.rows)) return false;
+  if (
+    input.reuseFresh &&
+    input.newestAt &&
+    input.now.getTime() - input.newestAt.getTime() < AUTO_FILL_CACHE_FRESH_MS &&
+    input.now.getTime() >= input.newestAt.getTime()
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /** True after a flood extract from the premises-schedule teach. Older caches re-read. */
 export function floodPremisesScheduleStamped(rows: readonly GeminiMintRow[]): boolean {
   return rows.some((row) => {
@@ -365,7 +387,11 @@ export async function loadGeminiRows(
   if (!input.force && deps.loadCachedRows) {
     const cached = await deps.loadCachedRows(input.docId);
     // Partial/empty cache must not skip Gemini — that is how hollow mints get result.ok.
-    if (evaluateMintExtract(cached).ok) {
+    // A commercial certificate often has no premium. Reuse it when a WC / GL / E&O limit is already cached.
+    const reusable = isCommercialShopLine(input.shopLine)
+      ? commercialDecCacheSupportsFill(cached)
+      : evaluateMintExtract(cached).ok;
+    if (reusable) {
       return { ok: true, rows: cached, cached: true, documentKind: null, geminiPreview: null };
     }
   }
