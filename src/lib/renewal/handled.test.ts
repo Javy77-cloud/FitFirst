@@ -54,7 +54,7 @@ function card(
     carrierName: "Carrier",
     expirationDate: null,
     renewalDate: null,
-    daysUntil: 30,
+    daysUntil: partial.daysUntil ?? 30,
     premium: null,
     proposedPremium: null,
     premiumDelta: null,
@@ -115,7 +115,15 @@ describe("Client staying / Handled", () => {
     ];
     expect(filterRenewalCards(rows, {}, DEFAULT_DESK_LINE_SETTINGS).map((r) => r.policyNumber)).toEqual([
       "HO-1",
+      "HO-H",
     ]);
+    expect(
+      filterRenewalCards(
+        [...rows, card({ stage: "handled", lineOfBusiness: "HO3", policyNumber: "HO-FAR", daysUntil: 379 })],
+        {},
+        DEFAULT_DESK_LINE_SETTINGS,
+      ).map((r) => r.policyNumber),
+    ).toEqual(["HO-1", "HO-H"]);
     expect(
       filterRenewalCards(rows, { pipeline: "handled" }, DEFAULT_DESK_LINE_SETTINGS).map((r) => r.policyNumber),
     ).toEqual(["HO-H"]);

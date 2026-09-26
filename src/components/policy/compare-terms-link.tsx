@@ -15,7 +15,7 @@ export function CompareTermsLink({
   persistent?: boolean;
 }) {
   const label = persistent
-    ? "Compare terms — opens prior term vs current term, does not bind"
+    ? "Compare terms — opens prior/current vs renewal proposal, does not bind"
     : "Compare terms — opens current vs upcoming comparison, does not bind";
   return (
     <Link

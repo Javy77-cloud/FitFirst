@@ -16,6 +16,17 @@ import {
 } from "@/lib/policies/current-term";
 import { etDateKey } from "@/lib/time/et";
 
+/** Same horizon as the renewals board. Compare stays through this window after the stamp. */
+export const RENEWAL_COMPARE_WINDOW_DAYS = 180;
+export const RENEWAL_COMPARE_OVERDUE_DAYS = 14;
+
+export function inRenewalCompareWindow(
+  days: number | null | undefined,
+  windowDays: number = RENEWAL_COMPARE_WINDOW_DAYS,
+): boolean {
+  return days != null && days >= -RENEWAL_COMPARE_OVERDUE_DAYS && days <= windowDays;
+}
+
 export type RenewalClockAnchor =
   | "in_force_expiration"
   | "renew_into_effective"

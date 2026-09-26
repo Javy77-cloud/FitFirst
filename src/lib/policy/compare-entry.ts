@@ -1,21 +1,23 @@
 /**
- * Policy compare entry after Client staying.
+ * Policy compare entry.
  *
- * Unstamped in-force policies keep current vs proposed.
- * Once the renewal-agreed stamp is on, Compare stays reachable until the
- * renewal date even if the renewed term has not started (no longer in force)
- * and the Client staying chase row is gone.
+ * Compare stays for the whole renewal window. Client staying / the
+ * renewal-agreed stamp does not hide it. In-force policies outside that
+ * window keep the unstamped current-vs-proposal compare.
  * After the advance demotes the old term to prior, the open compare is
- * prior (old) vs current (new). A proposed term still on file keeps the
- * original current vs proposed pair.
+ * prior vs current. A proposed term still on file is the renewal proposal.
  */
+
+import { inRenewalCompareWindow } from "@/lib/renewal/days-to-renewal";
 
 export function showPolicyCompareTerms(input: {
   inForce: boolean;
-  /** Renewal agreed stamp is showing (Client staying, before the renewal date). */
+  /** Renewal agreed stamp is showing. Does not hide Compare. */
   renewalAgreed: boolean;
+  /** Days until the renewal the desk is working. */
+  daysUntilRenewal?: number | null;
 }): boolean {
-  return input.inForce || input.renewalAgreed;
+  return inRenewalCompareWindow(input.daysUntilRenewal) || input.inForce || input.renewalAgreed;
 }
 
 export type PolicyCompareKind = "current-proposed" | "prior-current";
@@ -32,6 +34,13 @@ const CURRENT_VS_PROPOSED: PolicyComparePair = {
   renewalLabel: "Proposed term",
 };
 
+/** Stamp is on and the renewal proposal is still a proposed term. */
+const HANDLED_VS_PROPOSAL: PolicyComparePair = {
+  kind: "current-proposed",
+  baselineLabel: "Prior / current",
+  renewalLabel: "Renewal proposal",
+};
+
 const PRIOR_VS_CURRENT: PolicyComparePair = {
   kind: "prior-current",
   baselineLabel: "Prior term",
@@ -44,6 +53,9 @@ export function policyComparePair(input: {
   hasCurrent: boolean;
   hasProposed: boolean;
 }): PolicyComparePair {
+  if (input.renewalHandled && input.hasCurrent && input.hasProposed) {
+    return HANDLED_VS_PROPOSAL;
+  }
   if (!input.renewalHandled || input.hasProposed || !input.hasPrior || !input.hasCurrent) {
     return CURRENT_VS_PROPOSED;
   }

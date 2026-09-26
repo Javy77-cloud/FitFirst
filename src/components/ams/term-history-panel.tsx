@@ -14,15 +14,18 @@ export function TermHistoryPanel({
 }) {
   const rows = sortPolicyTerms(terms);
   const hasProposed = rows.some((row) => row.role === "proposed");
+  const hasPrior = rows.some((row) => row.role === "prior");
+  const showCompare = hasProposed || hasPrior;
 
   return (
     <section className="ff-card mb-4 p-4" data-ff-policy-term-history="">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold text-navy">Policy term history</h2>
-        {hasProposed ? (
+        {showCompare ? (
           <Link
             href={`/policies/${policyId}/compare`}
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            data-ff-compare-terms=""
           >
             Compare renewal
           </Link>

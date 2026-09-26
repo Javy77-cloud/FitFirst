@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { resolveCurrentTerm } from "@/lib/policies/current-term";
-import { renewalClock } from "@/lib/renewal/days-to-renewal";
+import { inRenewalCompareWindow, renewalClock } from "@/lib/renewal/days-to-renewal";
 import { renewalClockPhrase, renewalUrgencyBand, renewalWhyLine } from "@/lib/renewal/urgency";
 
 /** Noon Eastern on the audit day (2026-09-26). */
@@ -26,6 +26,8 @@ describe("renewals board days-to-renewal", () => {
     expect(clock.days).toBe(14);
     expect(clock.anchor).toBe("renew_into_effective");
     expect(renewalUrgencyBand(clock.days ?? 0)).toBe("under30");
+    expect(inRenewalCompareWindow(clock.days)).toBe(true);
+    expect(inRenewalCompareWindow(379)).toBe(false);
     expect(renewalClockPhrase(14, "renew_into_effective")).toBe("Renews in 14 days");
     expect(renewalWhyLine({ daysUntil: 14, clockAnchor: "renew_into_effective" })).toBe(
       "Renews in 14 days",

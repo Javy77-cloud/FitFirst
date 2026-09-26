@@ -17,6 +17,7 @@ import {
   type CurrentTermResolution,
 } from "@/lib/policies/current-term";
 import { renewalDaysPhrase } from "@/lib/renewal/urgency";
+import { renewalClock } from "@/lib/renewal/days-to-renewal";
 import { showPolicyCompareTerms } from "@/lib/policy/compare-entry";
 import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
 import { floodRatingFromLimits } from "@/lib/policy/flood-coverage";
@@ -200,9 +201,25 @@ export function PolicyOverviewTab({
     renewedEffectiveDate: termView?.upcoming?.effective,
     terms,
   });
+  const renewalDays = renewalClock({
+    status: policy.status,
+    effectiveDate: policy.effectiveDate,
+    expirationDate: policy.expirationDate,
+    renewalDate: policy.renewalDate,
+    premium: policy.premium,
+    lineOfBusiness: policy.lineOfBusiness,
+    terms: terms.map((term) => ({
+      id: term.id,
+      role: term.role,
+      effective: term.termEffective,
+      expiration: term.termExpiration,
+      premium: term.premium,
+    })),
+  }).days;
   const showCompareTerms = showPolicyCompareTerms({
     inForce,
     renewalAgreed: showRenewalAgreed,
+    daysUntilRenewal: renewalDays,
   });
 
   return (
@@ -233,9 +250,6 @@ export function PolicyOverviewTab({
         <div className="ff-links-renewal-copy space-y-3">
           <div className="ff-links-renewal-heading">
             <h2 className="text-base font-semibold text-navy">Links & renewal</h2>
-            {showRenewalAgreed ? (
-              <CompareTermsLink policyId={policy.id} persistent />
-            ) : null}
           </div>
           <p className="text-sm text-muted-foreground" data-ff-policy-renewal-status="">
             Renewal status · {renewalLine}
@@ -255,10 +269,10 @@ export function PolicyOverviewTab({
           {deal ? (
             <RecordLink href={`/deals/${deal.id}?fromPolicy=${policy.id}`}>Deal {deal.title}</RecordLink>
           ) : null}
-          {showCompareTerms && inForce && !showRenewalAgreed ? (
-            <CompareTermsLink policyId={policy.id} />
+          {showCompareTerms ? (
+            <CompareTermsLink policyId={policy.id} persistent={Boolean(renewalHandled)} />
           ) : null}
-            {inForce ? (
+            {inForce && !renewalHandled ? (
               <span className="ff-links-renewal-staying">
                 <ClientStayingButton policyId={policy.id} renewalDate={stayingDate} size="sm" />
               </span>

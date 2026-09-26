@@ -1681,6 +1681,13 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   /* 12px past the button; the tilt leaves about a 10px visible gap. */
   left: calc(anchor(right) + 12px);
 }
+/* After Client staying is pushed the button is gone. Keep the stamp in the corner, off Compare. */
+[data-ff-policy-links-renewal]:has([data-ff-renewal-agreed-stamp]):not(:has(.ff-links-renewal-staying)) .ff-renewal-agreed-stamp {
+  top: 0.45rem;
+  right: 0.45rem;
+  left: auto;
+  transform: none;
+}
 [data-ff-renewal-agreed-stamp] .ff-deal-status-stamp {
   max-width: none;
 }
