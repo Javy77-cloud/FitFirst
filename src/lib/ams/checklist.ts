@@ -8,6 +8,10 @@ import {
 import { deskNow } from "@/lib/home/as-of";
 import { daysUntilExpiration, expirationDay } from "./renewals";
 import {
+  checklistRowAttachDocType,
+  checklistRowHasFile,
+} from "./checklist-uploads";
+import {
   CHECKLIST_CHECK_KEYS_BY_LOB,
   CHECKLIST_DOC_KEYS_BY_LOB,
   resolveChecklistLob,
@@ -41,6 +45,10 @@ export type ChecklistItem = {
   toggleable: boolean;
   checkId?: string | null;
   taskId?: string | null;
+  /** Policy Documents type. Set only on upload-backed rows. */
+  attachDocType?: string | null;
+  /** True when a matching file is attached. "On file" vs schedule "Complete". */
+  onFile?: boolean;
 };
 
 export type ServicingChecklist = {
@@ -50,22 +58,8 @@ export type ServicingChecklist = {
   lobFamily: ChecklistLobFamily | "classic";
 };
 
-/** Issued mint often stores current_policy / dec before policy_dec retag. */
-const DEC_TYPES = new Set([
-  "policy_dec",
-  "policy_complete",
-  "current_policy",
-  "dec",
-  "declaration",
-  "policy",
-]);
-const ID_TYPES = new Set(["policy_id", "id_card", "auto_id_card"]);
-const AOR_TYPES = new Set(["aor"]);
-
 export function hasServicingDoc(files: ServicingFile[], key: ServicingDocKey): boolean {
-  const types =
-    key === "dec" ? DEC_TYPES : key === "id_card" ? ID_TYPES : AOR_TYPES;
-  return files.some((file) => types.has(String(file.docType ?? "").toLowerCase()));
+  return checklistRowHasFile(files, key);
 }
 
 /** Optional packets — never auto-required; never block policy completion. */
@@ -133,13 +127,31 @@ export function servicingTaskBody(itemKey: ServicingCheckKey, policyNumber: stri
   return `${SERVICING_CHECK_LABELS[itemKey]} is incomplete on ${policyNumber}. In-desk task only — do not email.`;
 }
 
+function decChecklistItem(files: ServicingFile[]): ChecklistItem {
+  const onFile = hasServicingDoc(files, "dec");
+  return {
+    key: "dec",
+    label: SERVICING_DOC_LABELS.dec,
+    ok: onFile,
+    onFile,
+    attachDocType: checklistRowAttachDocType("dec"),
+    detail: onFile
+      ? "Issued declaration page or complete policy is on this record."
+      : "Upload the issued declaration page on this Policy — shopping decs stay on the Deal.",
+    toggleable: false,
+  };
+}
+
 function docItem(key: ServicingDocKey, files: ServicingFile[]): ChecklistItem {
-  const ok = hasServicingDoc(files, key);
+  if (key === "dec") return decChecklistItem(files);
+  const onFile = hasServicingDoc(files, key);
   return {
     key,
     label: SERVICING_DOC_LABELS[key],
-    ok,
-    detail: ok
+    ok: onFile,
+    onFile,
+    attachDocType: checklistRowAttachDocType(key),
+    detail: onFile
       ? "Issued packet is on this record."
       : "Upload on this Policy — shopping docs stay on the Deal.",
     toggleable: false,
@@ -150,24 +162,36 @@ function renewalItem(
   checks: ServicingCheck[] | undefined,
   expirationDate: Date | string | null | undefined,
   asOf: Date,
+  files: ServicingFile[],
 ): ChecklistItem {
   const exp = expirationDay(expirationDate);
   const days = exp ? daysUntilExpiration(exp, asOf) : null;
   const renewalDocsDue = days != null && days >= 0 && days <= 90;
   const renewalCheck = checkByKey(checks, "renewal_docs");
+  const onFile = checklistRowHasFile(files, "renewal_docs");
+  const notDue = days != null && !renewalDocsDue;
+  let detail: string;
+  if (onFile && days == null) {
+    detail = "Renewal docs are on file. No expiration on this Policy.";
+  } else if (onFile && renewalDocsDue) {
+    detail = `Renewal docs are on file. Expires in ${days} days.`;
+  } else if (onFile) {
+    detail = `Renewal docs are on file. Expires ${formatDay(exp)}.`;
+  } else if (days == null) {
+    detail = "No expiration on this Policy.";
+  } else if (!renewalDocsDue) {
+    detail = `Not in the 90-day window. Expires ${formatDay(exp)}.`;
+  } else {
+    detail = `Due — expires in ${days} days (${formatDay(exp)}).`;
+  }
   return {
     key: "renewal_docs",
     label: SERVICING_CHECK_LABELS.renewal_docs,
-    ok: !renewalDocsDue ? (days == null ? false : true) : renewalCheck?.status === "complete",
-    detail:
-      days == null
-        ? "No expiration on this Policy."
-        : !renewalDocsDue
-          ? `Not in the 90-day window. Expires ${formatDay(exp)}.`
-          : renewalCheck?.status === "complete"
-            ? `Renewal packet complete. Expires in ${days} days.`
-            : `Due — expires in ${days} days (${formatDay(exp)}).`,
-    toggleable: true,
+    ok: onFile || notDue,
+    onFile,
+    attachDocType: checklistRowAttachDocType("renewal_docs"),
+    detail,
+    toggleable: false,
     checkId: renewalCheck?.id ?? null,
     taskId: renewalCheck?.taskId ?? null,
   };
@@ -179,54 +203,53 @@ function checkItem(
   files: ServicingFile[],
 ): ChecklistItem {
   if (key === "renewal_docs") {
-    // caller should use renewalItem
+    return renewalItem(checks, null, deskNow(), files);
+  }
+  const attachDocType = checklistRowAttachDocType(key);
+  const row = checkByKey(checks, key);
+  if (attachDocType) {
+    const onFile = checklistRowHasFile(files, key);
+    const emptyHints: Partial<Record<ServicingCheckKey, string>> = {
+      id_cards: "No ID cards on this Policy yet.",
+      inspection: "Inspection is not on file.",
+      mortgagee: "Mortgagee endorsement is not on file.",
+      coi: "Certificate of insurance is not on file.",
+      ai_endorsements: "Additional insured endorsement is not on file.",
+    };
+    const doneHints: Partial<Record<ServicingCheckKey, string>> = {
+      id_cards: "ID card file is attached.",
+      inspection: "Inspection is on file.",
+      mortgagee: "Mortgagee endorsement is on file.",
+      coi: "Certificate of insurance is on file.",
+      ai_endorsements: "Additional insured endorsement is on file.",
+    };
     return {
       key,
       label: SERVICING_CHECK_LABELS[key],
-      ok: false,
-      detail: "",
-      toggleable: true,
+      ok: onFile,
+      onFile,
+      attachDocType,
+      detail: onFile
+        ? doneHints[key] ?? "Document is on file."
+        : emptyHints[key] ?? "Not on file.",
+      toggleable: false,
+      checkId: row?.id ?? null,
+      taskId: row?.taskId ?? null,
     };
   }
-  if (key === "id_cards") {
-    const idOnFile = hasServicingDoc(files, "id_card");
-    const idCheck = checkByKey(checks, "id_cards");
-    return {
-      key: "id_cards",
-      label: SERVICING_CHECK_LABELS.id_cards,
-      ok: idOnFile || idCheck?.status === "complete",
-      detail: idOnFile
-        ? "ID card file is attached."
-        : idCheck?.status === "complete"
-          ? "Marked complete on the desk."
-          : "No ID cards on this Policy yet.",
-      toggleable: true,
-      checkId: idCheck?.id ?? null,
-      taskId: idCheck?.taskId ?? null,
-    };
-  }
-  const row = checkByKey(checks, key);
   const emptyHints: Partial<Record<ServicingCheckKey, string>> = {
-    inspection: "Inspection not on file. Mark complete when the report lands.",
-    mortgagee: "Mortgagee clause still open. File the endorsement when the lender packet is ready.",
     roof_docs: "Roof docs not on file yet.",
     beneficiary: "Beneficiary not confirmed. Link a contact when the insured names one.",
     medical_exam: "Medical exam not marked complete.",
     underwriting: "Underwriting packet still open.",
-    coi: "Certificate of insurance not on file.",
     loss_runs: "Loss runs not collected yet.",
-    ai_endorsements: "Additional insured endorsements still open.",
   };
   const doneHints: Partial<Record<ServicingCheckKey, string>> = {
-    inspection: "Inspection marked complete.",
-    mortgagee: "Mortgagee / additional interest is current.",
     roof_docs: "Roof docs marked complete.",
     beneficiary: "Beneficiary marked complete.",
     medical_exam: "Medical exam marked complete.",
     underwriting: "Underwriting marked complete.",
-    coi: "COI marked complete.",
     loss_runs: "Loss runs marked complete.",
-    ai_endorsements: "AI endorsements marked complete.",
   };
   return {
     key,
@@ -253,7 +276,7 @@ function buildClassicChecklist(input: {
   const items: ChecklistItem[] = [
     docItem("dec", input.files),
     checkItem("id_cards", input.checks, input.files),
-    renewalItem(input.checks, input.expirationDate, input.asOf),
+    renewalItem(input.checks, input.expirationDate, input.asOf, input.files),
     checkItem("inspection", input.checks, input.files),
     checkItem("mortgagee", input.checks, input.files),
     {
@@ -269,16 +292,6 @@ function buildClassicChecklist(input: {
       taskId: input.nextTask?.id ?? null,
     },
   ];
-  // Preserve classic dec wording from WAVE 1
-  items[0] = {
-    key: "dec",
-    label: SERVICING_DOC_LABELS.dec,
-    ok: hasServicingDoc(input.files, "dec"),
-    detail: hasServicingDoc(input.files, "dec")
-      ? "Issued declaration page or complete policy is on this record."
-      : "Upload the issued declaration page on this Policy — shopping decs stay on the Deal.",
-    toggleable: false,
-  };
   return {
     items,
     readyCount: items.filter((item) => item.ok).length,
@@ -306,24 +319,12 @@ export function buildServicingChecklist(input: {
   const items: ChecklistItem[] = [];
 
   for (const key of docKeys) {
-    if (key === "dec") {
-      items.push({
-        key: "dec",
-        label: SERVICING_DOC_LABELS.dec,
-        ok: hasServicingDoc(input.files, "dec"),
-        detail: hasServicingDoc(input.files, "dec")
-          ? "Issued declaration page or complete policy is on this record."
-          : "Upload the issued declaration page on this Policy — shopping decs stay on the Deal.",
-        toggleable: false,
-      });
-    } else {
-      items.push(docItem(key, input.files));
-    }
+    items.push(docItem(key, input.files));
   }
 
   for (const key of checkKeys) {
     if (key === "renewal_docs") {
-      items.push(renewalItem(input.checks, input.expirationDate, asOf));
+      items.push(renewalItem(input.checks, input.expirationDate, asOf, input.files));
     } else {
       items.push(checkItem(key, input.checks, input.files));
     }

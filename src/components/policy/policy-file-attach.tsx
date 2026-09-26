@@ -2,13 +2,14 @@
 
 import { ProcessingLabel } from "@/components/desk/wait-hold";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   attachPolicyFiles,
   preparePolicyBlobUpload,
   savePolicyDocumentFromBlob,
 } from "@/app/actions/policy-files";
+import { AttachDocTypeConfirmDialog } from "@/components/policy/attach-doc-type-confirm";
 import { ChooseFiles } from "@/components/choose-files";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { DocumentVersions } from "@/components/documents/document-versions";
@@ -36,7 +37,7 @@ export function PolicyFileAttach({
   files: { id: string; filename: string; docType: string }[];
   versions?: DocumentVersionRow[];
   uploadMode?: { onVercel: boolean; directBlob: boolean };
-  /** From `?tab=documents&docType=` — AOR collect paths pass `aor`. */
+  /** From `?tab=documents&docType=` — checklist Documents links pass the row's attach type. */
   presetDocType?: string | null;
 }) {
   const router = useRouter();
@@ -45,11 +46,18 @@ export function PolicyFileAttach({
   const [rows, setRows] = useState<FileRow[]>([{ id: 1, category: startingCategory, file: null, pick: 0 }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmTypes, setConfirmTypes] = useState<string[]>([]);
+  const commitLock = useRef(false);
   const byDoc = groupVersionsByDocument(versions);
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function pendingRows() {
+    return rows.filter((row) => row.file);
+  }
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const pending = rows.filter((row) => row.file);
+    if (saving) return;
+    const pending = pendingRows();
     if (pending.length === 0) {
       setError("Choose a file to attach. Nothing was saved.");
       return;
@@ -68,6 +76,15 @@ export function PolicyFileAttach({
         return;
       }
     }
+    setError(null);
+    setConfirmTypes([...new Set(pending.map((row) => row.category))]);
+  }
+
+  async function commitAttach() {
+    const pending = pendingRows();
+    if (pending.length === 0 || commitLock.current) return;
+    commitLock.current = true;
+    setConfirmTypes([]);
     setError(null);
     setSaving(true);
     try {
@@ -136,12 +153,21 @@ export function PolicyFileAttach({
       flashAction(saved === 1 ? "Document attached" : `${saved} documents attached`);
       router.refresh();
     } finally {
+      commitLock.current = false;
       setSaving(false);
     }
   }
 
   return (
     <section className="space-y-3">
+      <AttachDocTypeConfirmDialog
+        open={confirmTypes.length > 0}
+        docTypes={confirmTypes}
+        onCancel={() => setConfirmTypes([])}
+        onConfirm={() => {
+          void commitAttach();
+        }}
+      />
       <div>
         <h3 className="text-sm font-semibold text-navy">Attachments</h3>
 
@@ -209,7 +235,7 @@ export function PolicyFileAttach({
           >
             + Add another
           </Button>
-          <Button type="submit" size="sm" disabled={saving}>
+          <Button type="submit" size="sm" disabled={saving} data-ff-policy-file-attach-submit="">
             {saving ? <ProcessingLabel>Attaching…</ProcessingLabel> : "Attach files"}
           </Button>
         </div>

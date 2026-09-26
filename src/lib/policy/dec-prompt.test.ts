@@ -37,6 +37,9 @@ describe("declaration create-policy prompt", () => {
     expect(isDeclarationDocType("photo")).toBe(false);
     expect(isDeclarationDocType("aor")).toBe(false);
     expect(isDeclarationDocType("AOR")).toBe(false);
+    expect(isDeclarationDocType("renewal_docs")).toBe(false);
+    expect(isDeclarationDocType("inspection")).toBe(false);
+    expect(isDeclarationDocType("endorsement")).toBe(false);
     expect(coerceDeclarationDocType("declaration")).toBe("dec");
 
     expect(shouldPromptCreatePolicy({ docType: "dec", looksLikeDec: true })).toBe(true);

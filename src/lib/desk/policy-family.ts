@@ -49,6 +49,7 @@ export const DOCUMENT_CATEGORIES = [
   { value: "aor", label: "AOR packet" },
   { value: "coi", label: "COI" },
   { value: "inspection", label: "Inspection" },
+  { value: "renewal_docs", label: "Renewal docs" },
 ] as const;
 
 /** @deprecated alias — prefer DOCUMENT_CATEGORIES */

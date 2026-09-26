@@ -35,7 +35,10 @@ export const CHECKLIST_DOC_KEYS_BY_LOB: Record<ChecklistLobFamily, ServicingDocK
   default: ["dec"],
 };
 
-/** Toggleable desk checks per LOB. */
+/**
+ * Desk checks per LOB. Upload-backed keys (renewal, inspection, mortgagee, ID,
+ * COI, AI endorsements) derive status from files. The rest stay manual.
+ */
 export const CHECKLIST_CHECK_KEYS_BY_LOB: Record<ChecklistLobFamily, ServicingCheckKey[]> = {
   auto: ["id_cards", "renewal_docs", "inspection", "mortgagee"],
   homeowners: ["mortgagee", "inspection", "roof_docs", "renewal_docs"],
