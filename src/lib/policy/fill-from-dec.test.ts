@@ -6,7 +6,9 @@ import { ProcessingLabel, WaitHold } from "@/components/desk/wait-hold";
 import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
 import { policyInformationFields } from "@/lib/desk/policy-information";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
-import { mapGeminiJsonToFields, sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
+import { fillableGeminiFields, mapGeminiJsonToFields, sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
+import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { autoCoverageExtras, autoCoverageSchedule, autoVehicleCoverageBlocks } from "@/lib/policy/auto-coverage";
 import {
   buildPolicyFillAuditInsert,
@@ -725,6 +727,140 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.construction).toBe("Masonry");
     expect(proposed.yearBuilt).toBe("2024");
     expect(proposed.formType).toBe("HO3");
+  });
+
+  it("fills Southern Oak DP3 rating labels onto desk fields and leaves territory and exclude-wind unmapped", () => {
+    const printed = {
+      construction: "Masonry",
+      occupied_by: "Tenant",
+      bceg_grade: "Ungraded",
+      protection_class: "02",
+      number_of_families: "1",
+      automatic_sprinklers: "None",
+      roof_shape: "Gable",
+      roof_material: "Shingles-Asphalt",
+      roof_age: "5 years",
+      year_built: "1980",
+      usage_type: "Rental",
+      territory: "034-13",
+      exclude_wind_coverage: "No",
+      fire_alarm: "None",
+      opening_protection: "Class A",
+      roof_year: "2021",
+    };
+    const mapped = mapGeminiJsonToFields(printed, "dec", "home");
+    const unmapped = mapped.unmappedLabels.map((label) => label.sourceLabel).sort();
+    expect(unmapped).toEqual(["exclude_wind_coverage", "territory"]);
+
+    const byKey = Object.fromEntries(mapped.fields.map((field) => [field.fieldKey, field.normalizedValue]));
+    expect(byKey.construction).toBe("Masonry");
+    expect(byKey.occupancy).toBe("Tenant");
+    expect(byKey.usage).toBe("Rental");
+    expect(byKey.year_built).toBe("1980");
+    expect(byKey.roof_year).toBe("2021");
+    expect(byKey.number_of_families).toBe("1");
+    expect(byKey.bceg_grade).toBe("Ungraded");
+    expect(byKey.sprinkler).toBe("None");
+    expect(byKey.fire_alarm).toBe("None");
+    expect(byKey.opening_protection).toBe("A");
+    expect(byKey.roof_shape).toBe("C");
+    expect(byKey.roof_covering).toBe("Shingles-Asphalt");
+
+    for (const product of ["landlord", "homeowners"] as const) {
+      const applied = applyExtractedToSheet(
+        "home",
+        emptySheetValues("home", product),
+        fillableGeminiFields(mapped.fields),
+        { docType: "dec" },
+      );
+      expect(applied.values.occupancy?.value).toBe("Tenant");
+      expect(applied.values.usage?.value).toBe("Rental");
+      expect(applied.values.year_built?.value).toBe("1980");
+      expect(applied.values.construction?.value).toBe("Masonry");
+      expect(applied.values.number_of_families?.value).toBe("1");
+      expect(applied.values.protection_class?.value).toBe("2");
+      expect(applied.values.bceg_grade?.value).toBe("Ungraded");
+      expect(applied.values.sprinkler?.value).toBe("no");
+      expect(applied.values.fire_alarm?.value).toBe("no");
+      expect(applied.values.roof_year?.value).toBe("2021");
+      expect(applied.values.roof_covering?.value).toBe("Shingles-Asphalt");
+      expect(applied.values.roof_shape?.value).toBe("other");
+      expect(applied.values.opening_protection?.value).toBe("Hurricane Protection");
+      expect(applied.filledKeys).not.toContain("territory");
+      expect(applied.values.territory).toBeUndefined();
+    }
+
+    for (const lineOfBusiness of ["DP3", "DP1", "HO3"]) {
+      const proposed = proposeFillFromDec({
+        family: "homeowners",
+        rows: rows({ ...printed, form: lineOfBusiness }),
+      });
+      expect(proposed.occupancy).toBe("Tenant");
+      expect(proposed.usage).toBe("Rental");
+      expect(proposed.yearBuilt).toBe("1980");
+      expect(proposed.construction).toBe("Masonry");
+      expect(proposed.families).toBe("1");
+      expect(proposed.protectionClass).toBe("2");
+      expect(proposed.bceg).toBe("Ungraded");
+      expect(proposed.sprinkler).toBe("No");
+      expect(proposed.fireAlarm).toBe("No");
+      expect(proposed.roofYear).toBe("2021");
+      expect(proposed.roofCovering).toBe("Shingles-Asphalt");
+      expect(proposed.roofShape).toBe("other");
+      expect(proposed.openingProtection).toBe("Hurricane Protection");
+      expect(proposed.formType).toBe(lineOfBusiness);
+      expect(proposed).not.toHaveProperty("territory");
+      expect(proposed).not.toHaveProperty("excludeWind");
+
+      const patch = groupAppliedFill(proposed, Object.keys(proposed));
+      expect(patch.risk.occupancy).toBe("Tenant");
+      expect(patch.risk.yearBuilt).toBe(1980);
+      expect(patch.risk.construction).toBe("Masonry");
+      expect(patch.risk.protectionClass).toBe("2");
+      expect(patch.risk.roofYear).toBe(2021);
+      expect(patch.risk.roofCovering).toBe("Shingles-Asphalt");
+      expect(patch.risk.openingProtection).toBe("Hurricane Protection");
+      expect(patch.protection.bceg_grade).toBe("Ungraded");
+      expect(patch.protection.sprinkler).toBe("No");
+      expect(patch.protection.fire_alarm).toBe("No");
+      expect(patch.protection.roof_shape).toBe("other");
+      expect(patch.protection.opening_protection).toBe("Hurricane Protection");
+      expect(patch.coverageLimits.usage).toBe("Rental");
+      expect(patch.coverageLimits.number_of_families).toBe("1");
+    }
+  });
+
+  it("prefers a printed Roof Year over Roof Age and still turns an age into a year", () => {
+    const both = mapGeminiJsonToFields(
+      { roof_age: { value: "10 years", confidence: 0.95 }, roof_year: { value: "2021", confidence: 0.95 } },
+      "dec",
+      "home",
+    );
+    expect(both.fields.find((field) => field.fieldKey === "roof_year")?.normalizedValue).toBe("2021");
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ roof_age: "10 years", roof_year: "2021" }),
+    });
+    expect(proposed.roofYear).toBe("2021");
+    const ageOnly = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ roof_age: "5 years" }),
+    });
+    expect(ageOnly.roofYear).toBe(String(new Date().getUTCFullYear() - 5));
+  });
+
+  it("does not invent occupancy from Usage Type when Occupied by is absent", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        form: "DP3",
+        usage_type: "Rental",
+        construction: "Masonry",
+      }),
+    });
+    expect(proposed.usage).toBe("Rental");
+    expect(proposed.occupancy).toBeUndefined();
+    expect(proposed.construction).toBe("Masonry");
   });
 
   it("keeps an explicit occupancy ahead of type of residence", () => {

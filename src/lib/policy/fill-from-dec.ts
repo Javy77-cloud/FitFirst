@@ -12,6 +12,14 @@ import {
   normalizeMintFieldKey,
 } from "@/lib/policy/mint-gate";
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
+import {
+  normalizeBcegGrade,
+  normalizeOpeningProtection,
+  normalizeProtectionClass,
+  normalizeRoofCovering,
+  normalizeRoofShape,
+  normalizeUsage,
+} from "@/lib/quote-sheet/sheet-defaults";
 import { splitPremisesAddress, type PremisesAddressParts } from "@/lib/policy/premises";
 import { floodFormCodeFromText, isFloodPolicy } from "@/lib/policy/flood-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
@@ -126,6 +134,7 @@ export type AppliedFillPatch = {
     protectionClass?: string;
     roofYear?: number;
     roofCovering?: string;
+    openingProtection?: string;
     coverageA?: number;
     address1?: string;
     city?: string;
@@ -285,6 +294,15 @@ function yesNo(raw: string): string {
   return raw.trim();
 }
 
+/** Rating Information alarms. Printed None is the desk No. */
+function ratingAlarm(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  if (!value) return "";
+  if (/^(y|yes|true)$/.test(value)) return "Yes";
+  if (/^(n|no|false|none|n\/a|na)$/.test(value)) return "No";
+  return raw.trim();
+}
+
 function moneyLabel(raw: string): string {
   const n = parseMoney(raw);
   if (n == null) return raw.trim();
@@ -337,10 +355,10 @@ function formatSinkhole(raw: string): string {
   return formatHomeDeductibleAmount(trimmed);
 }
 
-/** A credit line that only says Incl is not a burglar / fire / sprinkler answer. */
+/** A credit line that only says Incl is not a burglar / fire / sprinkler answer. Printed None is No. */
 function protectionYesNo(raw: string): string {
   if (/^incl\.?$/i.test(raw.trim()) || /^included$/i.test(raw.trim())) return "";
-  return yesNo(raw);
+  return ratingAlarm(raw);
 }
 
 /**
@@ -607,18 +625,21 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   }
 
   put(out, "families", rawCell(rows, "number_of_families", "families"));
+  put(out, "usage", normalizeUsage(rawCell(rows, "usage", "usage_type")));
   put(
     out,
     "occupancy",
     ratingOccupancyValue(
-      occupancyUnlessEndorsement(rawCell(rows, "occupancy", "occupied")),
+      occupancyUnlessEndorsement(rawCell(rows, "occupancy", "occupied", "occupied_by")),
       rawCell(rows, "type_of_residence", "residence_type"),
     ),
   );
 
-  put(out, "protectionClass", rawCell(rows, "protection_class"));
+  put(out, "protectionClass", normalizeProtectionClass(rawCell(rows, "protection_class")));
   const bceg = rawCell(rows, "bceg_grade", "bceg");
-  if (bceg && !/^incl\.?$/i.test(bceg) && !/^included$/i.test(bceg)) put(out, "bceg", bceg);
+  if (bceg && !/^incl\.?$/i.test(bceg) && !/^included$/i.test(bceg)) {
+    put(out, "bceg", normalizeBcegGrade(bceg));
+  }
   put(out, "county", rawCell(rows, "county"));
   put(
     out,
@@ -632,7 +653,11 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   );
   put(out, "burglarAlarm", protectionYesNo(rawCell(rows, "burglar_alarm", "burglar")));
   put(out, "fireAlarm", protectionYesNo(rawCell(rows, "fire_alarm")));
-  put(out, "sprinkler", protectionYesNo(rawCell(rows, "sprinkler")));
+  put(
+    out,
+    "sprinkler",
+    protectionYesNo(rawCell(rows, "sprinkler", "automatic_sprinklers", "automatic_sprinkler")),
+  );
 
   const mortgagee = rawCell(rows, "mortgagee", "mortgagee_name");
   if (mortgagee && !isNoMortgageValue(mortgagee)) put(out, "mortgageeName", mortgagee);
@@ -841,24 +866,26 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
 
   const roofInstall = rawCell(rows, "date_of_roof_installation", "roof_install_date");
   put(out, "roofInstallDate", roofInstall);
+  const printedRoofYear = rawCell(
+    rows,
+    "roof_year",
+    "year_roof",
+    "year_of_roof",
+    "year_of_roof_updated",
+    "year_roof_updated",
+  );
   const roofYear =
-    parsePropertyYear(
-      rawCell(
-        rows,
-        "roof_year",
-        "roof_age",
-        "year_roof",
-        "year_of_roof",
-        "year_of_roof_updated",
-        "year_roof_updated",
-      ),
-    ) ?? parsePropertyYear(roofInstall);
+    parsePropertyYear(printedRoofYear) ??
+    parsePropertyYear(rawCell(rows, "roof_age")) ??
+    parsePropertyYear(roofInstall);
   if (roofYear) put(out, "roofYear", String(roofYear));
   put(
     out,
     "roofCovering",
-    rawCell(rows, "roof_material", "roof_covering", "dwelling_roofing_material"),
+    normalizeRoofCovering(rawCell(rows, "roof_material", "roof_covering", "dwelling_roofing_material")),
   );
+  put(out, "roofShape", normalizeRoofShape(rawCell(rows, "roof_shape")));
+  put(out, "openingProtection", normalizeOpeningProtection(rawCell(rows, "opening_protection")));
 
   const unitYear = parsePropertyYear(rawCell(rows, "unit_year", "mh_year"));
   if (unitYear) put(out, "unitYear", String(unitYear));
@@ -1432,6 +1459,7 @@ const LIMIT_KEYS: Record<string, string> = {
   months_occupied: "monthsOccupied",
   dwelling_type: "dwellingType",
   number_of_families: "families",
+  usage: "usage",
   dwelling_replacement_cost: "dwellingReplacementCost",
   personal_property_replacement_cost: "personalPropertyReplacementCost",
   theft: "theft",
@@ -1534,6 +1562,7 @@ export type FillSnapshotInput = {
     protectionClass?: string | null;
     roofYear?: number | null;
     roofCovering?: string | null;
+    openingProtection?: string | null;
   } | null;
   protection?: Record<string, string> | null;
   contact?: {
@@ -1614,6 +1643,8 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
   put(out, "protectionClass", risk?.protectionClass || input.protection?.protection_class);
   if (risk?.roofYear != null) put(out, "roofYear", String(risk.roofYear));
   put(out, "roofCovering", risk?.roofCovering || input.protection?.roof_covering);
+  put(out, "roofShape", input.protection?.roof_shape);
+  put(out, "openingProtection", risk?.openingProtection || input.protection?.opening_protection);
   put(out, "bceg", input.protection?.bceg_grade);
   put(out, "burglarAlarm", input.protection?.burglar_alarm);
   put(out, "fireAlarm", input.protection?.fire_alarm);
@@ -1730,6 +1761,13 @@ export function groupAppliedFill(
     patch.risk.roofCovering = roofCovering;
     patch.protection.roof_covering = roofCovering;
   }
+  const roofShape = take("roofShape");
+  if (roofShape) patch.protection.roof_shape = roofShape;
+  const openingProtection = take("openingProtection");
+  if (openingProtection) {
+    patch.risk.openingProtection = openingProtection;
+    patch.protection.opening_protection = openingProtection;
+  }
   const bceg = take("bceg");
   if (bceg) patch.protection.bceg_grade = bceg;
   const burglar = take("burglarAlarm");
@@ -1804,6 +1842,7 @@ export function groupAppliedFill(
     ["monthsOccupied", "months_occupied"],
     ["dwellingType", "dwelling_type"],
     ["families", "number_of_families"],
+    ["usage", "usage"],
     ["dwellingReplacementCost", "dwelling_replacement_cost"],
     ["personalPropertyReplacementCost", "personal_property_replacement_cost"],
     ["theft", "theft"],

@@ -112,6 +112,42 @@ describe("LOB overview templates", () => {
     expect(html).not.toContain("1fr");
   });
 
+  it("shows Southern Oak rating facts on dwelling and keeps an empty home compact", () => {
+    const filled = buildLobOverviewSections({
+      policyId: "soyla",
+      lineOfBusiness: "DP3",
+      coverageA: 250000,
+      yearBuilt: 1980,
+      roofYear: 2021,
+      construction: "Masonry",
+      occupancy: "Tenant",
+      usage: "Rental",
+      families: "1",
+      protectionClass: "02",
+      bceg: "Ungraded",
+      fireAlarm: "None",
+      sprinkler: "no",
+    });
+    const dwelling = filled.find((section) => section.id === "dwelling")?.fields ?? [];
+    expect(dwelling.find((field) => field.key === "occupancy")?.value).toBe("Tenant");
+    expect(dwelling.find((field) => field.key === "usage")?.value).toBe("Rental");
+    expect(dwelling.find((field) => field.key === "protectionClass")?.value).toBe("2");
+    expect(dwelling.find((field) => field.key === "bceg")?.value).toBe("Ungraded");
+    expect(dwelling.find((field) => field.key === "fireAlarm")?.value).toBe("No");
+    expect(dwelling.find((field) => field.key === "sprinkler")?.value).toBe("No");
+    expect(dwelling.find((field) => field.key === "families")?.value).toBe("1");
+    expect(dwelling.find((field) => field.key === "roofYear")?.value).toBe("2021");
+    expect(dwelling.some((field) => /territory|exclude wind/i.test(field.label))).toBe(false);
+
+    const empty = buildLobOverviewSections({
+      policyId: "p1",
+      lineOfBusiness: "HO3",
+      yearBuilt: 1992,
+    });
+    const compact = empty.find((section) => section.id === "dwelling")?.fields ?? [];
+    expect(compact.map((field) => field.key)).toEqual(["coverageA", "yearBuilt", "construction", "occupancy"]);
+  });
+
   it("normalizes Owner Occupied and Tenant into the occupancy slot", () => {
     const fromResidence = buildLobOverviewSections({
       policyId: "p1",

@@ -23,6 +23,7 @@ import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
 import {
   normalizeAutoDollarLimit,
   normalizeAutoSplitLimit,
+  normalizeBcegGrade,
   normalizeBuildingCode,
   normalizeClaims5yr,
   normalizeDistanceToHydrant,
@@ -369,6 +370,7 @@ export function applyExtractedToSheet(
     if (key === "plan_type") nextValue = normalizeHealthPlanType(nextValue) || nextValue;
     if (key === "tobacco_status") nextValue = normalizeTobaccoStatus(nextValue) || nextValue;
     if (key === "protection_class") nextValue = normalizeProtectionClass(nextValue);
+    if (key === "bceg_grade") nextValue = normalizeBcegGrade(nextValue);
     if (key === "building_code") nextValue = normalizeBuildingCode(nextValue);
     if (key === "roof_covering") nextValue = normalizeRoofCovering(nextValue);
     if (key === "roof_shape") nextValue = normalizeRoofShape(nextValue);
