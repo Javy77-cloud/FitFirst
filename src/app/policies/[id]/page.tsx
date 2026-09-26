@@ -150,6 +150,8 @@ export default async function PolicyDetailPage({
     ? `${contact.firstName} ${contact.lastName}`
     : account?.name ?? policy.policyNumber;
   const partyName = contact ? (normalizeNamedInsured(partyNameRaw) ?? partyNameRaw) : partyNameRaw;
+  const printedInsurer = policy.coverageLimits?.insurer_name?.trim() || null;
+  const overviewCarrier = carrier?.name?.trim() || printedInsurer;
   const asOf = deskNow();
   const termView = resolveCurrentTerm(
     {
@@ -412,7 +414,7 @@ export default async function PolicyDetailPage({
               policyFacts={{
                 number: policy.policyNumber,
                 status: deskTermBandLabel(termView.band, policy.status),
-                carrier: carrier?.name ?? "Carrier TBD",
+                carrier: overviewCarrier ?? "Carrier TBD",
                 effective: formatDay(termView.bookEffective ?? policy.effectiveDate),
                 expiration: formatDay(termView.bookExpiration ?? policy.expirationDate),
                 premium: formatMoney(termView.current?.premium ?? policy.premium),
@@ -426,7 +428,7 @@ export default async function PolicyDetailPage({
             policy={policy}
             declaration={declaration}
             carrierId={carrier?.id ?? policy.carrierId}
-            carrierName={carrier?.name}
+            carrierName={overviewCarrier}
             contact={contact}
             account={account}
             deal={deal}

@@ -1,6 +1,7 @@
 /**
  * Map one declaration extract onto a policy's Overview + Coverage (HO/DP),
- * Flood rating + Building/Contents, or Vehicles + Coverage (Auto).
+ * Flood rating + Building/Contents, Vehicles + Coverage (Auto), or one shared
+ * commercial schedule (Workers' Comp, General Liability, Professional Liability).
  * Does not touch deal quote_sheets.
  */
 import { monthsBetweenTermDates } from "@/lib/documents/document-labels";
@@ -13,6 +14,12 @@ import {
 } from "@/lib/policy/mint-gate";
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import { splitPremisesAddress, type PremisesAddressParts } from "@/lib/policy/premises";
+import {
+  COMMERCIAL_FILL_PAIRS,
+  commercialExtractHasSchedule,
+  commercialFieldsFromRows,
+  type CommercialExtractRow,
+} from "@/lib/policy/commercial-coverage";
 import { floodFormCodeFromText, isFloodPolicy } from "@/lib/policy/flood-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { ratingOccupancyValue } from "@/lib/policy/rating-occupancy";
@@ -114,6 +121,7 @@ export type AppliedFillPatch = {
     policyType?: string;
     policySubType?: string;
     premium?: string;
+    policyNumber?: string;
     effectiveDate?: Date;
     expirationDate?: Date;
     termMonths?: number;
@@ -222,11 +230,12 @@ export function fillFamilyForPolicy(input: {
   insuranceType?: string | null;
   policySubType?: string | null;
   formType?: string | null;
-}): "homeowners" | "auto" | "flood" | "other" {
+}): "homeowners" | "auto" | "flood" | "commercial" | "other" {
   const family = resolveLobOverviewFamily(input);
   if (family === "flood" || isFloodPolicy(input)) return "flood";
   if (family === "auto") return "auto";
   if (family === "homeowners") return "homeowners";
+  if (family === "wc" || family === "gl") return "commercial";
   return "other";
 }
 
@@ -1352,12 +1361,40 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
   return out;
 }
 
+function asCommercialRows(rows: readonly MintGeminiRow[]): CommercialExtractRow[] {
+  return rows.map((row) => ({
+    fieldKey: row.fieldKey,
+    normalizedValue: row.normalizedValue,
+    rawValue: row.rawValue,
+  }));
+}
+
+/** Dates, policy number, insurer, named insured, and the shared WC / GL / E&O schedule. */
+function proposeCommercial(rows: readonly MintGeminiRow[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  proposeTermDates(out, rows);
+  const extracted = commercialFieldsFromRows(asCommercialRows(rows));
+  put(out, "policyNumber", extracted.policyNumber);
+  put(out, "insurerName", extracted.insurerName);
+  put(out, "namedInsured", extracted.namedInsured);
+  const premiumAmount = parseMoney(extracted.premiumRaw);
+  if (premiumAmount != null) put(out, "premium", premiumAmount.toFixed(2));
+  for (const [fieldKey, limitKey] of COMMERCIAL_FILL_PAIRS) {
+    put(out, fieldKey, extracted.limits[limitKey]);
+  }
+  return out;
+}
+
 export function proposeFillFromDec(input: {
-  family: "homeowners" | "auto" | "flood" | "other";
+  family: "homeowners" | "auto" | "flood" | "commercial" | "other";
   rows: readonly MintGeminiRow[];
 }): Record<string, string> {
   if (input.family === "flood") return proposeFlood(input.rows);
+  if (input.family === "commercial") return proposeCommercial(input.rows);
   if (input.family === "other" && looksLikeFloodExtract(input.rows)) return proposeFlood(input.rows);
+  if (input.family === "other" && commercialExtractHasSchedule(asCommercialRows(input.rows))) {
+    return proposeCommercial(input.rows);
+  }
   const sniffed =
     input.family === "other"
       ? rawCell(input.rows, "vin", "vehicle_year", "vehicle_2_vin")
@@ -1508,6 +1545,7 @@ const LIMIT_KEYS: Record<string, string> = {
   flood_icc_premium: "floodIccPremium",
   flood_debris: "floodDebris",
   flood_debris_premium: "floodDebrisPremium",
+  ...Object.fromEntries(COMMERCIAL_FILL_PAIRS.map(([fieldKey, limitKey]) => [limitKey, fieldKey])),
 };
 
 export type FillSnapshotInput = {
@@ -1521,6 +1559,7 @@ export type FillSnapshotInput = {
     policyType?: string | null;
     policySubType?: string | null;
     premium?: string | number | null;
+    policyNumber?: string | null;
     coverageLimits?: Record<string, string> | null;
     effectiveDate?: Date | string | null;
     expirationDate?: Date | string | null;
@@ -1583,6 +1622,7 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
   if (policy?.coverageA != null && Number.isFinite(policy.coverageA)) {
     put(out, "coverageA", String(policy.coverageA));
   }
+  put(out, "policyNumber", policy?.policyNumber);
   put(out, "formType", policy?.formType);
   put(out, "policyType", policy?.policyType);
   put(out, "policySubType", policy?.policySubType);
@@ -1753,6 +1793,8 @@ export function groupAppliedFill(
   if (policyType) patch.policy.policyType = policyType;
   const policySubType = take("policySubType");
   if (policySubType) patch.policy.policySubType = policySubType;
+  const policyNumber = take("policyNumber");
+  if (policyNumber) patch.policy.policyNumber = policyNumber;
   const effectiveDate = take("effectiveDate");
   const expirationDate = take("expirationDate");
   const effective = effectiveDate ? noonUtcFromBusinessDate(effectiveDate) : null;
@@ -1880,6 +1922,7 @@ export function groupAppliedFill(
     ["floodIccPremium", "flood_icc_premium"],
     ["floodDebris", "flood_debris"],
     ["floodDebrisPremium", "flood_debris_premium"],
+    ...COMMERCIAL_FILL_PAIRS,
   ];
   for (const [fieldKey, limitKey] of limitPairs) {
     const value = take(fieldKey);

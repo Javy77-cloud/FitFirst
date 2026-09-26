@@ -15,6 +15,7 @@ import {
   liabilityRetroDate,
 } from "@/lib/policy/eo";
 import { isResidentialHomeForm } from "@/lib/quote-sheet/home-inspections";
+import { commercialLimitsSummary } from "@/lib/policy/commercial-coverage";
 import { isFloodPolicy } from "@/lib/policy/flood-coverage";
 
 export type LobOverviewFamily =
@@ -370,11 +371,15 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
   }
 
   if (family === "wc") {
+    const wcLimits = commercialLimitsSummary(input.coverageLimits, "wc");
+    const namedInsured = limit(input.coverageLimits, "named_insured");
     return [
       {
         id: "wc",
         title: "Workers comp",
         fields: [
+          ...(wcLimits ? [field("limits", "Limits", wcLimits)] : []),
+          ...(namedInsured ? [field("namedInsured", "Named insured", namedInsured)] : []),
           field("classCodes", "Class codes", input.account?.wcClassCode, {
             hint: "Class codes not on the business yet.",
           }),
@@ -406,14 +411,22 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
           id: "gl",
           title: ERRORS_OMISSIONS_SHORT,
           fields: [
-            field("limits", "Limits", liabilityLimitText(input.coverageLimits), {
-              hint: "Liability limits not keyed yet.",
-            }),
+            field(
+              "limits",
+              "Limits",
+              commercialLimitsSummary(input.coverageLimits, "pl") || liabilityLimitText(input.coverageLimits),
+              {
+                hint: "Liability limits not keyed yet.",
+              },
+            ),
             field("deductible", "Deductible", liabilityDeductible(input.coverageLimits), {
               hint: "Deductible not on file.",
             }),
             ...(retro
               ? [field("retroDate", "Retro date", retro)]
+              : []),
+            ...(limit(input.coverageLimits, "pl_claims_made")
+              ? [field("claimsMade", "Claims-made", limit(input.coverageLimits, "pl_claims_made"))]
               : []),
           ],
         },
@@ -427,16 +440,17 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
           field(
             "limits",
             "Limits",
-            limit(
-              input.coverageLimits,
-              "generalAggregate",
-              "eachOccurrence",
-              "general_aggregate",
-              "each_occurrence",
-            ) ||
+            commercialLimitsSummary(input.coverageLimits, "gl") ||
+              limit(
+                input.coverageLimits,
+                "generalAggregate",
+                "eachOccurrence",
+                "general_aggregate",
+                "each_occurrence",
+              ) ||
               (input.coverageLimits
                 ? Object.entries(input.coverageLimits)
-                    .filter(([, v]) => v?.trim())
+                    .filter(([key, value]) => value?.trim() && key !== "insurer_name" && key !== "named_insured")
                     .map(([k, v]) => `${k}: ${v}`)
                     .join(" · ")
                 : null),

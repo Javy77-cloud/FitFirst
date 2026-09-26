@@ -393,11 +393,44 @@ export const GEMINI_FLOOD_EXTRACT_JSON_KEYS = [
   "debris_removal_premium",
 ] as const;
 
+/**
+ * One commercial list for Workers' Comp, General Liability, and a
+ * Professional Liability / E&O certificate. Not the HO3 Coverage A–F list.
+ */
+export const GEMINI_COMMERCIAL_EXTRACT_JSON_KEYS = [
+  "named_insured",
+  "policy_number",
+  "current_carrier",
+  "effective_date",
+  "expiration_date",
+  "premium",
+  "el_each_accident",
+  "el_disease_each_employee",
+  "el_disease_policy_limit",
+  "wc_per_statute",
+  "gl_general_aggregate",
+  "gl_products_completed_ops",
+  "gl_personal_advertising_injury",
+  "gl_each_occurrence",
+  "gl_damage_to_premises_rented",
+  "gl_medical_expenses",
+  "gl_deductible",
+  "pl_per_claim",
+  "pl_aggregate",
+  "pl_per_claim_deductible",
+  "pl_claims_made",
+] as const;
+
 export type GeminiExtractKey =
   | (typeof GEMINI_EXTRACT_JSON_KEYS)[number]
   | (typeof GEMINI_AUTO_EXTRACT_JSON_KEYS)[number]
   | (typeof GEMINI_LETTER_EXTRACT_JSON_KEYS)[number]
-  | (typeof GEMINI_FLOOD_EXTRACT_JSON_KEYS)[number];
+  | (typeof GEMINI_FLOOD_EXTRACT_JSON_KEYS)[number]
+  | (typeof GEMINI_COMMERCIAL_EXTRACT_JSON_KEYS)[number];
+
+function isCommercialGeminiLine(line: string): boolean {
+  return line === "workers_comp" || line === "general_liability" || line === "commercial";
+}
 
 export function isAgencyLetterGeminiDoc(docType?: string | null): boolean {
   const t = (docType ?? "").trim().toLowerCase();
@@ -419,6 +452,7 @@ export function geminiKeysForShopLine(shopLine?: string | null): readonly string
     return GEMINI_AUTO_EXTRACT_JSON_KEYS;
   }
   if (line === "flood") return GEMINI_FLOOD_EXTRACT_JSON_KEYS;
+  if (isCommercialGeminiLine(line)) return GEMINI_COMMERCIAL_EXTRACT_JSON_KEYS;
   return GEMINI_EXTRACT_JSON_KEYS;
 }
 
@@ -431,6 +465,45 @@ export function buildGeminiSystemPrompt(docType?: string | null, shopLine?: stri
   const kind = (docType ?? "").trim() || "insurance source document";
   const line = (shopLine ?? "").trim().toLowerCase();
   const keys = geminiKeysForExtract(docType, shopLine);
+  if (isCommercialGeminiLine(line)) {
+    return `You extract a commercial certificate or schedule onto one shared field list. This covers Workers Compensation / Employers Liability, General Liability, and Professional Liability / Errors and Omissions. It is not a homeowners HO3 policy and not a personal auto policy.
+
+Document type hint: ${kind}
+
+Rules:
+- Return ONLY a single JSON object. No markdown fences, no commentary.
+- Keys MUST be exactly from this list (omit unknown keys or set value null):
+  ${keys.join(", ")}
+- Each present key maps to an object: { "value": string|null, "confidence": number } where confidence is 0..1.
+- Extract ONLY what is printed. Never invent a limit, date, premium, class code, payroll, or experience mod. Leave a key null when that row is not on the page. A thin page stays thin.
+- Dates are the policy period only: Policy Effective / EFF, Policy Expiration / EXP, or From / To on a workers compensation information page. The certificate DATE in the corner is not effective_date. Keep dates as printed (05/06/2026 or 06/02/26).
+- policy_number is Policy Number / Policy No, kept as printed, including spaces (WC PC 924909-000, 83 WEC CD0BKN, NXTH4RCXPW-00-PL).
+- current_carrier is the insurer / writing company (Insurer A: Pie Casualty Insurance Company, Next Insurance US Company). The producer is not the carrier. On a workers compensation information page, the issuing company is the carrier when no separate insurer line is printed (The Hartford Business Service Center → The Hartford). Do not use the producer.
+- named_insured is the INSURED block (the business or person). Do not put the producer or the certificate holder there.
+- premium is the policy premium only when a premium is printed (Total Estimated Annual Premium on a workers compensation information page). Deposit premium and policy minimum premium are not coverage limits. Omit premium when the page has none. Do not invent 0. Never store that premium in an EL, GL, or E&O limit.
+- Workers compensation / employers liability, same three limits whatever the label:
+  EL Each Accident, E.L. EACH ACCIDENT, Bodily injury by Accident / each accident → el_each_accident.
+  EL Disease Ea Employee, E.L. DISEASE - EA EMPLOYEE, Bodily injury by Disease / each employee → el_disease_each_employee.
+  EL Disease Policy Limit, E.L. DISEASE - POLICY LIMIT, Bodily injury by Disease / policy limit → el_disease_policy_limit.
+  wc_per_statute is Yes when the ACORD PER STATUTE box is marked with an X. Leave it null when that box is empty. Do not turn Per Statute into a dollar.
+- General liability, same rows whatever the label. Omit a row that is not printed:
+  General Aggregate, General Aggregate Limit, General Liability (Annual Aggregate), Aggregate Limit on a GL schedule → gl_general_aggregate.
+  Products/Completed Operations Aggregate, Products/Completed Operations Annual Aggregate, Included or a dollar → gl_products_completed_ops.
+  Personal & Advertising Injury Limit, only when that line is printed by itself → gl_personal_advertising_injury. Do not invent it from an each-occurrence note.
+  Each Occurrence, Each Occurrence Limit, General Liability (Each Occurrence) → gl_each_occurrence.
+  Damage to Premises Rented to You, Damage to Premises Rented to you Limit → gl_damage_to_premises_rented.
+  Medical Expenses, Medical Expenses Limit, Medical Expense Limit → gl_medical_expenses.
+  Deductible Amount, Property Damage Deductible, Deductible → gl_deductible. A printed $0 stays 0.
+- Professional Liability / E&O on the same certificate, when that is the coverage shown (not GL):
+  Per Claim Limit → pl_per_claim.
+  Aggregate Limit on that E&O block → pl_aggregate (not gl_general_aggregate).
+  Per Claim Deductible → pl_per_claim_deductible.
+  pl_claims_made is Claims-Made when the CLAIMS-MADE box or the coverage type says CLAIMS-MADE. Leave it null on an occurrence form.
+- Dollar limits use a leading $. Included stays Included. Do not copy one limit into another row.
+- Do not extract certificate holder, additional insured, description of operations, or producer. Those are out of scope.
+- If policy number or any limit above is printed, document_kind is declaration. This ACORD 25, workers compensation information page, or liability schedule is not a homeowners dec.
+`;
+  }
   if (line === "flood") {
     return `You extract structured fields from a Flood declaration (Selective Flood, NFIP, or another flood carrier). This is not a homeowners HO3 policy.
 
@@ -629,6 +702,10 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
       "This may be a phone photo (JPEG/PNG/HEIC) of a dec, wind mit, 4-point, or inspection — not a PDF. Read the visible text from the image and fill every labeled field you can see. Prefer the same keys as dec / wind mit / four-point when the form type is clear from the page.";
   }
   const line = (shopLine ?? "").trim().toLowerCase();
+  if (isCommercialGeminiLine(line)) {
+    focus =
+      "This is a commercial certificate or schedule (ACORD 25 workers compensation or professional liability, a workers compensation information page, or a general liability limits schedule). It is not homeowners and not personal auto. Do not fill Coverage A–F. Do not invent class code, payroll, or experience mod. Fill only printed facts: named_insured (INSURED block, not the producer or certificate holder), policy_number, current_carrier (insurer / writing company, not the producer), effective_date and expiration_date from the policy period (not the certificate date), and premium only when a premium is printed. Total Estimated Annual Premium is premium, never an employers-liability or GL limit. Omit premium when the page has none. Workers compensation aliases: EL Each Accident / E.L. EACH ACCIDENT / Bodily injury by Accident each accident → el_each_accident; EL Disease Ea Employee / E.L. DISEASE - EA EMPLOYEE / Bodily injury by Disease each employee → el_disease_each_employee; EL Disease Policy Limit / E.L. DISEASE - POLICY LIMIT / Bodily injury by Disease policy limit → el_disease_policy_limit; PER STATUTE checked → wc_per_statute Yes. General liability aliases: General Aggregate / General Liability (Annual Aggregate) / Aggregate Limit on a GL schedule → gl_general_aggregate; Products/Completed Operations Aggregate (Included or a dollar) → gl_products_completed_ops; Personal & Advertising Injury only when printed separately → gl_personal_advertising_injury; Each Occurrence / General Liability (Each Occurrence) → gl_each_occurrence; Damage to Premises Rented to You → gl_damage_to_premises_rented; Medical Expenses / Medical Expense Limit → gl_medical_expenses; Deductible / Property Damage Deductible / Deductible Amount, including $0 → gl_deductible. Professional liability / E&O on that same certificate: Per Claim Limit → pl_per_claim; Aggregate Limit on the E&O block → pl_aggregate; Per Claim Deductible → pl_per_claim_deductible; CLAIMS-MADE marked → pl_claims_made Claims-Made. Do not extract certificate holder or additional insured. A missing row stays null.";
+  }
   if (line === "flood") {
     focus =
       "This is a Flood declaration (Selective Flood or NFIP), not homeowners. Do not fill HO3 Coverage A–F. form is FLD when the form or policy number starts with FLD, otherwise Flood — never Home or HO3. MUST fill Rating Information when printed: building_occupancy, number_of_units, primary_residence, property_description, prior_nfip_claims, date_of_construction (full printed date) and year_built (four-digit year), flood_zone, first_floor_height, ffh_method, building_description_detail. N/A stays N/A. Building (NFIP Coverage A) → building_limit, building_premium, building_deductible. Contents (NFIP Coverage C) → contents_limit, contents_premium, contents_deductible. Loss of use only when printed. Increased cost of compliance or debris removal only when printed. Do not invent Coverage B, E, or F. Mortgagee only when printed. Policy number, dates, and the total premium when printed.";
