@@ -1754,6 +1754,41 @@ describe("fillPolicyFromDec wiring", () => {
     expect(pickPolicyDecDocument([older, newer], { documentId: "old" })?.id).toBe("old");
     expect(pickPolicyDecDocument([older, newer], { sourceDocumentId: "old" })?.id).toBe("old");
   });
+
+  it("prefers a Current term-role declaration only when the book pass asks", () => {
+    const current = {
+      id: "current",
+      filename: "current-dec.pdf",
+      docType: "policy_dec",
+      mimeType: "application/pdf",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      tags: ["dec", "term_role:current"],
+    };
+    const newer = {
+      id: "newer",
+      filename: "source-dec.pdf",
+      docType: "policy_dec",
+      mimeType: "application/pdf",
+      createdAt: "2026-06-01T00:00:00.000Z",
+      tags: ["dec", "term_role:prior"],
+    };
+    expect(pickPolicyDecDocument([current, newer])?.id).toBe("newer");
+    expect(pickPolicyDecDocument([current, newer], { preferCurrentTerm: true })?.id).toBe("current");
+    expect(pickPolicyDecDocument([current, newer], { preferCurrentTerm: true, sourceDocumentId: "newer" })?.id).toBe(
+      "current",
+    );
+    expect(pickPolicyDecDocument([current, newer], { preferCurrentTerm: true, documentId: "newer" })?.id).toBe("newer");
+    const untagged = {
+      id: "old",
+      filename: "prior-dec.pdf",
+      docType: "dec",
+      mimeType: "application/pdf",
+      createdAt: "2025-01-01T00:00:00.000Z",
+    };
+    expect(pickPolicyDecDocument([untagged, newer], { preferCurrentTerm: true, sourceDocumentId: "old" })?.id).toBe(
+      "old",
+    );
+  });
 });
 
 describe("manufactured home coverage display", () => {

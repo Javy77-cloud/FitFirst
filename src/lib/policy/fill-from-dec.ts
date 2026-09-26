@@ -4,7 +4,7 @@
  * commercial schedule (Workers' Comp, General Liability, Professional Liability).
  * Does not touch deal quote_sheets.
  */
-import { monthsBetweenTermDates } from "@/lib/documents/document-labels";
+import { monthsBetweenTermDates, termRoleFromTags } from "@/lib/documents/document-labels";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
 import {
   isDeclarationPdf,
@@ -77,6 +77,7 @@ export type DecDocLike = {
   docType?: string | null;
   slot?: string | null;
   createdAt?: Date | string | null;
+  tags?: string[] | null;
 };
 
 type VehicleWriteField =
@@ -259,23 +260,33 @@ function looksLikeDec(doc: DecDocLike): boolean {
   return isDeclarationPdf(doc) || isIssuedPolicyDocument(doc);
 }
 
-/** Prefer an explicit file, then the policy source DEC, then the newest declaration. */
+function newestFirst<T extends DecDocLike>(docs: T[]): T[] {
+  return docs.sort((a, b) => createdAtMs(b) - createdAtMs(a) || a.id.localeCompare(b.id));
+}
+
+/**
+ * Prefer an explicit file, then the policy source DEC, then the newest declaration.
+ * `preferCurrentTerm` checks a Current term-role declaration before the source file.
+ * The desk button leaves that off. The book pass turns it on.
+ */
 export function pickPolicyDecDocument<T extends DecDocLike>(
   docs: readonly T[],
-  input?: { documentId?: string | null; sourceDocumentId?: string | null },
+  input?: { documentId?: string | null; sourceDocumentId?: string | null; preferCurrentTerm?: boolean },
 ): T | null {
   const preferred = (input?.documentId ?? "").trim();
   if (preferred) {
     return docs.find((doc) => doc.id === preferred) ?? null;
+  }
+  if (input?.preferCurrentTerm) {
+    const currents = newestFirst(docs.filter((doc) => looksLikeDec(doc) && termRoleFromTags(doc.tags) === "current"));
+    if (currents[0]) return currents[0];
   }
   const sourceId = (input?.sourceDocumentId ?? "").trim();
   if (sourceId) {
     const source = docs.find((doc) => doc.id === sourceId && looksLikeDec(doc));
     if (source) return source;
   }
-  const decs = docs.filter(looksLikeDec);
-  decs.sort((a, b) => createdAtMs(b) - createdAtMs(a) || a.id.localeCompare(b.id));
-  return decs[0] ?? null;
+  return newestFirst(docs.filter(looksLikeDec))[0] ?? null;
 }
 
 function rawCell(rows: readonly MintGeminiRow[], ...keys: string[]): string {
