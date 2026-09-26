@@ -1,3 +1,5 @@
+import { addressFingerprint } from "@/lib/address/compare";
+import { parseAddressVerifyMeta } from "@/lib/address/verify-state";
 import { dealProductDef } from "@/lib/deals/deal-products";
 import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { sheetFormForProduct } from "@/lib/deals/product-chip-label";
@@ -20,11 +22,10 @@ import {
  * Which quote-sheet line and risk row a property tab may use.
  *
  * Shop order gives the plain `home` line to the first property product.
- * A dec can land on that line with a different form (DP3 facts on an HO3
- * chip). That sheet is not an address source for the chip that merely owns
- * the line. The product the form belongs to reads it. The unscoped risk
- * (product_key null) follows the same rule and is never copied onto a second
- * property product.
+ * A dec `form` on that line (DP3 facts stamped HO3) does not move the
+ * insured address onto the sibling. The unscoped risk stays with the first
+ * property product. A later product does not reuse that street, and does
+ * not reuse another product's keyed street, unless it has its own risk row.
  */
 
 type SheetValues = Record<string, { value?: string | null } | null | undefined> | null | undefined;
@@ -137,18 +138,23 @@ export function propertyStreetsMatch(a: string | null | undefined, b: string | n
 
 /**
  * True when this sheet's policy form belongs to a sibling product, not `instance`.
- * A sheet with no form stays with its line owner.
+ * A shop stamp (`sheet_product` / `quoting_form`) keeps the line with that product.
+ * An extracted `form` does not steal it. A sheet with no form stays with its line owner.
  */
 export function sheetIsForeignToInstance(
   instance: Pick<ProductInstance, "key" | "productId">,
   peers: readonly Pick<ProductInstance, "key" | "productId">[],
   values: SheetValues,
 ): boolean {
-  const form = policyFormOnSheet(values);
-  if (!form) return false;
-  if (sheetFormForProduct(instance.productId, form)) return false;
+  const stampedProduct = cell(values, "sheet_product");
+  if (stampedProduct && stampedProduct === instance.productId) return false;
+  const stampedForm = cell(values, "quoting_form");
+  if (stampedForm && sheetFormForProduct(instance.productId, stampedForm)) return false;
+  const extracted = cell(values, "form");
+  if (!extracted) return false;
+  if (sheetFormForProduct(instance.productId, extracted)) return false;
   return peers.some(
-    (peer) => peer.key !== instance.key && Boolean(sheetFormForProduct(peer.productId, form)),
+    (peer) => peer.key !== instance.key && Boolean(sheetFormForProduct(peer.productId, extracted)),
   );
 }
 
@@ -309,6 +315,7 @@ export function pinPropertyAddresses(input: {
     pins.set(instance.key, pinFromSheetOrRisk(instance, input.instances, input.sheets, input.risks));
   }
   const legacy = legacyPropertyOwnerKey(input.instances);
+  keepOneProductPerStreet(pins, input.instances, input.risks);
   if (!legacy) return pins;
   const current = pins.get(legacy);
   if (current && addressHasLocation(current.address)) return pins;
@@ -326,6 +333,119 @@ export function pinPropertyAddresses(input: {
   if (taken) return pins;
   pins.set(legacy, { address: prefill, source: "deal" });
   return pins;
+}
+
+/** One insured street per property tab. The legacy owner keeps a shared street; a keyed risk wins over that. */
+function keepOneProductPerStreet(
+  pins: Map<string, PinnedPropertyAddress>,
+  instances: readonly ProductInstance[],
+  risks: readonly PropertyRiskRef[],
+): void {
+  const groups = new Map<string, string[]>();
+  for (const instance of instances) {
+    const pin = pins.get(instance.key);
+    if (!pin || !addressHasLocation(pin.address)) continue;
+    const streetKey = propertyStreetKey(pin.address.street);
+    if (!streetKey) continue;
+    const list = groups.get(streetKey) ?? [];
+    list.push(instance.key);
+    groups.set(streetKey, list);
+  }
+  const legacy = legacyPropertyOwnerKey(instances);
+  for (const keys of groups.values()) {
+    if (keys.length < 2) continue;
+    const keyed = keys.find((key) =>
+      risks.some(
+        (row) =>
+          String(row.productKey ?? "").trim() === key &&
+          propertyStreetsMatch(row.address1, pins.get(key)?.address.street),
+      ),
+    );
+    const winner = keyed ?? (legacy && keys.includes(legacy) ? legacy : keys[0]);
+    for (const key of keys) {
+      if (key === winner) continue;
+      pins.set(key, { address: { ...EMPTY_PROPERTY_ADDRESS }, source: "blank" });
+    }
+  }
+}
+
+const HEADER_INSURED_SHEET_KEYS = [
+  "address1",
+  "city",
+  "state",
+  "zip",
+  "county",
+  "premises_address",
+  "premises_city",
+  "premises_state",
+  "premises_zip",
+  "garaging_address",
+  "garaging_city",
+  "garaging_state",
+  "garaging_zip",
+  "applicant_address",
+  "property_address",
+] as const;
+
+/** Header insured location follows the pin. A blank pin does not fall through to a sibling street on the sheet. */
+export function headerSheetForPinnedAddress(
+  values: SheetValues,
+  pin: PinnedPropertyAddress | null | undefined,
+): SheetValues {
+  if (!values || (pin && addressHasLocation(pin.address))) return values;
+  const next: NonNullable<SheetValues> = { ...values };
+  for (const key of HEADER_INSURED_SHEET_KEYS) {
+    const current = next[key];
+    if (!current) continue;
+    next[key] = { ...current, value: "" };
+  }
+  return next;
+}
+
+/**
+ * Deal Details insured address is the deal field (`mailing_address`), not the
+ * active product's risk and not the mailing street. A same-as flag or a verify
+ * fingerprint for a different street must not present mailing as insured.
+ */
+export function dealDetailsStoredAddresses(
+  stored: Record<string, string | null | undefined> | null | undefined,
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const [key, value] of Object.entries(stored ?? {})) {
+    if (value != null) next[key] = String(value);
+  }
+  const insuredStreet = next.mailing_address ?? "";
+  const mailingStreet = next.contact_mailing_address ?? "";
+  if (insuredStreet && mailingStreet && !propertyStreetsMatch(insuredStreet, mailingStreet)) {
+    next.mailing_same_as_insured = "false";
+  }
+  const meta = parseAddressVerifyMeta(next.mailing_address__verify);
+  const insuredFingerprint = addressFingerprint({
+    street: insuredStreet,
+    city: next.city ?? "",
+    state: next.state ?? "",
+    zip: next.zip ?? "",
+    county: next.county ?? "",
+    country: "US",
+  });
+  if (meta?.fingerprint && insuredFingerprint && meta.fingerprint !== insuredFingerprint) {
+    delete next.mailing_address__verify;
+  }
+  return next;
+}
+
+/** A later product must not insert a second risk on the unscoped building. */
+export function mayInsertSeparatePropertyRisk(input: {
+  instanceKey: string;
+  legacyOwnerKey: string | null;
+  addressStreet: string | null | undefined;
+  unscopedStreet: string | null | undefined;
+  claimMatchingUnscoped?: boolean;
+}): boolean {
+  if (input.claimMatchingUnscoped) return false;
+  if (input.legacyOwnerKey && input.instanceKey === input.legacyOwnerKey) return false;
+  if (propertyStreetsMatch(input.addressStreet, input.unscopedStreet)) return false;
+  return Boolean(propertyStreetKey(input.addressStreet));
 }
 
 export type PropertyRiskWriteTarget = {

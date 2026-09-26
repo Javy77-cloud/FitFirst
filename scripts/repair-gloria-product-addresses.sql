@@ -1,56 +1,52 @@
 -- Gloria Martinez deal 03dccdd7-db06-4c89-9b7a-cf0a2064d044
 -- One-time data repair. Do not run from the app. Review, then run by hand.
 --
--- What is wrong today (read 2026-09-26):
---   shop_products: homeowners, landlord, homeowners~88uvyj
---   quote_sheets.line = home
---     form = DP3 (dec), quoting_form stamped HO3 because homeowners owns the plain line
---     address1 = 10358 NW 30th TER, Doral 33172, occupancy Tenant, coverage_a 309000
---     mailing_address = 16021 NW 79Th CT  (owner mailing, not the rental)
---   quote_sheets.line = home~landlord
---     quoting_form = DP3, address1 = 10358 Northwest 30th Terrace, facts blank
---     (a copy of the rental, source "Deal address")
---   quote_sheets.line = home~homeowners~88uvyj
---     quoting_form = HO3, address1 = 16021 Northwest 79th Court, Miami Lakes 33016
---     occupancy Owner, coverage_a 533000
---   risks product_key null → 10358 Doral, Tenant, coverage_a 309000
---     (synced off the DP3 dec; the app used to treat this row as the first HO3)
---   risks product_key homeowners~88uvyj → 16021 Miami Lakes, Owner, coverage_a 533000
---   deal insured fields (mailing_address) = 8944 Adriatico Lane, Kissimmee 34747
---   deal mailing (contact_mailing_*) = 16021 Northwest 79th Court, Miami Lakes 33016
---   mailing_address__verify fingerprint is 16021 and does not match 8944.
---     Do not overwrite 8944 from this script. Confirm that street on the desk first.
+-- Pins the app now shows (read 2026-09-26, Javy correction):
+--   homeowners (HO3) insured/risk = 10358 NW 30th TER, Doral FL 33172
+--     unscoped risk fe30db6a-9e7b-42a2-b46c-2c7ced26e2e3 stays product_key null
+--     quote_sheets.line = home, sheet_product homeowners, quoting_form HO3
+--     extracted form is DP3; that does not move this street onto landlord
+--   homeowners~88uvyj (HO3 copy, chip 803-16021) = 16021 Northwest 79th Court,
+--     Miami Lakes FL 33016. Do not merge this tab into the Doral HO3.
+--   landlord (DP3) sheet home~landlord address1 is a "Deal address" copy of
+--     10358. The tab does not use that copy. This script clears only that
+--     copied street so a later save cannot clone a second 10358 risk.
+--   Deal Details insured (mailing_address) stays 8944 Adriatico Lane,
+--     Kissimmee FL 34747. It is not 16021 and it is not a product risk.
+--   Deal mailing (contact_mailing_*) stays 16021. mailing_same_as_insured
+--     is true even though the streets differ, and mailing_address__verify
+--     fingerprints 16021. Clear both so Deal Details does not treat 8944
+--     as confirmed-16021.
 --
--- The app now:
---   shows the DP3 dec (home) on the landlord tab, insured 10358, mailing 16021
---   shows the HO3 copy on homeowners~88uvyj, insured 16021
---   does not show 10358 or 16021 as the first HO3's insured address
---   writes a DP3 fill onto a landlord-keyed risk instead of the unscoped row
---   refuses to overwrite the unscoped row when the first HO3 saves a different street
---
--- This script only claims the existing 10358 risk for landlord so the row is
--- keyed even before the next DP3 save. It does not move sheet lines, does not
--- invent an 8944 risk, and does not copy 16021 onto DP3.
+-- Does not insert an 8944 risk. Does not copy 16021 onto the Doral HO3.
+-- Does not change quoting_form on the home line.
 
 begin;
 
-update risks
-set product_key = 'landlord',
-    updated_at = now()
-where deal_id = '03dccdd7-db06-4c89-9b7a-cf0a2064d044'
-  and id = 'fe30db6a-9e7b-42a2-b46c-2c7ced26e2e3'
-  and product_key is null
-  and address1 = '10358 NW 30th TER';
+update desk_custom_field_values
+set value = 'false'
+where record_id = '03dccdd7-db06-4c89-9b7a-cf0a2064d044'
+  and field_key = 'mailing_same_as_insured'
+  and value = 'true';
 
--- Align the shop stamp on the DP3 dec with the extracted form.
--- The landlord tab already prefers `form` over `quoting_form`. This keeps
--- a later fill from reading the line as HO3.
+update desk_custom_field_values
+set value = ''
+where record_id = '03dccdd7-db06-4c89-9b7a-cf0a2064d044'
+  and field_key = 'mailing_address__verify'
+  and value like '%16021 northwest 79th ct%';
+
 update quote_sheets
-set values = jsonb_set(values, '{quoting_form,value}', '"DP3"', true),
+set values = values
+    || jsonb_build_object(
+      'address1', jsonb_build_object('value', '', 'status', 'missing', 'source', 'agent', 'sourceLabel', 'Deal address'),
+      'city', jsonb_build_object('value', '', 'status', 'missing', 'source', 'agent', 'sourceLabel', 'Deal address'),
+      'state', jsonb_build_object('value', '', 'status', 'missing', 'source', 'agent', 'sourceLabel', 'Deal address'),
+      'zip', jsonb_build_object('value', '', 'status', 'missing', 'source', 'agent', 'sourceLabel', 'Deal address')
+    ),
     updated_at = now()
 where deal_id = '03dccdd7-db06-4c89-9b7a-cf0a2064d044'
-  and line = 'home'
-  and values->'form'->>'value' = 'DP3'
-  and values->'quoting_form'->>'value' = 'HO3';
+  and line = 'home~landlord'
+  and values->'address1'->>'sourceLabel' = 'Deal address'
+  and values->'address1'->>'value' ilike '10358%';
 
 commit;

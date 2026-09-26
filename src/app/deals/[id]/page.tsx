@@ -81,6 +81,8 @@ import {
 import { hideCrossProductDealFacts } from "@/lib/quote-sheet/product-fact-scope";
 import {
   boundStorageLineForInstance,
+  dealDetailsStoredAddresses,
+  headerSheetForPinnedAddress,
   pinPropertyAddresses,
   quotingFormForProductSheet,
   unscopedRiskInstanceKey,
@@ -88,7 +90,6 @@ import {
 import {
   headerAddressesForProductTab,
   instanceOwnsSheet,
-  insuredFieldsFromAddress,
   isPropertyCoveringProduct,
   legacyPropertyOwnerKey,
   overlaySharedProductSheet,
@@ -374,10 +375,11 @@ export default async function DealPage({
     dealProductDef(activeProduct).quotingForm,
     activeProduct,
   );
+  const pinnedSheetValues = headerSheetForPinnedAddress(activeSheet.values, activePin);
   const headerAddresses = headerAddressesForProductTab({
     instanceKey: activeInstance.key,
     ownsSheet: activeOwnsPropertySheet,
-    sheetValues: activeSheet.values,
+    sheetValues: pinnedSheetValues,
     ownRisk: activePin?.address.street
       ? {
           address1: activePin.address.street,
@@ -402,15 +404,11 @@ export default async function DealPage({
     : null;
   const profileValues = hideCrossProductDealFacts(
     activePropertyAddress && !activeOwnsPropertySheet
-      ? overlaySharedProductSheet(activeSheet.values, activeInstance.key, activePropertyAddress.address)
-      : activeSheet.values,
+      ? overlaySharedProductSheet(pinnedSheetValues, activeInstance.key, activePropertyAddress.address)
+      : pinnedSheetValues,
     productInstances.length > 1,
     { includeAddress: activeInstance.key !== legacyPropertyKey },
   );
-  const detailsAddressOverlay =
-    activePropertyAddress && activeInstance.key !== legacyPropertyKey
-      ? insuredFieldsFromAddress(activePropertyAddress.address)
-      : null;
   const lineForm =
     quotingFormForProductSheet(activeProduct, activeSheet.values) ??
     resolveLineQuotingForm({
@@ -1071,11 +1069,15 @@ export default async function DealPage({
                         layout={dealLayout ?? defaultLayoutForModule("deals")}
                         fields={dealFields.length ? dealFields : resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
                         values={{
-                          ...mergeDealSystemValues(deal, lead, dealValues, dealFields),
+                          ...mergeDealSystemValues(
+                            deal,
+                            lead,
+                            dealDetailsStoredAddresses(dealValues),
+                            dealFields,
+                          ),
                           ...(deal.accountKind === "commercial" && !dealValues.business_name
                             ? { business_name: deal.primaryNamedInsured ?? "" }
                             : {}),
-                          ...(detailsAddressOverlay ?? {}),
                         }}
                         productInstance={activeInstance.key}
                         pipelineFamily={familyForProducts(dealProducts)}
