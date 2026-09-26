@@ -31,6 +31,7 @@ export function RenewalCompareDrawer({
   hideTrigger = false,
   clientHealth = null,
   policyHealth = null,
+  renewalHandled = false,
 }: {
   policyId: string;
   renewalDate?: Date | string | null;
@@ -41,11 +42,14 @@ export function RenewalCompareDrawer({
   hideTrigger?: boolean;
   clientHealth?: HealthChipView | null;
   policyHealth?: HealthChipView | null;
+  /** Client staying already pushed — keep the chase control off. */
+  renewalHandled?: boolean;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
   const [payload, setPayload] = useState<RenewalCompareDrawerPayload | null>(null);
+  const chaseOff = renewalHandled || Boolean(payload?.renewalHandled);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -87,15 +91,20 @@ export function RenewalCompareDrawer({
             (payload?.dark ?? !canCompare) && "ff-renewal-compare-dark",
           )}
           data-ff-renewal-compare=""
+          data-ff-compare-frozen={payload?.frozen ? "true" : "false"}
           data-ff-compare-dark={payload?.dark ?? !canCompare ? "true" : "false"}
         >
           <SheetHeader>
             <SheetTitle>Compare terms</SheetTitle>
-            <div className="pt-2"><ClientStayingButton policyId={policyId} renewalDate={payload?.renewalDate ?? renewalDate} size="sm" /></div>
+            {chaseOff ? null : (
+              <div className="pt-2"><ClientStayingButton policyId={policyId} renewalDate={payload?.renewalDate ?? renewalDate} size="sm" /></div>
+            )}
             <SheetDescription>
-              {canCompare
-                ? `${clientName} — current vs proposed. Matched lines stay green.`
-                : `${clientName} — snapshot only until a renewal quote lands.`}
+              {payload?.frozen
+                ? `${clientName} — old rate vs new rate, frozen when Client staying was pushed.`
+                : (payload ? payload.bothSides : canCompare)
+                  ? `${clientName} — ${payload?.baselineLabel ?? "current"} vs ${payload?.renewalLabel ?? "proposed"}. Matched lines stay green.`
+                  : `${clientName} — snapshot only until a renewal quote lands.`}
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-3 px-4 pb-6">
@@ -124,8 +133,8 @@ export function RenewalCompareDrawer({
                   <thead>
                     <tr>
                       <th>Line</th>
-                      <th>Current</th>
-                      <th>Proposed</th>
+                      <th>{payload.baselineLabel || "Current"}</th>
+                      <th>{payload.renewalLabel || "Proposed"}</th>
                     </tr>
                   </thead>
                   <tbody>
