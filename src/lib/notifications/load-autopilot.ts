@@ -1,7 +1,7 @@
 import { and, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { activityLogs, alerts, contacts, policies } from "@/lib/db/schema";
+import { activityLogs, alerts, contacts, policies, renewalQueue } from "@/lib/db/schema";
 import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
 import { resolveCurrentTerm } from "@/lib/policies/current-term";
@@ -60,9 +60,14 @@ export async function loadAutopilotSignals(asOf = deskNow()): Promise<PanelCard[
       accountId: policies.accountId,
       firstName: contacts.firstName,
       lastName: contacts.lastName,
+      beatsSuppressed: renewalQueue.beatsSuppressed,
     })
     .from(policies)
     .leftJoin(contacts, eq(policies.contactId, contacts.id))
+    .leftJoin(
+      renewalQueue,
+      and(eq(renewalQueue.policyId, policies.id), eq(renewalQueue.tenantId, DEFAULT_TENANT_ID)),
+    )
     .where(
       and(
         eq(policies.tenantId, DEFAULT_TENANT_ID),
@@ -160,7 +165,7 @@ export async function loadAutopilotSignals(asOf = deskNow()): Promise<PanelCard[
       ...(row.contactId ? (logsByPolicy.get(`c:${row.contactId}`) ?? []) : []),
     ];
     const chased = chasedBand(partyLogs, band);
-    if (!shouldQueueAutopilot({ chasedThisBand: chased, band })) continue;
+    if (!shouldQueueAutopilot({ chasedThisBand: chased, band, beatsSuppressed: row.beatsSuppressed })) continue;
 
     const name =
       partyLabel(

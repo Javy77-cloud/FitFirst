@@ -81,6 +81,9 @@ export async function markSelectedAlertsRead(formData: FormData) {
 
 export async function completeTask(formData: FormData) {
   const id = String(formData.get("taskId") ?? "");
+  // Completing a task is logged on the task row. It must not move health pipeline status.
+  const { healthPipelineStatusAfterTaskComplete } = await import("@/lib/renewal/health-pipeline");
+  void healthPipelineStatusAfterTaskComplete(null);
   await db
     .update(reviewTasks)
     .set({ status: "done", completedAt: new Date() })

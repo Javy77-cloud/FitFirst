@@ -141,6 +141,9 @@ import { PromiseChips } from "@/components/notifications/promise-chips";
 import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
 import { serializeCommitments } from "@/lib/notifications/commitments";
 import { DealHeaderStage } from "@/components/deals/deal-header-stage";
+import { RenewalRiskReview } from "@/components/renewals/renewal-risk-review";
+import { ShoppingResolution } from "@/components/renewals/shopping-resolution";
+import { renewalLobFamily } from "@/lib/renewal/board-filter";
 import { dealHasOnHoldTag } from "@/lib/deals/on-hold";
 import { quoteIdsWithFolderPolicy } from "@/lib/policy/mint-gate";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
@@ -507,7 +510,10 @@ export default async function DealPage({
       ? risk
       : null;
   const scoringRisk = activePropertyRisk ?? legacyRiskForTab;
-  const evalMarkets = Boolean(scoringRisk && sheetReady);
+  const renewalShopBlocksMarkets = Boolean(
+    deal.renewalShop && deal.quotingReviewRequired && !deal.quotingUnlocked,
+  );
+  const evalMarkets = Boolean(scoringRisk && sheetReady && !renewalShopBlocksMarkets);
   const rawMatches =
     evalMarkets && scoringRisk
       ? await evaluateDealMarkets(scoringRisk, profileValues, activeLob)
@@ -914,6 +920,21 @@ export default async function DealPage({
                 <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
                   {visibleDealTitle}
                 </h1>
+                {deal.renewalShop ? (
+                  <div className="mt-2 space-y-2" data-ff-renewal-shop-branch="">
+                    <p className="text-xs text-muted-foreground">
+                      Shopping branch off the renewal. Return here from the renewal badge.
+                    </p>
+                    {deal.renewalPolicyId ? (
+                      <ShoppingResolution
+                        policyId={deal.renewalPolicyId}
+                        health={
+                          renewalLobFamily(deal.lineOfBusiness, deal.policySubType, null, null) === "health"
+                        }
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
                 <PromiseChips commitments={serializeCommitments(dealPromises)} />
               </div>
               <DealPackageShell
@@ -1206,6 +1227,8 @@ export default async function DealPage({
                           <HealthMarketsEmpty
                             usingHealthSherpa={isUsingHealthSherpa(activeSheet.values.using_healthsherpa?.value)}
                           />
+                        ) : renewalShopBlocksMarkets ? (
+                          <RenewalRiskReview dealId={deal.id} />
                         ) : (
                       <MarketsPanel
                         key={sheetReady || agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
@@ -1227,6 +1250,10 @@ export default async function DealPage({
                       />
                         )}
                       </div>
+                    ) : lifeHealthLine && deal.renewalShop && sheetLine === "health" ? (
+                      <p className="text-sm text-muted-foreground" data-ff-health-tracking-only="">
+                        Tracking deal only. Quotes are pulled in HealthSherpa, Connector, or the carrier portal. FitFirst does not quote health.
+                      </p>
                     ) : lifeHealthLine ? (
                       <LifeHealthQuotesPanel
                         createNotice={createNoticeControl}

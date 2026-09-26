@@ -800,10 +800,16 @@ export const deals = pgTable(
         createdAt: string;
       } | null;
     } | null>(),
+    /** Renewal shopping branch. Not creatable from the general deals list. */
+    renewalShop: boolean("renewal_shop").notNull().default(false),
+    renewalPolicyId: uuid("renewal_policy_id"),
+    /** P&C renewal shop: agent reviews risk before markets. No auto-market. */
+    quotingReviewRequired: boolean("quoting_review_required").notNull().default(false),
     ...timestamps,
   },
   (t) => [
     index("deals_tenant_idx").on(t.tenantId),
+    index("deals_renewal_shop_idx").on(t.tenantId, t.renewalShop),
     index("deals_stage_idx").on(t.tenantId, t.pipelineStage),
     index("deals_owner_idx").on(t.tenantId, t.ownerId),
     index("deals_zoho_idx").on(t.tenantId, t.zohoId),
@@ -1105,6 +1111,8 @@ export const policies = pgTable(
     sourceQuoteId: uuid("source_quote_id"),
     sourceDocumentId: uuid("source_document_id"),
     sourceProduct: text("source_product"),
+    /** manual | healthsherpa | connector — health dedup audit. */
+    intakeSource: text("intake_source"),
     mintPayload: jsonb("mint_payload").$type<{
       status?: "creating" | "unpublished" | "published";
       soldBasis?: {
@@ -3950,12 +3958,99 @@ export const renewalQueue = pgTable(
       .references(() => policies.id),
     stage: text("stage").notNull().default("upcoming"),
     notes: text("notes"),
+    /** Manual health pipeline. Agent status is source of truth. */
+    healthPipelineStatus: text("health_pipeline_status"),
+    healthPipelineNotes: jsonb("health_pipeline_notes")
+      .$type<
+        Array<{
+          id: string;
+          status: string;
+          body: string;
+          lang: "en" | "es";
+          channel: "text" | "voice";
+          actorId: string | null;
+          at: string;
+        }>
+      >()
+      .notNull()
+      .default([]),
+    shoppingDealId: uuid("shopping_deal_id").references(() => deals.id),
+    /** in_progress | accepted | replaced | dropped */
+    shoppingStatus: text("shopping_status"),
+    preShoppingStage: text("pre_shopping_stage"),
+    shoppingSnapshot: jsonb("shopping_snapshot").$type<{
+      emailsSent: number;
+      clientResponse: string | null;
+      comparisonShown: boolean;
+      language: string | null;
+      stage: string;
+      capturedAt: string;
+    } | null>(),
+    clientRequestedShop: boolean("client_requested_shop").notNull().default(false),
+    /** Pauses renewal beats while shopping. Accept keeps them suppressed. Drop resumes. */
+    beatsSuppressed: boolean("beats_suppressed").notNull().default(false),
+    cancellationRequired: boolean("cancellation_required").notNull().default(false),
+    cancelEffective: timestamp("cancel_effective", { withTimezone: true }),
+    shoppingProductKey: text("shopping_product_key"),
+    replacementPolicyId: uuid("replacement_policy_id").references(() => policies.id),
     ...timestamps,
   },
   (t) => [
     uniqueIndex("renewal_queue_policy_uidx").on(t.tenantId, t.policyId),
     index("renewal_queue_tenant_idx").on(t.tenantId, t.stage),
     index("renewal_queue_policy_idx").on(t.tenantId, t.policyId),
+    index("renewal_queue_shopping_deal_idx").on(t.tenantId, t.shoppingDealId),
+  ],
+);
+
+/** Append-only health policy merge log. Source is manual vs HealthSherpa/connector. */
+export const healthPolicyMergeAudit = pgTable(
+  "health_policy_merge_audit",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    source: text("source").notNull(),
+    matchReason: text("match_reason").notNull(),
+    productType: text("product_type").notNull(),
+    filledGaps: jsonb("filled_gaps").$type<string[]>().notNull().default([]),
+    setBound: boolean("set_bound").notNull().default(false),
+    actorId: uuid("actor_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("health_policy_merge_audit_policy_idx").on(t.tenantId, t.policyId, t.createdAt),
+  ],
+);
+
+/** Accept / replace / drop on a renewal shopping branch. */
+export const renewalShoppingResolutions = pgTable(
+  "renewal_shopping_resolutions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    renewalQueueId: uuid("renewal_queue_id")
+      .notNull()
+      .references(() => renewalQueue.id),
+    shoppingDealId: uuid("shopping_deal_id").references(() => deals.id),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id),
+    resolution: text("resolution").notNull(),
+    source: text("source").notNull().default("shopping"),
+    clientRequestedShop: boolean("client_requested_shop").notNull().default(false),
+    oldPolicyId: uuid("old_policy_id"),
+    newPolicyId: uuid("new_policy_id"),
+    cancelEffective: timestamp("cancel_effective", { withTimezone: true }),
+    productKey: text("product_key"),
+    actorId: uuid("actor_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("renewal_shopping_resolutions_queue_idx").on(t.tenantId, t.renewalQueueId, t.createdAt),
   ],
 );
 
@@ -4044,6 +4139,8 @@ export type ClaimDiaryEntry = typeof claimDiary.$inferSelect;
 export type EndorsementDraft = typeof endorsementDrafts.$inferSelect;
 export type CertificateHolderContact = typeof certificateHolderContacts.$inferSelect;
 export type RenewalQueueRow = typeof renewalQueue.$inferSelect;
+export type HealthPolicyMergeAuditRow = typeof healthPolicyMergeAudit.$inferSelect;
+export type RenewalShoppingResolutionRow = typeof renewalShoppingResolutions.$inferSelect;
 export type PolicyInspection = typeof policyInspections.$inferSelect;
 export type PolicyInstallment = typeof policyInstallments.$inferSelect;
 

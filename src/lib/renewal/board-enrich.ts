@@ -225,7 +225,11 @@ export async function enrichRenewalCards(cards: RenewalBoardCard[]): Promise<Ren
     const bindOrClose = card.stage === "bound" || card.stage === "lost";
     const triggerReady = chasedThisBand || bindOrClose || wrappedClaim || loggedCall;
     const reviewDue = triggerReady && reviewLogs.length === 0 && skipCount < 2;
-    const autopilotQueued = shouldQueueAutopilot({ chasedThisBand, band });
+    const autopilotQueued = shouldQueueAutopilot({
+      chasedThisBand,
+      band,
+      beatsSuppressed: card.beatsSuppressed,
+    });
     const autopilotEscalated =
       autopilotQueued && lastContactDays != null && lastContactDays >= AUTOPILOT_SILENCE_DAYS;
     const hasCurrentTerm = card.premium != null && card.premium !== "";

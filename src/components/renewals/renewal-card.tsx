@@ -11,6 +11,8 @@ import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import { RenewalMiniReview } from "@/components/renewals/renewal-mini-review";
 import { Button } from "@/components/ui/button";
 import { ClientStayingButton } from "@/components/renewals/client-staying-button";
+import { HealthPipelineControl } from "@/components/renewals/health-pipeline-control";
+import { ShopForQuotes } from "@/components/renewals/shop-for-quotes";
 import {
   formatBoardPremiumDelta,
   PREMIUM_LAPSE_RISK_LABEL,
@@ -20,6 +22,7 @@ import { autopilotConfirmLabel } from "@/lib/renewal/autopilot";
 import { chaseTemplateFor, primaryActionLabel, primaryRenewalAction } from "@/lib/renewal/chase";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
 import { renewalPolicyTypeLabel } from "@/lib/renewal/policy-type";
+import { renewalLobFamily } from "@/lib/renewal/board-filter";
 import {
   RENEWAL_RISK_LABEL,
   renewalRiskHover,
@@ -109,6 +112,9 @@ export function RenewalBoardCardView({
     chasedThisBand: card.chasedThisBand,
     canCompare: card.canCompare,
   });
+  const healthRenewal =
+    renewalLobFamily(card.lineOfBusiness, card.policySubType, card.insuranceType, card.commissionFamily) ===
+    "health";
 
   function openCompare(event: MouseEvent) {
     if (isInteractive(event.target)) return;
@@ -267,11 +273,26 @@ export function RenewalBoardCardView({
           />
         </div>
       ) : null}
+      {healthRenewal ? (
+        <div data-ff-no-compare="">
+          <HealthPipelineControl
+            policyId={card.policyId}
+            status={card.healthPipelineStatus}
+            notes={card.healthPipelineNotes}
+            returnTo="/renewals"
+          />
+        </div>
+      ) : null}
       <div className="ff-renewal-card-footer">
         <span className="ff-renewal-policy-type" title={renewalPolicyTypeLabel(card)}>
           {renewalPolicyTypeLabel(card)}
         </span>
         <div className="ff-renewal-card-footer-actions" data-ff-no-compare="">
+          <ShopForQuotes
+            policyId={card.policyId}
+            shoppingDealId={card.shoppingDealId}
+            shoppingStatus={card.shoppingStatus}
+          />
           {card.stage !== "handled" ? (
             <ClientStayingButton policyId={card.policyId} renewalDate={card.renewalDate} />
           ) : (

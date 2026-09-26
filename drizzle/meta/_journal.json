@@ -1142,6 +1142,13 @@
       "when": 1793300000000,
       "tag": "0162_deal_resume",
       "breakpoints": true
+    },
+    {
+      "idx": 163,
+      "version": "7",
+      "when": 1793400000000,
+      "tag": "0163_health_renewal_shop",
+      "breakpoints": true
     }
   ]
 }

@@ -26,6 +26,7 @@ describe("renewal autopilot", () => {
     expect(shouldQueueAutopilot({ chasedThisBand: false, band: "60to90" })).toBe(true);
     expect(shouldQueueAutopilot({ chasedThisBand: true, band: "under30" })).toBe(false);
     expect(shouldQueueAutopilot({ chasedThisBand: false, band: "90plus" })).toBe(false);
+    expect(shouldQueueAutopilot({ chasedThisBand: false, band: "60to90", beatsSuppressed: true })).toBe(false);
     expect(autopilotKey("p1", "30to60")).toBe(`${AUTOPILOT_KIND}:p1:30to60`);
   });
 

@@ -15,6 +15,7 @@ import {
 } from "@/lib/notifications/quote-status-policy";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { displayDealTitle } from "@/lib/deals/deal-title";
+import { dealVisibleOnGeneralDealsList } from "@/lib/renewal/shopping-branch";
 import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
 import {
   DWELLING_EXTRACT_FIELD_KEYS,
@@ -682,6 +683,7 @@ export async function listDeals(filter: DealListFilter = {}) {
     seen.add(deal.id);
     if (!canViewOwned(session, deal.ownerId)) return false;
     if (deal.archivedAt) return false;
+    if (!dealVisibleOnGeneralDealsList(deal)) return false;
     const family = bookFamily(deal.lineOfBusiness);
     if (family === "life" && !lineOptions.writeLife) return false;
     if (family === "health" && !lineOptions.writeHealth) return false;
@@ -2757,6 +2759,7 @@ export async function getPipelineBoard(
   const cards = [];
   for (const row of rows) {
     if (seen.has(row.deal.id)) continue;
+    if (!dealVisibleOnGeneralDealsList(row.deal)) continue;
     if (!canViewOwned(session, row.deal.ownerId)) continue;
     if (!dealMatchesBoard(row.deal, board)) continue;
     seen.add(row.deal.id);
