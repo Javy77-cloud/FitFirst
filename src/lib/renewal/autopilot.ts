@@ -36,7 +36,10 @@ export function autopilotKey(policyId: string, band: AutopilotBand): string {
 export function shouldQueueAutopilot(input: {
   chasedThisBand: boolean;
   band: RenewalUrgencyBand | null;
+  /** Shopping and accepted renewals pause remaining beats for that product. */
+  beatsSuppressed?: boolean | null;
 }): boolean {
+  if (input.beatsSuppressed) return false;
   if (input.chasedThisBand) return false;
   return input.band != null && isAutopilotBand(input.band);
 }

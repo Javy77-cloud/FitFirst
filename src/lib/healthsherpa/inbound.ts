@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -6,7 +6,6 @@ import {
   contacts,
   deals,
   healthsherpaEnrollments,
-  policies,
 } from "@/lib/db/schema";
 import { listDealLookup } from "@/lib/db/queries";
 import {
@@ -182,23 +181,6 @@ export async function upsertHealthSherpaPolicy(input: {
     (parsed.applicationId ? `HS-${parsed.applicationId.slice(0, 8)}` : null);
   if (!policyNumber) return null;
 
-  const existing = parsed.applicationId
-    ? await db
-        .select({ id: policies.id })
-        .from(policies)
-        .where(
-          and(
-            eq(policies.tenantId, DEFAULT_TENANT_ID),
-            or(eq(policies.sourceId, parsed.applicationId), eq(policies.policyNumber, policyNumber)),
-          ),
-        )
-        .limit(1)
-    : await db
-        .select({ id: policies.id })
-        .from(policies)
-        .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.policyNumber, policyNumber)))
-        .limit(1);
-
   const effective = parseDate(parsed.effectiveDate) ?? new Date();
   const expiration = addYear(effective);
   const premium = parsed.premiumCents != null ? (parsed.premiumCents / 100).toFixed(2) : null;
@@ -209,7 +191,7 @@ export async function upsertHealthSherpaPolicy(input: {
     lineOfBusiness: "HEALTH",
     insuranceType: "Health",
     policySubType: parsed.policySubType,
-    status: "unpublished" as const,
+    status: (parsed.event === "policy_status" ? "bound" : "unpublished") as "bound" | "unpublished",
     publishedAt: null,
     effectiveDate: effective,
     expirationDate: expiration,
@@ -233,18 +215,48 @@ export async function upsertHealthSherpaPolicy(input: {
     updatedAt: new Date(),
   };
 
-  if (existing[0]) {
-    await db.update(policies).set(values).where(eq(policies.id, existing[0].id));
-    return existing[0].id;
-  }
-  const [created] = await db
-    .insert(policies)
-    .values({
-      tenantId: DEFAULT_TENANT_ID,
-      ...values,
+  const { commitHealthPolicyWrite } = await import("@/lib/health/policy-write");
+  const { healthProductType } = await import("@/lib/health/product-type");
+  const [contact] = await db
+    .select({
+      firstName: contacts.firstName,
+      lastName: contacts.lastName,
+      dateOfBirth: contacts.dateOfBirth,
     })
-    .returning({ id: policies.id });
-  return created?.id ?? null;
+    .from(contacts)
+    .where(eq(contacts.id, input.contactId))
+    .limit(1);
+  const clientName = [contact?.firstName, contact?.lastName].filter(Boolean).join(" ").trim();
+  const productType = healthProductType({
+    lineOfBusiness: "HEALTH",
+    insuranceType: "Health",
+    policySubType: parsed.policySubType,
+    planType: parsed.planType,
+    sourceProduct: values.sourceProduct,
+  });
+  const written = await commitHealthPolicyWrite({
+    source: "healthsherpa",
+    incoming: {
+      contactId: input.contactId,
+      clientName: clientName || `${parsed.contact.firstName} ${parsed.contact.lastName}`.trim(),
+      dateOfBirth: contact?.dateOfBirth ?? parsed.contact.dateOfBirth,
+      policyNumber,
+      carrierName: parsed.carrierName,
+      planType: parsed.planName ?? parsed.planType ?? parsed.policySubType,
+      policySubType: parsed.policySubType,
+      sourceProduct: values.sourceProduct,
+      sourceId: parsed.applicationId,
+      lineOfBusiness: "HEALTH",
+      insuranceType: "Health",
+      productType,
+      premium,
+      status: values.status,
+      bound: parsed.event === "policy_status",
+      intakeSource: "healthsherpa",
+    },
+    insert: values,
+  });
+  return written.policyId;
 }
 
 export async function attachHealthSherpaEnrollment(input: {

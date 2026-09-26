@@ -83,6 +83,20 @@ export type RenewalBoardCard = {
   clientHealth: HealthChipView | null;
   autopilotQueued: boolean;
   autopilotEscalated: boolean;
+  /** Renewal shopping branch. Badge only while in progress. */
+  shoppingDealId?: string | null;
+  shoppingStatus?: string | null;
+  beatsSuppressed?: boolean;
+  healthPipelineStatus?: string | null;
+  healthPipelineNotes?: Array<{
+    id: string;
+    status: string;
+    body: string;
+    lang: "en" | "es";
+    channel: "text" | "voice";
+    actorId: string | null;
+    at: string;
+  }> | null;
   inboxCue?: string | null;
   inboxHref?: string | null;
 };
@@ -316,6 +330,11 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       clientHealth: null,
       autopilotQueued: false,
       autopilotEscalated: false,
+      shoppingDealId: row.queue.shoppingDealId,
+      shoppingStatus: row.queue.shoppingStatus,
+      beatsSuppressed: row.queue.beatsSuppressed,
+      healthPipelineStatus: row.queue.healthPipelineStatus,
+      healthPipelineNotes: row.queue.healthPipelineNotes,
     });
   }
 

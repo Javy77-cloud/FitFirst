@@ -494,6 +494,15 @@ export async function createDealFromLead(formData: FormData) {
 }
 
 export async function createDeal(formData: FormData) {
+  const { renewalShopBlockedFromDealsList } = await import("@/lib/renewal/shopping-branch");
+  if (
+    renewalShopBlockedFromDealsList({
+      renewalShop: str(formData, "renewalShop"),
+      origin: str(formData, "origin") || str(formData, "source"),
+    })
+  ) {
+    throw new Error("Renewal shopping starts from the renewal record, not the deals list.");
+  }
   const actor = await getActor();
   const sourceDealId = isUuid(str(formData, "sourceDealId")) ? str(formData, "sourceDealId") : "";
   const [sourceDeal] = sourceDealId

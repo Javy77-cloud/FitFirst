@@ -144,6 +144,39 @@ export async function updatePolicyRecord(formData: FormData) {
   });
 
   const session = await currentDeskSession();
+  const healthLine =
+    insuranceType === "Health" ||
+    String(next.lineOfBusiness).toUpperCase() === "HEALTH" ||
+    String(existing.lineOfBusiness).toUpperCase() === "HEALTH";
+  if (healthLine && existing.contactId) {
+    const { reconcileHealthPolicyUpdate } = await import("@/lib/health/policy-write");
+    const { healthProductType } = await import("@/lib/health/product-type");
+    await reconcileHealthPolicyUpdate({
+      policyId: id,
+      source: "manual",
+      actorId: session.userId,
+      incoming: {
+        id,
+        contactId: existing.contactId,
+        policyNumber: next.policyNumber,
+        policySubType: next.policySubType,
+        policyType: next.policyType,
+        insuranceType: next.insuranceType,
+        lineOfBusiness: next.lineOfBusiness,
+        sourceProduct: existing.sourceProduct,
+        premium: next.premium,
+        status: next.status,
+        productType: healthProductType({
+          lineOfBusiness: next.lineOfBusiness,
+          insuranceType: next.insuranceType,
+          policyType: next.policyType,
+          policySubType: next.policySubType,
+          sourceProduct: existing.sourceProduct,
+        }),
+        bound: next.status === "bound" || next.status === "active",
+      },
+    });
+  }
   await writeEoAuditSafe({
     action: "policy_change",
     summary: `Updated ${str(formData, "policyNumber") || existing.policyNumber} on the desk`,

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ClientStayingButton } from "@/components/renewals/client-staying-button";
+import { HealthPipelineControl } from "@/components/renewals/health-pipeline-control";
+import { ShopForQuotes } from "@/components/renewals/shop-for-quotes";
 import { CompareTermsLink } from "@/components/policy/compare-terms-link";
 import { RenewalAgreedStamp } from "@/components/policy/renewal-agreed-stamp";
 import { PolicyInformationCard } from "@/components/policy/policy-information";
@@ -52,6 +54,7 @@ export function PolicyOverviewTab({
   readOnly = false,
   showCommission = true,
   termView = null,
+  renewalDesk = null,
   renewalHandled = false,
   clientStayingMarkedAt = null,
   inspectionDocs = [],
@@ -136,6 +139,20 @@ export function PolicyOverviewTab({
   showCommission?: boolean;
   termView?: CurrentTermResolution | null;
   /** renewal_queue stage === handled ("Client staying"). */
+  renewalDesk?: {
+    healthPipelineStatus?: string | null;
+    healthPipelineNotes?: Array<{
+      id: string;
+      status: string;
+      body: string;
+      lang: "en" | "es";
+      channel: "text" | "voice";
+      actorId: string | null;
+      at: string;
+    }> | null;
+    shoppingDealId?: string | null;
+    shoppingStatus?: string | null;
+  } | null;
   renewalHandled?: boolean;
   /** When that queue row was marked. A mark before the in-force effective was for that term. */
   clientStayingMarkedAt?: Date | string | null;
@@ -282,9 +299,22 @@ export function PolicyOverviewTab({
                 <ClientStayingButton policyId={policy.id} renewalDate={stayingDate} size="sm" />
               </span>
             ) : null}
+            <ShopForQuotes
+              policyId={policy.id}
+              shoppingDealId={renewalDesk?.shoppingDealId}
+              shoppingStatus={renewalDesk?.shoppingStatus}
+            />
           </div>
         </div>
       </section>
+      {family === "health" ? (
+        <HealthPipelineControl
+          policyId={policy.id}
+          status={renewalDesk?.healthPipelineStatus}
+          notes={renewalDesk?.healthPipelineNotes}
+          returnTo={`/policies/${policy.id}`}
+        />
+      ) : null}
 
       {change && inForce ? (
         <PremiumChangeSummary change={change} compareHref={`/policies/${policy.id}/compare`} />

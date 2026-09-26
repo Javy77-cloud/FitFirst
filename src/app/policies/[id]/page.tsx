@@ -452,6 +452,16 @@ export default async function PolicyDetailPage({
             readOnly={!isAdmin}
             showCommission={viewer.commissionBreakdown.read}
             termView={termView}
+            renewalDesk={
+              renewalQueueRow
+                ? {
+                    healthPipelineStatus: renewalQueueRow.healthPipelineStatus,
+                    healthPipelineNotes: renewalQueueRow.healthPipelineNotes,
+                    shoppingDealId: renewalQueueRow.shoppingDealId,
+                    shoppingStatus: renewalQueueRow.shoppingStatus,
+                  }
+                : null
+            }
             renewalHandled={renewalHandled}
             clientStayingMarkedAt={renewalHandled ? renewalQueueRow?.updatedAt : null}
             inspectionDocs={inspectionDocs}
