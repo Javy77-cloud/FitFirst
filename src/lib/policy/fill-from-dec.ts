@@ -13,6 +13,15 @@ import {
   normalizeMintFieldKey,
 } from "@/lib/policy/mint-gate";
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
+import { policyFormCode } from "@/lib/policy/form-label";
+import {
+  normalizeBcegGrade,
+  normalizeOpeningProtection,
+  normalizeProtectionClass,
+  normalizeRoofCovering,
+  normalizeRoofShape,
+  normalizeUsage,
+} from "@/lib/quote-sheet/sheet-defaults";
 import { splitPremisesAddress, type PremisesAddressParts } from "@/lib/policy/premises";
 import {
   COMMERCIAL_FILL_PAIRS,
@@ -134,6 +143,7 @@ export type AppliedFillPatch = {
     protectionClass?: string;
     roofYear?: number;
     roofCovering?: string;
+    openingProtection?: string;
     coverageA?: number;
     address1?: string;
     city?: string;
@@ -294,6 +304,15 @@ function yesNo(raw: string): string {
   return raw.trim();
 }
 
+/** Rating Information alarms. Printed None is the desk No. */
+function ratingAlarm(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  if (!value) return "";
+  if (/^(y|yes|true)$/.test(value)) return "Yes";
+  if (/^(n|no|false|none|n\/a|na)$/.test(value)) return "No";
+  return raw.trim();
+}
+
 function moneyLabel(raw: string): string {
   const n = parseMoney(raw);
   if (n == null) return raw.trim();
@@ -346,10 +365,10 @@ function formatSinkhole(raw: string): string {
   return formatHomeDeductibleAmount(trimmed);
 }
 
-/** A credit line that only says Incl is not a burglar / fire / sprinkler answer. */
+/** A credit line that only says Incl is not a burglar / fire / sprinkler answer. Printed None is No. */
 function protectionYesNo(raw: string): string {
   if (/^incl\.?$/i.test(raw.trim()) || /^included$/i.test(raw.trim())) return "";
-  return yesNo(raw);
+  return ratingAlarm(raw);
 }
 
 /**
@@ -368,6 +387,20 @@ function sameMoney(a: string, b: string): boolean {
   const left = parseMoney(a);
   const right = parseMoney(b);
   return left != null && right != null && Math.abs(left - right) < 0.001;
+}
+
+/** Fire + Extended + Hurricane on one Coverage A row. One column is not the annual premium. */
+function sumPrintedPremiums(rows: readonly MintGeminiRow[], keys: readonly string[]): number | null {
+  const amounts: number[] = [];
+  for (const key of keys) {
+    const raw = rawCell(rows, key);
+    if (!raw) continue;
+    const amount = parseMoney(raw);
+    if (amount == null) continue;
+    amounts.push(amount);
+  }
+  if (amounts.length < 2) return null;
+  return amounts.reduce((sum, amount) => sum + amount, 0);
 }
 
 /** Drop a letter premium that is really the package subtotal or the policy total. Incl stays. */
@@ -616,18 +649,21 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   }
 
   put(out, "families", rawCell(rows, "number_of_families", "families"));
+  put(out, "usage", normalizeUsage(rawCell(rows, "usage", "usage_type")));
   put(
     out,
     "occupancy",
     ratingOccupancyValue(
-      occupancyUnlessEndorsement(rawCell(rows, "occupancy", "occupied")),
+      occupancyUnlessEndorsement(rawCell(rows, "occupancy", "occupied", "occupied_by")),
       rawCell(rows, "type_of_residence", "residence_type"),
     ),
   );
 
-  put(out, "protectionClass", rawCell(rows, "protection_class"));
+  put(out, "protectionClass", normalizeProtectionClass(rawCell(rows, "protection_class")));
   const bceg = rawCell(rows, "bceg_grade", "bceg");
-  if (bceg && !/^incl\.?$/i.test(bceg) && !/^included$/i.test(bceg)) put(out, "bceg", bceg);
+  if (bceg && !/^incl\.?$/i.test(bceg) && !/^included$/i.test(bceg)) {
+    put(out, "bceg", normalizeBcegGrade(bceg));
+  }
   put(out, "county", rawCell(rows, "county"));
   put(
     out,
@@ -641,7 +677,11 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   );
   put(out, "burglarAlarm", protectionYesNo(rawCell(rows, "burglar_alarm", "burglar")));
   put(out, "fireAlarm", protectionYesNo(rawCell(rows, "fire_alarm")));
-  put(out, "sprinkler", protectionYesNo(rawCell(rows, "sprinkler")));
+  put(
+    out,
+    "sprinkler",
+    protectionYesNo(rawCell(rows, "sprinkler", "automatic_sprinklers", "automatic_sprinkler")),
+  );
 
   const mortgagee = rawCell(rows, "mortgagee", "mortgagee_name");
   if (mortgagee && !isNoMortgageValue(mortgagee)) put(out, "mortgageeName", mortgagee);
@@ -663,7 +703,8 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
     put(out, "policyType", manufactured);
     put(out, "policySubType", manufactured);
   } else {
-    put(out, "formType", printedForm);
+    const code = policyFormCode(printedForm);
+    put(out, "formType", code || printedForm);
   }
 
   const coverageARaw = rawCell(rows, "coverage_a", "dwelling", "dwelling_limit");
@@ -676,6 +717,8 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(out, "coverageD", coverageMoney(rows, "coverage_d", "loss_of_use", "additional_living_expense"));
   put(out, "coverageE", coverageMoney(rows, "coverage_e", "personal_liability"));
   put(out, "coverageF", coverageMoney(rows, "coverage_f", "medical_payments_to_others"));
+  put(out, "coverageL", coverageMoney(rows, "coverage_l", "landlord_liability"));
+  put(out, "coverageM", coverageMoney(rows, "coverage_m"));
   const packagePremium = rawCell(
     rows,
     "property_liability_package_premium",
@@ -686,7 +729,23 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   const totalPremium = rawCell(rows, "premium", "current_premium", "total_premium");
   const linePremium = (...keys: string[]) =>
     rejectCopiedPremium(formatCoverageLinePremium(rawCell(rows, ...keys)), packagePremium, totalPremium);
-  put(out, "coverageAPremium", linePremium("coverage_a_premium", "dwelling_premium"));
+  const coverageAColumns = sumPrintedPremiums(rows, [
+    "coverage_a_fire_premium",
+    "coverage_a_extended_premium",
+    "coverage_a_hurricane_premium",
+  ]);
+  const coverageAAnnual = linePremium("coverage_a_premium", "dwelling_premium");
+  const coverageAFromColumns =
+    coverageAColumns == null
+      ? ""
+      : rejectCopiedPremium(formatCoverageLinePremium(coverageAColumns.toFixed(2)), packagePremium, totalPremium);
+  put(
+    out,
+    "coverageAPremium",
+    coverageAFromColumns && (!coverageAAnnual || sameMoney(coverageAAnnual, totalPremium))
+      ? coverageAFromColumns
+      : coverageAAnnual,
+  );
   put(out, "coverageBPremium", linePremium("coverage_b_premium", "other_structures_premium"));
   put(out, "coverageCPremium", linePremium("coverage_c_premium", "personal_property_premium", "contents_premium"));
   put(out, "coverageDPremium", linePremium("coverage_d_premium", "loss_of_use_premium"));
@@ -696,6 +755,8 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
     "coverageFPremium",
     linePremium("coverage_f_premium", "medical_payments_premium", "medical_payments_to_others_premium"),
   );
+  put(out, "coverageLPremium", linePremium("coverage_l_premium", "landlord_liability_premium"));
+  put(out, "coverageMPremium", linePremium("coverage_m_premium"));
   put(
     out,
     "ordinanceOrLaw",
@@ -745,13 +806,15 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
       ),
     ),
   );
-  put(
-    out,
-    "sinkholeDeductible",
-    formatSinkhole(
-      rawCell(rows, "sinkhole_deductible", "sinkhole", "sinkhole_coverage", "sinkhole_loss", "sinkhole_loss_coverage"),
-    ),
+  const sinkholeExclusion = rawCell(rows, "sinkhole_exclusion");
+  const sinkholePrinted = formatSinkhole(
+    rawCell(rows, "sinkhole_deductible", "sinkhole", "sinkhole_coverage", "sinkhole_loss", "sinkhole_loss_coverage"),
   );
+  const exclusionOn =
+    /^incl\.?$/i.test(sinkholeExclusion) ||
+    /^included$/i.test(sinkholeExclusion) ||
+    /excluded|not\s*covered|not\s*included/i.test(sinkholeExclusion);
+  put(out, "sinkholeDeductible", exclusionOn ? "Not Included" : sinkholePrinted);
   put(out, "personalInjury", formatOptionalAmount(rawCell(rows, "personal_injury", "personal_injury_limit")));
   put(out, "personalInjuryPremium", formatOptionalAmount(rawCell(rows, "personal_injury_premium")));
   put(
@@ -779,6 +842,41 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
     rawCell(rows, "loss_assessment", "loss_assessment_coverage"),
     rawCell(rows, "loss_assessment_premium", "loss_assessment_coverage_premium"),
   );
+  putOptionalCoverage(
+    out,
+    "limitedFungiLiability",
+    "limitedFungiLiabilityPremium",
+    rawCell(
+      rows,
+      "limited_fungi_liability",
+      "limited_fungi_wet_or_dry_rot_or_bacteria_liability",
+      "limited_fungi_wet_or_dry_rot_or_bacteria_coverage_liability",
+    ),
+    rawCell(rows, "limited_fungi_liability_premium"),
+  );
+  putOptionalCoverage(
+    out,
+    "rentalToOthersShortTerm",
+    "rentalToOthersShortTermPremium",
+    rawCell(
+      rows,
+      "rental_to_others_short_term",
+      "rental_to_others_short_term_exclusions",
+      "rental_to_others_short_term_exclusions_property",
+    ),
+    rawCell(rows, "rental_to_others_short_term_premium"),
+  );
+  putOptionalCoverage(
+    out,
+    "replacementCostBuyBack",
+    "replacementCostBuyBackPremium",
+    rawCell(rows, "replacement_cost_buy_back", "replacement_cost_buyback"),
+    rawCell(rows, "replacement_cost_buy_back_premium"),
+  );
+  const waterExclusion = rawCell(rows, "water_damage_exclusion", "water_damage");
+  if (/^incl\.?$/i.test(waterExclusion) || /^included$/i.test(waterExclusion) || /excluded|not\s*covered/i.test(waterExclusion)) {
+    put(out, "waterDamage", "Not Covered");
+  }
   putOptionalCoverage(
     out,
     "limitedFungi",
@@ -850,23 +948,29 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
 
   const roofInstall = rawCell(rows, "date_of_roof_installation", "roof_install_date");
   put(out, "roofInstallDate", roofInstall);
+  const printedRoofYear = rawCell(
+    rows,
+    "roof_year",
+    "year_roof",
+    "year_of_roof",
+    "year_of_roof_updated",
+    "year_roof_updated",
+  );
   const roofYear =
-    parsePropertyYear(
-      rawCell(
-        rows,
-        "roof_year",
-        "roof_age",
-        "year_roof",
-        "year_of_roof",
-        "year_of_roof_updated",
-        "year_roof_updated",
-      ),
-    ) ?? parsePropertyYear(roofInstall);
+    parsePropertyYear(printedRoofYear) ??
+    parsePropertyYear(rawCell(rows, "roof_age")) ??
+    parsePropertyYear(roofInstall);
   if (roofYear) put(out, "roofYear", String(roofYear));
   put(
     out,
     "roofCovering",
-    rawCell(rows, "roof_material", "roof_covering", "dwelling_roofing_material"),
+    normalizeRoofCovering(rawCell(rows, "roof_material", "roof_covering", "dwelling_roofing_material")),
+  );
+  put(out, "roofShape", normalizeRoofShape(rawCell(rows, "roof_shape")));
+  put(
+    out,
+    "openingProtection",
+    normalizeOpeningProtection(rawCell(rows, "opening_protection", "hurricane_protection")),
   );
 
   const unitYear = parsePropertyYear(rawCell(rows, "unit_year", "mh_year"));
@@ -1200,6 +1304,32 @@ function floodZoneValue(raw: string): string {
   return text;
 }
 
+/** A printed flood limit: $0 stays $0, Included stays Included, No stays No. */
+function floodPrintedLimit(raw: string): string {
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (/^n\/?a$/i.test(trimmed)) return "N/A";
+  if (/^(y|yes)$/i.test(trimmed)) return "Yes";
+  if (/^(n|no)$/i.test(trimmed)) return "No";
+  return formatHomeDollarAmount(trimmed);
+}
+
+function floodLinePremium(raw: string, totalPremium: string): string {
+  return rejectCopiedPremium(formatCoverageLinePremium(raw), "", totalPremium);
+}
+
+function putFloodPair(
+  out: Record<string, string>,
+  limitKey: string,
+  premiumKey: string,
+  limitRaw: string,
+  premiumRaw: string,
+  totalPremium: string,
+) {
+  put(out, limitKey, floodPrintedLimit(limitRaw));
+  put(out, premiumKey, floodLinePremium(premiumRaw, totalPremium));
+}
+
 /** Two or more NFIP rating facts, or an FLD / Flood form. A stray flood zone on HO3 is not enough. */
 function looksLikeFloodExtract(rows: readonly MintGeminiRow[]): boolean {
   const form = rawCell(rows, "form", "policy_form");
@@ -1221,7 +1351,8 @@ function looksLikeFloodExtract(rows: readonly MintGeminiRow[]): boolean {
 }
 
 /**
- * NFIP / Selective Flood. Building and Contents replace HO3 Coverage A and C.
+ * NFIP, Selective, and private flood (Neptune). Building and Contents replace
+ * HO3 Coverage A and C. Other printed flood rows stay on the flood schedule.
  * Mortgagee is stored on the desk interest. No carrier API.
  */
 function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
@@ -1251,11 +1382,31 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
   else if (year) put(out, "floodDateOfConstruction", String(year));
   if (year) put(out, "yearBuilt", String(year));
 
-  put(out, "floodBuildingOccupancy", rawCell(rows, "building_occupancy", "flood_occupancy"));
+  put(
+    out,
+    "floodBuildingOccupancy",
+    rawCell(rows, "building_occupancy", "flood_occupancy", "occupancy", "occupancy_type"),
+  );
   put(out, "floodNumberOfUnits", rawCell(rows, "number_of_units", "units"));
-  put(out, "floodPrimaryResidence", printedYesNo(rawCell(rows, "primary_residence")));
+  put(
+    out,
+    "floodPrimaryResidence",
+    printedYesNo(rawCell(rows, "primary_residence", "primary_home")),
+  );
   put(out, "floodPropertyDescription", rawCell(rows, "property_description"));
-  put(out, "floodPriorNfipClaims", rawCell(rows, "prior_nfip_claims", "prior_claims", "nfip_claims"));
+  put(
+    out,
+    "floodPriorNfipClaims",
+    rawCell(
+      rows,
+      "prior_nfip_claims",
+      "prior_claims",
+      "nfip_claims",
+      "prior_flood_claims",
+      "prior_flood_losses",
+      "prior_losses",
+    ),
+  );
   put(out, "floodZone", floodZoneValue(rawCell(rows, "flood_zone", "current_flood_zone")));
   put(
     out,
@@ -1265,7 +1416,13 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(
     out,
     "floodFfhMethod",
-    rawCell(rows, "ffh_method", "most_favorable_ffh_method", "ffh_determination"),
+    rawCell(
+      rows,
+      "ffh_method",
+      "most_favorable_ffh_method",
+      "ffh_determination",
+      "method_used_to_determine_first_floor_height",
+    ),
   );
   put(
     out,
@@ -1290,11 +1447,7 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(
     out,
     "floodBuildingPremium",
-    rejectCopiedPremium(
-      formatCoverageLinePremium(rawCell(rows, "building_premium", "coverage_a_premium", "dwelling_premium")),
-      "",
-      totalPremium,
-    ),
+    floodLinePremium(rawCell(rows, "building_premium", "coverage_a_premium", "dwelling_premium"), totalPremium),
   );
   put(
     out,
@@ -1302,18 +1455,15 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
     formatDecDeductible(rawCell(rows, "building_deductible", "coverage_a_deductible")),
   );
 
-  const contentsDisplay = formatHomeDollarAmount(
+  const contentsDisplay = floodPrintedLimit(
     rawCell(rows, "contents_limit", "contents", "coverage_c", "personal_property"),
   );
   if (contentsDisplay && !contentsDisplay.includes("%")) put(out, "floodContents", contentsDisplay);
   put(
     out,
     "floodContentsPremium",
-    rejectCopiedPremium(
-      formatCoverageLinePremium(
-        rawCell(rows, "contents_premium", "coverage_c_premium", "personal_property_premium"),
-      ),
-      "",
+    floodLinePremium(
+      rawCell(rows, "contents_premium", "coverage_c_premium", "personal_property_premium"),
       totalPremium,
     ),
   );
@@ -1323,35 +1473,135 @@ function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
     formatDecDeductible(rawCell(rows, "contents_deductible", "coverage_c_deductible")),
   );
 
-  const lossDisplay = formatHomeDollarAmount(
-    rawCell(rows, "loss_of_use", "coverage_d", "additional_living_expense"),
-  );
+  const lossDisplay = floodPrintedLimit(rawCell(rows, "loss_of_use", "coverage_d"));
   if (lossDisplay) put(out, "floodLossOfUse", lossDisplay);
   put(
     out,
     "floodLossOfUsePremium",
-    rejectCopiedPremium(
-      formatCoverageLinePremium(rawCell(rows, "loss_of_use_premium", "coverage_d_premium")),
-      "",
-      totalPremium,
-    ),
+    floodLinePremium(rawCell(rows, "loss_of_use_premium", "coverage_d_premium"), totalPremium),
   );
 
-  const icc = formatHomeDollarAmount(
-    rawCell(rows, "increased_cost_of_compliance", "icc", "icc_limit"),
+  putFloodPair(
+    out,
+    "floodDebris",
+    "floodDebrisPremium",
+    rawCell(rows, "debris_removal"),
+    rawCell(rows, "debris_removal_premium"),
+    totalPremium,
   );
-  const debris = formatHomeDollarAmount(rawCell(rows, "debris_removal"));
-  if (icc) {
-    put(out, "floodIcc", icc);
-    put(
-      out,
-      "floodIccPremium",
-      formatCoverageLinePremium(rawCell(rows, "increased_cost_of_compliance_premium", "icc_premium")),
-    );
-  } else if (debris) {
-    put(out, "floodDebris", debris);
-    put(out, "floodDebrisPremium", formatCoverageLinePremium(rawCell(rows, "debris_removal_premium")));
+  putFloodPair(
+    out,
+    "floodSandbags",
+    "floodSandbagsPremium",
+    rawCell(rows, "sandbags_supplies_labor", "sandbags_supplies_and_labor", "sandbags"),
+    rawCell(rows, "sandbags_supplies_labor_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodPropertyRemoved",
+    "floodPropertyRemovedPremium",
+    rawCell(rows, "property_removed_to_safety", "property_removed"),
+    rawCell(rows, "property_removed_to_safety_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodIcc",
+    "floodIccPremium",
+    rawCell(rows, "increased_cost_of_compliance", "icc", "icc_limit"),
+    rawCell(rows, "increased_cost_of_compliance_premium", "icc_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodReplacementCostContents",
+    "floodReplacementCostContentsPremium",
+    rawCell(rows, "replacement_cost_on_contents"),
+    rawCell(rows, "replacement_cost_on_contents_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodBasementContents",
+    "floodBasementContentsPremium",
+    rawCell(rows, "basement_contents"),
+    rawCell(rows, "basement_contents_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodPoolRepair",
+    "floodPoolRepairPremium",
+    rawCell(rows, "pool_repair_and_refill", "pool_repair_refill", "pool_repair"),
+    rawCell(rows, "pool_repair_and_refill_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodUnattachedStructures",
+    "floodUnattachedStructuresPremium",
+    rawCell(rows, "unattached_structures"),
+    rawCell(rows, "unattached_structures_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodTemporaryLiving",
+    "floodTemporaryLivingPremium",
+    rawCell(
+      rows,
+      "temporary_living_expenses",
+      "temporary_living_expense",
+      "temporary_living",
+      "i_temporary_living_expenses",
+      "additional_living_expense",
+    ),
+    rawCell(rows, "temporary_living_expenses_premium", "additional_living_expense_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodReplacementCostBuilding",
+    "floodReplacementCostBuildingPremium",
+    rawCell(rows, "replacement_cost_on_building"),
+    rawCell(rows, "replacement_cost_on_building_premium"),
+    totalPremium,
+  );
+  putFloodPair(
+    out,
+    "floodOutdoorTrees",
+    "floodOutdoorTreesPremium",
+    rawCell(
+      rows,
+      "outdoor_trees_shrubs_plants",
+      "outdoor_trees_shrubs_and_plants",
+      "trees_shrubs_and_plants",
+      "trees_shrubs_plants",
+      "outdoor_trees",
+      "coverage_m",
+    ),
+    rawCell(rows, "outdoor_trees_shrubs_plants_premium"),
+    totalPremium,
+  );
+  if (
+    out.floodTemporaryLiving &&
+    out.floodLossOfUse &&
+    sameMoney(out.floodTemporaryLiving, out.floodLossOfUse)
+  ) {
+    delete out.floodLossOfUse;
+    delete out.floodLossOfUsePremium;
   }
+
+  const policyDeductible = formatDecDeductible(rawCell(rows, "flood_deductible", "deductible"));
+  const policyDeductiblePremium = floodLinePremium(
+    rawCell(rows, "flood_deductible_premium", "deductible_premium"),
+    totalPremium,
+  );
+  if (!out.floodBuildingDeductible) put(out, "floodBuildingDeductible", policyDeductible);
+  if (!out.floodContentsDeductible) put(out, "floodContentsDeductible", policyDeductible);
+  put(out, "floodDeductible", policyDeductible);
+  put(out, "floodDeductiblePremium", policyDeductiblePremium);
 
   const premiumAmount = parseMoney(totalPremium);
   if (premiumAmount != null) put(out, "premium", premiumAmount.toFixed(2));
@@ -1448,12 +1698,23 @@ const LIMIT_KEYS: Record<string, string> = {
   coverage_d: "coverageD",
   coverage_e: "coverageE",
   coverage_f: "coverageF",
+  coverage_l: "coverageL",
+  coverage_m: "coverageM",
   coverage_a_premium: "coverageAPremium",
   coverage_b_premium: "coverageBPremium",
   coverage_c_premium: "coverageCPremium",
   coverage_d_premium: "coverageDPremium",
   coverage_e_premium: "coverageEPremium",
   coverage_f_premium: "coverageFPremium",
+  coverage_l_premium: "coverageLPremium",
+  coverage_m_premium: "coverageMPremium",
+  limited_fungi_liability: "limitedFungiLiability",
+  limited_fungi_liability_premium: "limitedFungiLiabilityPremium",
+  rental_to_others_short_term: "rentalToOthersShortTerm",
+  rental_to_others_short_term_premium: "rentalToOthersShortTermPremium",
+  replacement_cost_buy_back: "replacementCostBuyBack",
+  replacement_cost_buy_back_premium: "replacementCostBuyBackPremium",
+  water_damage: "waterDamage",
   ordinance_or_law: "ordinanceOrLaw",
   wind_hail_deductible: "windHailDeductible",
   sinkhole_deductible: "sinkholeDeductible",
@@ -1469,6 +1730,7 @@ const LIMIT_KEYS: Record<string, string> = {
   months_occupied: "monthsOccupied",
   dwelling_type: "dwellingType",
   number_of_families: "families",
+  usage: "usage",
   dwelling_replacement_cost: "dwellingReplacementCost",
   personal_property_replacement_cost: "personalPropertyReplacementCost",
   theft: "theft",
@@ -1573,6 +1835,7 @@ export type FillSnapshotInput = {
     protectionClass?: string | null;
     roofYear?: number | null;
     roofCovering?: string | null;
+    openingProtection?: string | null;
   } | null;
   protection?: Record<string, string> | null;
   contact?: {
@@ -1654,6 +1917,8 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
   put(out, "protectionClass", risk?.protectionClass || input.protection?.protection_class);
   if (risk?.roofYear != null) put(out, "roofYear", String(risk.roofYear));
   put(out, "roofCovering", risk?.roofCovering || input.protection?.roof_covering);
+  put(out, "roofShape", input.protection?.roof_shape);
+  put(out, "openingProtection", risk?.openingProtection || input.protection?.opening_protection);
   put(out, "bceg", input.protection?.bceg_grade);
   put(out, "burglarAlarm", input.protection?.burglar_alarm);
   put(out, "fireAlarm", input.protection?.fire_alarm);
@@ -1763,12 +2028,22 @@ export function groupAppliedFill(
   const roofYear = take("roofYear");
   if (roofYear) {
     const year = Number(roofYear);
-    if (Number.isFinite(year)) patch.risk.roofYear = year;
+    if (Number.isFinite(year)) {
+      patch.risk.roofYear = year;
+      patch.protection.roof_year = String(year);
+    }
   }
   const roofCovering = take("roofCovering");
   if (roofCovering) {
     patch.risk.roofCovering = roofCovering;
     patch.protection.roof_covering = roofCovering;
+  }
+  const roofShape = take("roofShape");
+  if (roofShape) patch.protection.roof_shape = roofShape;
+  const openingProtection = take("openingProtection");
+  if (openingProtection) {
+    patch.risk.openingProtection = openingProtection;
+    patch.protection.opening_protection = openingProtection;
   }
   const bceg = take("bceg");
   if (bceg) patch.protection.bceg_grade = bceg;
@@ -1825,12 +2100,23 @@ export function groupAppliedFill(
     ["coverageD", "coverage_d"],
     ["coverageE", "coverage_e"],
     ["coverageF", "coverage_f"],
+    ["coverageL", "coverage_l"],
+    ["coverageM", "coverage_m"],
     ["coverageAPremium", "coverage_a_premium"],
     ["coverageBPremium", "coverage_b_premium"],
     ["coverageCPremium", "coverage_c_premium"],
     ["coverageDPremium", "coverage_d_premium"],
     ["coverageEPremium", "coverage_e_premium"],
     ["coverageFPremium", "coverage_f_premium"],
+    ["coverageLPremium", "coverage_l_premium"],
+    ["coverageMPremium", "coverage_m_premium"],
+    ["limitedFungiLiability", "limited_fungi_liability"],
+    ["limitedFungiLiabilityPremium", "limited_fungi_liability_premium"],
+    ["rentalToOthersShortTerm", "rental_to_others_short_term"],
+    ["rentalToOthersShortTermPremium", "rental_to_others_short_term_premium"],
+    ["replacementCostBuyBack", "replacement_cost_buy_back"],
+    ["replacementCostBuyBackPremium", "replacement_cost_buy_back_premium"],
+    ["waterDamage", "water_damage"],
     ["ordinanceOrLaw", "ordinance_or_law"],
     ["windHailDeductible", "wind_hail_deductible"],
     ["sinkholeDeductible", "sinkhole_deductible"],
@@ -1846,6 +2132,7 @@ export function groupAppliedFill(
     ["monthsOccupied", "months_occupied"],
     ["dwellingType", "dwelling_type"],
     ["families", "number_of_families"],
+    ["usage", "usage"],
     ["dwellingReplacementCost", "dwelling_replacement_cost"],
     ["personalPropertyReplacementCost", "personal_property_replacement_cost"],
     ["theft", "theft"],
@@ -1922,6 +2209,26 @@ export function groupAppliedFill(
     ["floodIccPremium", "flood_icc_premium"],
     ["floodDebris", "flood_debris"],
     ["floodDebrisPremium", "flood_debris_premium"],
+    ["floodSandbags", "flood_sandbags"],
+    ["floodSandbagsPremium", "flood_sandbags_premium"],
+    ["floodPropertyRemoved", "flood_property_removed"],
+    ["floodPropertyRemovedPremium", "flood_property_removed_premium"],
+    ["floodReplacementCostContents", "flood_replacement_cost_contents"],
+    ["floodReplacementCostContentsPremium", "flood_replacement_cost_contents_premium"],
+    ["floodBasementContents", "flood_basement_contents"],
+    ["floodBasementContentsPremium", "flood_basement_contents_premium"],
+    ["floodPoolRepair", "flood_pool_repair"],
+    ["floodPoolRepairPremium", "flood_pool_repair_premium"],
+    ["floodUnattachedStructures", "flood_unattached_structures"],
+    ["floodUnattachedStructuresPremium", "flood_unattached_structures_premium"],
+    ["floodTemporaryLiving", "flood_temporary_living"],
+    ["floodTemporaryLivingPremium", "flood_temporary_living_premium"],
+    ["floodOutdoorTrees", "flood_outdoor_trees"],
+    ["floodOutdoorTreesPremium", "flood_outdoor_trees_premium"],
+    ["floodReplacementCostBuilding", "flood_replacement_cost_building"],
+    ["floodReplacementCostBuildingPremium", "flood_replacement_cost_building_premium"],
+    ["floodDeductible", "flood_deductible"],
+    ["floodDeductiblePremium", "flood_deductible_premium"],
     ...COMMERCIAL_FILL_PAIRS,
   ];
   for (const [fieldKey, limitKey] of limitPairs) {

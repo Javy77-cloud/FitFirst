@@ -6,7 +6,16 @@ import { ProcessingLabel, WaitHold } from "@/components/desk/wait-hold";
 import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
 import { policyInformationFields } from "@/lib/desk/policy-information";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
-import { mapGeminiJsonToFields, sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
+import { GEMINI_EXTRACT_JSON_KEYS, buildGeminiUserPrompt } from "@/lib/extraction/gemini/prompt";
+import { fillableGeminiFields, mapGeminiJsonToFields, sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
+import { propertyProtectionWithDwelling } from "@/lib/policy/dwelling-facts";
+import {
+  INES_CAMPS_TOWER_HILL_DP3_EXTRACT,
+  INES_CAMPS_TOWER_HILL_DP3_RATING,
+} from "@/lib/policy/fixtures/ines-camps-tower-hill-dp3";
+import { buildLobOverviewSections } from "@/lib/policy/lob-overview";
+import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { autoCoverageExtras, autoCoverageSchedule, autoVehicleCoverageBlocks } from "@/lib/policy/auto-coverage";
 import {
   buildPolicyFillAuditInsert,
@@ -725,6 +734,361 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.construction).toBe("Masonry");
     expect(proposed.yearBuilt).toBe("2024");
     expect(proposed.formType).toBe("HO3");
+  });
+
+  it("fills Southern Oak DP3 rating labels onto desk fields and leaves territory and exclude-wind unmapped", () => {
+    const printed = {
+      construction: "Masonry",
+      occupied_by: "Tenant",
+      bceg_grade: "Ungraded",
+      protection_class: "02",
+      number_of_families: "1",
+      automatic_sprinklers: "None",
+      roof_shape: "Gable",
+      roof_material: "Shingles-Asphalt",
+      roof_age: "5 years",
+      year_built: "1980",
+      usage_type: "Rental",
+      territory: "034-13",
+      exclude_wind_coverage: "No",
+      fire_alarm: "None",
+      opening_protection: "Class A",
+      roof_year: "2021",
+    };
+    const mapped = mapGeminiJsonToFields(printed, "dec", "home");
+    const unmapped = mapped.unmappedLabels.map((label) => label.sourceLabel).sort();
+    expect(unmapped).toEqual(["exclude_wind_coverage", "territory"]);
+
+    const byKey = Object.fromEntries(mapped.fields.map((field) => [field.fieldKey, field.normalizedValue]));
+    expect(byKey.construction).toBe("Masonry");
+    expect(byKey.occupancy).toBe("Tenant");
+    expect(byKey.usage).toBe("Rental");
+    expect(byKey.year_built).toBe("1980");
+    expect(byKey.roof_year).toBe("2021");
+    expect(byKey.number_of_families).toBe("1");
+    expect(byKey.bceg_grade).toBe("Ungraded");
+    expect(byKey.sprinkler).toBe("None");
+    expect(byKey.fire_alarm).toBe("None");
+    expect(byKey.opening_protection).toBe("A");
+    expect(byKey.roof_shape).toBe("C");
+    expect(byKey.roof_covering).toBe("Shingles-Asphalt");
+
+    for (const product of ["landlord", "homeowners"] as const) {
+      const applied = applyExtractedToSheet(
+        "home",
+        emptySheetValues("home", product),
+        fillableGeminiFields(mapped.fields),
+        { docType: "dec" },
+      );
+      expect(applied.values.occupancy?.value).toBe("Tenant");
+      expect(applied.values.usage?.value).toBe("Rental");
+      expect(applied.values.year_built?.value).toBe("1980");
+      expect(applied.values.construction?.value).toBe("Masonry");
+      expect(applied.values.number_of_families?.value).toBe("1");
+      expect(applied.values.protection_class?.value).toBe("2");
+      expect(applied.values.bceg_grade?.value).toBe("Ungraded");
+      expect(applied.values.sprinkler?.value).toBe("no");
+      expect(applied.values.fire_alarm?.value).toBe("no");
+      expect(applied.values.roof_year?.value).toBe("2021");
+      expect(applied.values.roof_covering?.value).toBe("Shingles-Asphalt");
+      expect(applied.values.roof_shape?.value).toBe("other");
+      expect(applied.values.opening_protection?.value).toBe("Hurricane Protection");
+      expect(applied.filledKeys).not.toContain("territory");
+      expect(applied.values.territory).toBeUndefined();
+    }
+
+    for (const lineOfBusiness of ["DP3", "DP1", "HO3"]) {
+      const proposed = proposeFillFromDec({
+        family: "homeowners",
+        rows: rows({ ...printed, form: lineOfBusiness }),
+      });
+      expect(proposed.occupancy).toBe("Tenant");
+      expect(proposed.usage).toBe("Rental");
+      expect(proposed.yearBuilt).toBe("1980");
+      expect(proposed.construction).toBe("Masonry");
+      expect(proposed.families).toBe("1");
+      expect(proposed.protectionClass).toBe("2");
+      expect(proposed.bceg).toBe("Ungraded");
+      expect(proposed.sprinkler).toBe("No");
+      expect(proposed.fireAlarm).toBe("No");
+      expect(proposed.roofYear).toBe("2021");
+      expect(proposed.roofCovering).toBe("Shingles-Asphalt");
+      expect(proposed.roofShape).toBe("other");
+      expect(proposed.openingProtection).toBe("Hurricane Protection");
+      expect(proposed.formType).toBe(lineOfBusiness);
+      expect(proposed).not.toHaveProperty("territory");
+      expect(proposed).not.toHaveProperty("excludeWind");
+
+      const patch = groupAppliedFill(proposed, Object.keys(proposed));
+      expect(patch.risk.occupancy).toBe("Tenant");
+      expect(patch.risk.yearBuilt).toBe(1980);
+      expect(patch.risk.construction).toBe("Masonry");
+      expect(patch.risk.protectionClass).toBe("2");
+      expect(patch.risk.roofYear).toBe(2021);
+      expect(patch.risk.roofCovering).toBe("Shingles-Asphalt");
+      expect(patch.risk.openingProtection).toBe("Hurricane Protection");
+      expect(patch.protection.bceg_grade).toBe("Ungraded");
+      expect(patch.protection.sprinkler).toBe("No");
+      expect(patch.protection.fire_alarm).toBe("No");
+      expect(patch.protection.roof_shape).toBe("other");
+      expect(patch.protection.opening_protection).toBe("Hurricane Protection");
+      expect(patch.coverageLimits.usage).toBe("Rental");
+      expect(patch.coverageLimits.number_of_families).toBe("1");
+    }
+  });
+
+  it("maps Tower Hill DP-3 coverages and writes property protection when rating is on the dec", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        "Coverage L - Liability": { value: "100000", confidence: 0.97 },
+        "Coverage M - Medical Payments to Others": { value: "1000", confidence: 0.97 },
+        "Limited Fungi, Wet or Dry Rot, or Bacteria Coverage Liability": { value: "50000", confidence: 0.97 },
+        "Limited Fungi, Wet or Dry Rot, or Bacteria Coverage Property": { value: "10000/10000", confidence: 0.97 },
+        "Rental to Others (Short Term Exclusions) - Property": { value: "Included", confidence: 0.97 },
+        "Replacement Cost Buy Back": { value: "Included", confidence: 0.97 },
+        "Sinkhole Exclusion": { value: "Included", confidence: 0.97 },
+        "Water Damage Exclusion": { value: "Included", confidence: 0.97 },
+      },
+      "dec",
+      "home",
+    );
+    const byKey = Object.fromEntries(mapped.fields.map((field) => [field.fieldKey, field.normalizedValue]));
+    expect(byKey.coverage_l).toBe("$100,000");
+    expect(byKey.coverage_m).toBe("$1,000");
+    expect(byKey.limited_fungi_liability).toBe("$50,000");
+    expect(byKey.limited_fungi).toBe("$10,000/$10,000");
+    expect(byKey.rental_to_others_short_term).toBe("Included");
+    expect(byKey.replacement_cost_buy_back).toBe("Included");
+    expect(byKey.sinkhole_exclusion).toBe("Included");
+    expect(byKey.water_damage_exclusion).toBe("Included");
+    expect(byKey.coverage_e).toBeUndefined();
+    expect(sheetKeysForGeminiKey("landlord_liability")).toEqual(["landlord_liability", "coverage_l"]);
+
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        ...INES_CAMPS_TOWER_HILL_DP3_EXTRACT,
+        age_of_dwelling_surcharge: "289.00",
+        empat_fee: "2.00",
+        figa_emergency_assessment_fee_2023: "20.36",
+        mga_fee: "25.00",
+        surplus_contribution: "203.60",
+        advance_quote_discount: "-115.00",
+        age_of_roof_credit: "-163.00",
+        decreased_coverage_b_limit: "Included",
+        deductible_options: "-773.00",
+      }),
+    });
+    expect(proposed.formType).toBe("DP3");
+    expect(proposed.policyType).toBeUndefined();
+    expect(proposed.coverageA).toBe("292037");
+    expect(proposed.coverageALimit).toBe("$292,037");
+    expect(proposed.coverageAPremium).toBe("$2,738");
+    expect(proposed.premium).toBe("2286.96");
+    expect(proposed.coverageB).toBe("$0");
+    expect(proposed.coverageBPremium).toBe("Included");
+    expect(proposed.coverageC).toBe("$0");
+    expect(proposed.coverageCPremium).toBe("$0");
+    expect(proposed.coverageD).toBe("$29,204");
+    expect(proposed.coverageE).toBe("$0");
+    expect(proposed.coverageEPremium).toBe("Included");
+    expect(proposed.coverageF).toBeUndefined();
+    expect(proposed.coverageL).toBe("$100,000");
+    expect(proposed.coverageLPremium).toBe("$60");
+    expect(proposed.coverageM).toBe("$1,000");
+    expect(proposed.coverageMPremium).toBe("Included");
+    expect(proposed.limitedFungi).toBe("$10,000/$10,000");
+    expect(proposed.limitedFungiPremium).toBe("Included");
+    expect(proposed.limitedFungiLiability).toBe("$50,000");
+    expect(proposed.limitedFungiLiabilityPremium).toBe("Included");
+    expect(proposed.rentalToOthersShortTermPremium).toBe("Included");
+    expect(proposed.replacementCostBuyBackPremium).toBe("Included");
+    expect(proposed.sinkholeDeductible).toBe("Not Included");
+    expect(proposed.waterDamage).toBe("Not Covered");
+    expect(JSON.stringify(proposed)).not.toMatch(/289|EMPAT|FIGA|surplus|773/i);
+
+    const copiedTotal = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        coverage_a_premium: "2286.96",
+        coverage_a_fire_premium: "402",
+        coverage_a_extended_premium: "487",
+        coverage_a_hurricane_premium: "1849",
+        premium: "2286.96",
+      }),
+    });
+    expect(copiedTotal.coverageAPremium).toBe("$2,738");
+    expect(copiedTotal.premium).toBe("2286.96");
+
+    const coveragesOnly = groupAppliedFill(proposed, Object.keys(proposed));
+    expect(coveragesOnly.coverageLimits.coverage_a_premium).toBe("$2,738");
+    expect(coveragesOnly.coverageLimits.coverage_l).toBe("$100,000");
+    expect(coveragesOnly.coverageLimits.coverage_l_premium).toBe("$60");
+    expect(coveragesOnly.coverageLimits.coverage_m).toBe("$1,000");
+    expect(coveragesOnly.coverageLimits.limited_fungi).toBe("$10,000/$10,000");
+    expect(coveragesOnly.coverageLimits.limited_fungi_liability).toBe("$50,000");
+    expect(coveragesOnly.coverageLimits.rental_to_others_short_term_premium).toBe("Included");
+    expect(coveragesOnly.coverageLimits.replacement_cost_buy_back_premium).toBe("Included");
+    expect(coveragesOnly.coverageLimits.sinkhole_deductible).toBe("Not Included");
+    expect(coveragesOnly.coverageLimits.water_damage).toBe("Not Covered");
+    expect(coveragesOnly.policy.formType).toBe("DP3");
+    expect(propertyProtectionWithDwelling(null, {
+      protection: coveragesOnly.protection,
+      yearBuilt: coveragesOnly.risk.yearBuilt,
+      construction: coveragesOnly.risk.construction,
+      occupancy: coveragesOnly.risk.occupancy,
+    })).toBeNull();
+
+    const withRating = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ ...INES_CAMPS_TOWER_HILL_DP3_EXTRACT, ...INES_CAMPS_TOWER_HILL_DP3_RATING }),
+    });
+    const rated = groupAppliedFill(withRating, Object.keys(withRating));
+    expect(rated.risk.yearBuilt).toBe(1978);
+    expect(rated.risk.construction).toBe("Masonry");
+    expect(rated.risk.occupancy).toBe("Tenant");
+    expect(rated.risk.protectionClass).toBe("4");
+    expect(rated.coverageLimits.usage).toBe("Rental");
+    expect(rated.coverageLimits.number_of_families).toBe("1");
+    expect(rated.protection.bceg_grade).toBe("Ungraded");
+    expect(rated.protection.sprinkler).toBe("No");
+    expect(rated.protection.fire_alarm).toBe("No");
+    expect(rated.protection.roof_year).toBe("2016");
+    expect(rated.protection.roof_covering).toBe("Shingle");
+    expect(rated.protection.roof_shape).toBe("other");
+    expect(rated.protection.opening_protection).toBe("Unknown or None");
+    const snapshot = propertyProtectionWithDwelling(null, {
+      protection: rated.protection,
+      yearBuilt: rated.risk.yearBuilt,
+      construction: rated.risk.construction,
+      occupancy: rated.risk.occupancy,
+      source: "gemini",
+    });
+    expect(snapshot?.dwelling).toMatchObject({
+      year_built: "1978",
+      construction: "Masonry",
+      occupancy: "Tenant",
+    });
+    expect(snapshot?.values.protection_class).toBe("4");
+    expect(snapshot?.values.roof_year).toBe("2016");
+
+    const sections = buildLobOverviewSections({
+      policyId: "ines",
+      lineOfBusiness: "DP3",
+      formType: "DP3",
+      coverageA: 292037,
+      yearBuilt: rated.risk.yearBuilt,
+      construction: rated.risk.construction,
+      occupancy: rated.risk.occupancy,
+      usage: rated.coverageLimits.usage,
+      families: rated.coverageLimits.number_of_families,
+      protectionClass: rated.protection.protection_class,
+      bceg: rated.protection.bceg_grade,
+      fireAlarm: rated.protection.fire_alarm,
+      sprinkler: rated.protection.sprinkler,
+      roofYear: rated.risk.roofYear,
+      roofCovering: rated.protection.roof_covering,
+      roofShape: rated.protection.roof_shape,
+      openingProtection: rated.protection.opening_protection,
+    });
+    const dwelling = sections.find((section) => section.id === "dwelling")?.fields ?? [];
+    expect(dwelling.find((field) => field.key === "occupancy")?.value).toBe("Tenant");
+    expect(dwelling.find((field) => field.key === "usage")?.value).toBe("Rental");
+    expect(dwelling.find((field) => field.key === "yearBuilt")?.value).toBe("1978");
+    expect(dwelling.find((field) => field.key === "construction")?.value).toBe("Masonry");
+    expect(dwelling.find((field) => field.key === "protectionClass")?.value).toBe("4");
+    expect(dwelling.find((field) => field.key === "roofShape")?.value).toBe("other");
+    expect(dwelling.find((field) => field.key === "openingProtection")?.value).toBe("Unknown or None");
+
+    const html = renderToString(
+      createElement(PolicyCoverageTab, {
+        policy: {
+          id: "ines",
+          coverageA: 292037,
+          coverageLimits: coveragesOnly.coverageLimits,
+          faceAmount: null,
+          lineOfBusiness: "DP",
+          formType: "DP3",
+          policyType: "DP3",
+        },
+        terms: [],
+        currentTerm: null,
+      }),
+    );
+    const at = (label: string) => html.indexOf(label);
+    expect(at("Coverage A")).toBeGreaterThan(-1);
+    expect(at("Coverage E")).toBeLessThan(at("Coverage L - Liability"));
+    expect(at("Coverage L - Liability")).toBeLessThan(at("Coverage M - Medical Payments"));
+    expect(at("Coverage M - Medical Payments")).toBeLessThan(
+      at("Limited Fungi, Wet or Dry Rot, or Bacteria - Liability"),
+    );
+    expect(at("Limited Fungi, Wet or Dry Rot, or Bacteria - Liability")).toBeLessThan(
+      at("Rental to Others (Short Term Exclusions) - Property"),
+    );
+    expect(at("Replacement Cost Buy Back")).toBeLessThan(at("Catastrophic Ground Cover Collapse"));
+    expect(at("$10,000/$10,000")).toBeGreaterThan(at("Limited Fungi, Wet or Dry Rot, or Bacteria - Liability"));
+    expect(at("Water Damage")).toBeLessThan(at("Sinkhole"));
+    expect(html).toContain("$2,738");
+    expect(html).toContain("$100,000");
+    expect(html).toContain("$60");
+    expect(html).toContain("$50,000");
+    expect(html).toContain("$10,000/$10,000");
+    expect(html).toContain("Not Covered");
+    expect(html).toContain("Not Included");
+    expect(html).not.toContain("2,286.96");
+    expect(html).not.toContain("EMPAT");
+    expect(html).not.toContain("FIGA");
+    expect(html).not.toContain("Advance Quote");
+    expect(GEMINI_EXTRACT_JSON_KEYS).toEqual(
+      expect.arrayContaining([
+        "coverage_l",
+        "coverage_m",
+        "limited_fungi_liability",
+        "rental_to_others_short_term",
+        "replacement_cost_buy_back",
+        "water_damage_exclusion",
+        "sinkhole_exclusion",
+      ]),
+    );
+    const prompt = buildGeminiUserPrompt("dec", "home");
+    expect(prompt).toMatch(/Coverage L Liability/);
+    expect(prompt).toMatch(/Coverage M Medical Payments/);
+    expect(prompt).toMatch(/never the Total Policy Premium/);
+    expect(prompt).toMatch(/read every page/i);
+    expect(prompt).toMatch(/Age of Dwelling Surcharge/);
+  });
+
+  it("prefers a printed Roof Year over Roof Age and still turns an age into a year", () => {
+    const both = mapGeminiJsonToFields(
+      { roof_age: { value: "10 years", confidence: 0.95 }, roof_year: { value: "2021", confidence: 0.95 } },
+      "dec",
+      "home",
+    );
+    expect(both.fields.find((field) => field.fieldKey === "roof_year")?.normalizedValue).toBe("2021");
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ roof_age: "10 years", roof_year: "2021" }),
+    });
+    expect(proposed.roofYear).toBe("2021");
+    const ageOnly = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({ roof_age: "5 years" }),
+    });
+    expect(ageOnly.roofYear).toBe(String(new Date().getUTCFullYear() - 5));
+  });
+
+  it("does not invent occupancy from Usage Type when Occupied by is absent", () => {
+    const proposed = proposeFillFromDec({
+      family: "homeowners",
+      rows: rows({
+        form: "DP3",
+        usage_type: "Rental",
+        construction: "Masonry",
+      }),
+    });
+    expect(proposed.usage).toBe("Rental");
+    expect(proposed.occupancy).toBeUndefined();
+    expect(proposed.construction).toBe("Masonry");
   });
 
   it("keeps an explicit occupancy ahead of type of residence", () => {

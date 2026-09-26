@@ -1,8 +1,9 @@
 /**
- * Selective Flood / NFIP coverage and rating.
- * Building is the NFIP "Coverage A" amount. Contents is "Coverage C".
- * Those are not HO3 Coverage A–F. Loss of use and one extra row appear only
- * when the declaration prints them.
+ * Flood coverage and rating for Selective / NFIP and private flood (Neptune).
+ * Building is the dwelling amount. Contents is personal property.
+ * Those are not HO3 Coverage A–F.
+ * Each printed schedule row is kept, including a zero limit. Included stays
+ * Included. "No" stays No. A deductible credit stays negative.
  */
 
 import { appointmentLine } from "@/lib/domain-ams";
@@ -12,6 +13,10 @@ import {
   formatHomeDeductibleAmount,
   formatHomeDollarAmount,
 } from "@/lib/extraction/gemini/home-dollar";
+
+/** Older flood extracts lack this stamp, so the next manual Fill re-reads the dec. */
+export const FLOOD_PREMISES_SCHEDULE_STAMP = "flood_premises_schedule";
+export const FLOOD_PREMISES_SCHEDULE_VERSION = "2";
 
 export type FloodPolicyIdentity = {
   lineOfBusiness?: string | null;
@@ -184,17 +189,157 @@ export type FloodCoverageScheduleRow = {
   premium: string;
 };
 
-type Bucket = "building" | "contents" | "loss_of_use" | "icc" | "debris";
-
-const BUCKET_LABEL: Record<Bucket, string> = {
-  building: "Building",
-  contents: "Contents",
-  loss_of_use: "Loss of use",
-  icc: "Increased cost of compliance",
-  debris: "Debris removal",
+type ScheduleSpec = {
+  key: string;
+  label: string;
+  limitKeys: string[];
+  premiumKeys: string[];
+  deductibleKeys: string[];
 };
 
-type Cell = { limit: string; deductible: string; premium: string };
+/**
+ * Selective prints Building, Contents, and sometimes loss of use plus ICC or
+ * debris. Neptune prints the whole premises table. The group heading
+ * "Other Coverages" is not a row. Letter J is not on that table.
+ */
+const FLOOD_SCHEDULE_SPECS: ScheduleSpec[] = [
+  {
+    key: "building",
+    label: "Building",
+    limitKeys: [
+      "flood_building",
+      "building_limit",
+      "building",
+      "building_coverage",
+      "building_property",
+      "coverage_a",
+      "dwelling",
+      "dwelling_limit",
+    ],
+    premiumKeys: ["flood_building_premium", "building_premium", "coverage_a_premium", "dwelling_premium"],
+    deductibleKeys: ["flood_building_deductible", "building_deductible", "coverage_a_deductible"],
+  },
+  {
+    key: "contents",
+    label: "Contents",
+    limitKeys: ["flood_contents", "contents_limit", "contents", "coverage_c", "personal_property"],
+    premiumKeys: [
+      "flood_contents_premium",
+      "contents_premium",
+      "coverage_c_premium",
+      "personal_property_premium",
+    ],
+    deductibleKeys: ["flood_contents_deductible", "contents_deductible", "coverage_c_deductible"],
+  },
+  {
+    key: "loss_of_use",
+    label: "Loss of use",
+    limitKeys: ["flood_loss_of_use", "loss_of_use", "ale", "coverage_d"],
+    premiumKeys: ["flood_loss_of_use_premium", "loss_of_use_premium", "coverage_d_premium"],
+    deductibleKeys: ["flood_loss_of_use_deductible", "loss_of_use_deductible"],
+  },
+  {
+    key: "debris",
+    label: "Debris removal",
+    limitKeys: ["flood_debris", "debris_removal", "debris"],
+    premiumKeys: ["flood_debris_premium", "debris_removal_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "sandbags",
+    label: "Sandbags, supplies, and labor",
+    limitKeys: [
+      "flood_sandbags",
+      "sandbags_supplies_labor",
+      "sandbags_supplies_and_labor",
+      "sandbags",
+    ],
+    premiumKeys: ["flood_sandbags_premium", "sandbags_supplies_labor_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "property_removed",
+    label: "Property removed to safety",
+    limitKeys: ["flood_property_removed", "property_removed_to_safety", "property_removed"],
+    premiumKeys: ["flood_property_removed_premium", "property_removed_to_safety_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "icc",
+    label: "Increased cost of compliance",
+    limitKeys: ["flood_icc", "increased_cost_of_compliance", "icc"],
+    premiumKeys: ["flood_icc_premium", "increased_cost_of_compliance_premium", "icc_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "replacement_cost_contents",
+    label: "Replacement cost on contents",
+    limitKeys: ["flood_replacement_cost_contents", "replacement_cost_on_contents"],
+    premiumKeys: ["flood_replacement_cost_contents_premium", "replacement_cost_on_contents_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "basement_contents",
+    label: "Basement contents",
+    limitKeys: ["flood_basement_contents", "basement_contents"],
+    premiumKeys: ["flood_basement_contents_premium", "basement_contents_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "pool_repair",
+    label: "Pool repair and refill",
+    limitKeys: ["flood_pool_repair", "pool_repair_and_refill", "pool_repair_refill", "pool_repair"],
+    premiumKeys: ["flood_pool_repair_premium", "pool_repair_and_refill_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "unattached_structures",
+    label: "Unattached structures",
+    limitKeys: ["flood_unattached_structures", "unattached_structures"],
+    premiumKeys: ["flood_unattached_structures_premium", "unattached_structures_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "temporary_living",
+    label: "Temporary living expenses",
+    limitKeys: [
+      "flood_temporary_living",
+      "temporary_living_expenses",
+      "temporary_living_expense",
+      "additional_living_expense",
+    ],
+    premiumKeys: ["flood_temporary_living_premium", "temporary_living_expenses_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "replacement_cost_building",
+    label: "Replacement cost on building",
+    limitKeys: ["flood_replacement_cost_building", "replacement_cost_on_building"],
+    premiumKeys: ["flood_replacement_cost_building_premium", "replacement_cost_on_building_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "outdoor_trees",
+    label: "Outdoor trees, shrubs, and plants",
+    limitKeys: [
+      "flood_outdoor_trees",
+      "outdoor_trees_shrubs_plants",
+      "outdoor_trees_shrubs_and_plants",
+      "trees_shrubs_and_plants",
+      "trees_shrubs_plants",
+      "outdoor_trees",
+    ],
+    premiumKeys: ["flood_outdoor_trees_premium", "outdoor_trees_shrubs_plants_premium"],
+    deductibleKeys: [],
+  },
+  {
+    key: "deductible",
+    label: "Deductible",
+    limitKeys: [],
+    premiumKeys: ["flood_deductible_premium", "deductible_premium"],
+    deductibleKeys: ["flood_deductible", "deductible"],
+  },
+];
 
 function normalizeKey(raw: string): string {
   return raw
@@ -204,55 +349,6 @@ function normalizeKey(raw: string): string {
     .replace(/[\s\-./]+/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");
-}
-
-function bucketFor(key: string): Bucket | null {
-  if (
-    key === "coverage_a" ||
-    key === "building" ||
-    key === "flood_building" ||
-    key === "building_limit" ||
-    key === "building_coverage" ||
-    key === "building_property" ||
-    key === "dwelling" ||
-    key === "dwelling_limit"
-  ) {
-    return "building";
-  }
-  if (
-    key === "coverage_c" ||
-    key === "contents" ||
-    key === "flood_contents" ||
-    key === "contents_limit" ||
-    key === "personal_property"
-  ) {
-    return "contents";
-  }
-  if (
-    key === "coverage_d" ||
-    key === "loss_of_use" ||
-    key === "flood_loss_of_use" ||
-    key === "additional_living_expense" ||
-    key === "ale"
-  ) {
-    return "loss_of_use";
-  }
-  if (key === "increased_cost_of_compliance" || key === "icc" || key === "flood_icc") return "icc";
-  if (key === "debris_removal" || key === "debris" || key === "flood_debris") return "debris";
-  return null;
-}
-
-function bucketForLabel(label: string): Bucket | null {
-  const key = normalizeKey(label);
-  if (!key) return null;
-  if (key === "coverage_a" || key === "building" || key === "building_property") return "building";
-  if (key === "coverage_c" || key === "contents" || key === "personal_property") return "contents";
-  if (key === "coverage_d" || key === "loss_of_use" || key === "additional_living_expense") {
-    return "loss_of_use";
-  }
-  if (key === "icc" || key.includes("increased_cost_of_compliance")) return "icc";
-  if (key.includes("debris")) return "debris";
-  return null;
 }
 
 function showMoney(raw: string): string {
@@ -273,114 +369,75 @@ function showDeductible(raw: string): string {
   return formatHomeDeductibleAmount(trimmed) || trimmed;
 }
 
-function blankCell(): Cell {
-  return { limit: "", deductible: "", premium: "" };
+function rememberLimit(values: Map<string, string>, key: string, value: string) {
+  const norm = normalizeKey(key);
+  const trimmed = value.trim();
+  if (!norm || !trimmed || trimmed === "—") return;
+  if (norm.startsWith("flood_") || !values.has(norm)) values.set(norm, trimmed);
+}
+
+function firstShown(
+  values: Map<string, string>,
+  keys: string[],
+  format: (raw: string) => string,
+): string {
+  for (const key of keys) {
+    const raw = values.get(key);
+    if (!raw) continue;
+    const shown = format(raw);
+    if (shown) return shown;
+  }
+  return "";
 }
 
 /**
- * At most four rows: Building, Contents, Loss of use when printed, and one
- * extra (increased cost of compliance, else debris removal).
+ * One row per printed flood coverage. Building and Contents stay first.
+ * Neptune's later rows stay on the desk, including a printed $0.
+ * The deductible row carries the credit. It is not a limit of liability.
  */
 export function floodCoverageSchedule(input: {
   coverageA?: number | null;
   coverageLimits?: Record<string, string> | null;
   coverages?: PolicyCoverageLine[] | Record<string, string> | null;
 }): FloodCoverageScheduleRow[] {
-  const cells = new Map<Bucket, Cell>();
-  const cellFor = (bucket: Bucket): Cell => {
-    const existing = cells.get(bucket);
-    if (existing) return existing;
-    const created = blankCell();
-    cells.set(bucket, created);
-    return created;
-  };
-
-  const setLimit = (bucket: Bucket, value: string) => {
-    const shown = showMoney(value);
-    if (!shown) return;
-    const cell = cellFor(bucket);
-    if (!cell.limit) cell.limit = shown;
-  };
-  const setPremium = (bucket: Bucket, value: string) => {
-    const shown = showPremium(value);
-    if (!shown) return;
-    const cell = cellFor(bucket);
-    if (!cell.premium) cell.premium = shown;
-  };
-  const setDeductible = (bucket: Bucket, value: string) => {
-    const shown = showDeductible(value);
-    if (!shown) return;
-    const cell = cellFor(bucket);
-    if (!cell.deductible) cell.deductible = shown;
-  };
-
-  const applyKey = (rawKey: string, rawValue: string, label = "") => {
-    let key = normalizeKey(rawKey);
-    let part: "limit" | "premium" | "deductible" = "limit";
-    if (key.endsWith("_premium")) {
-      part = "premium";
-      key = key.slice(0, -"_premium".length);
-    } else if (key.endsWith("_deductible")) {
-      part = "deductible";
-      key = key.slice(0, -"_deductible".length);
-    }
-    const bucket = bucketFor(key) ?? bucketForLabel(label);
-    if (!bucket) return;
-    if (part === "premium") setPremium(bucket, rawValue);
-    else if (part === "deductible") setDeductible(bucket, rawValue);
-    else setLimit(bucket, rawValue);
-  };
-
-  const limits = input.coverageLimits ?? {};
-  const entries = Object.entries(limits).sort((a, b) => {
-    const rank = (key: string) => (key.startsWith("flood_") ? 0 : 1);
-    return rank(a[0]) - rank(b[0]);
-  });
-  for (const [key, value] of entries) {
-    if (!value?.trim()) continue;
-    applyKey(key, value);
+  const values = new Map<string, string>();
+  for (const [key, value] of Object.entries(input.coverageLimits ?? {})) {
+    if (value?.trim()) rememberLimit(values, key, value);
   }
 
   const coverages = input.coverages;
   if (Array.isArray(coverages)) {
     for (const row of coverages) {
-      const bucket = bucketFor(normalizeKey(row.key || "")) ?? bucketForLabel(row.label || "");
-      if (!bucket) continue;
-      setLimit(bucket, row.value ?? "");
-      if (row.premium?.trim()) setPremium(bucket, row.premium);
-      if (row.deductible?.trim()) setDeductible(bucket, row.deductible);
+      const key = normalizeKey(row.key || "") || normalizeKey(row.label || "");
+      if (!key) continue;
+      if (row.value?.trim()) rememberLimit(values, key, row.value);
+      if (row.premium?.trim()) rememberLimit(values, `${key}_premium`, row.premium);
+      if (row.deductible?.trim()) rememberLimit(values, `${key}_deductible`, row.deductible);
     }
   } else if (coverages) {
     for (const [key, value] of Object.entries(coverages)) {
-      if (!value?.trim()) continue;
-      applyKey(key, value);
+      if (value?.trim()) rememberLimit(values, key, value);
     }
   }
 
-  if (input.coverageA != null && !cells.get("building")?.limit) {
-    const shown = showMoney(String(input.coverageA));
-    if (shown) setLimit("building", shown);
+  const buildingLimitKeys = FLOOD_SCHEDULE_SPECS[0]?.limitKeys ?? [];
+  if (input.coverageA != null && !buildingLimitKeys.some((key) => values.has(key))) {
+    rememberLimit(values, "flood_building", String(input.coverageA));
   }
-
-  const order: Bucket[] = ["building", "contents", "loss_of_use"];
-  const extra: Bucket | null = cells.get("icc")?.limit || cells.get("icc")?.premium
-    ? "icc"
-    : cells.get("debris")?.limit || cells.get("debris")?.premium
-      ? "debris"
-      : null;
-  if (extra) order.push(extra);
 
   const rows: FloodCoverageScheduleRow[] = [];
-  for (const bucket of order) {
-    const cell = cells.get(bucket);
-    if (!cell || (!cell.limit && !cell.premium)) continue;
+  for (const spec of FLOOD_SCHEDULE_SPECS) {
+    const limit = firstShown(values, spec.limitKeys, showMoney);
+    const premium = firstShown(values, spec.premiumKeys, showPremium);
+    const deductible = firstShown(values, spec.deductibleKeys, showDeductible);
+    if (!limit && !premium && !deductible) continue;
     rows.push({
-      key: bucket,
-      label: BUCKET_LABEL[bucket],
-      limit: cell.limit || "—",
-      deductible: cell.deductible || "—",
-      premium: cell.premium || "—",
+      key: spec.key,
+      label: spec.label,
+      limit: limit || "—",
+      deductible: deductible || "—",
+      premium: premium || "—",
     });
   }
-  return rows.slice(0, 4);
+  return rows;
 }

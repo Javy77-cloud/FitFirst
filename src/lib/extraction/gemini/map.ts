@@ -1,4 +1,8 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
+import {
+  FLOOD_PREMISES_SCHEDULE_STAMP,
+  FLOOD_PREMISES_SCHEDULE_VERSION,
+} from "@/lib/policy/flood-coverage";
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
 import { normalizeNamedInsured } from "@/lib/people/named-insured";
@@ -42,7 +46,10 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   months_occupied: ["months_occupied"],
   number_of_months_occupied: ["months_occupied"],
   occupancy: ["occupancy"],
+  occupied: ["occupancy"],
+  occupied_by: ["occupancy"],
   usage: ["usage"],
+  usage_type: ["usage"],
   entity_type: ["entity_type"],
   construction: ["construction"],
   construction_type: ["construction"],
@@ -83,6 +90,38 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   icc_premium: ["increased_cost_of_compliance_premium"],
   debris_removal: ["debris_removal"],
   debris_removal_premium: ["debris_removal_premium"],
+  sandbags_supplies_labor: ["sandbags_supplies_labor"],
+  sandbags_supplies_and_labor: ["sandbags_supplies_labor"],
+  sandbags: ["sandbags_supplies_labor"],
+  sandbags_supplies_labor_premium: ["sandbags_supplies_labor_premium"],
+  property_removed_to_safety: ["property_removed_to_safety"],
+  property_removed: ["property_removed_to_safety"],
+  property_removed_to_safety_premium: ["property_removed_to_safety_premium"],
+  basement_contents: ["basement_contents"],
+  basement_contents_premium: ["basement_contents_premium"],
+  pool_repair_and_refill: ["pool_repair_and_refill"],
+  pool_repair_refill: ["pool_repair_and_refill"],
+  pool_repair: ["pool_repair_and_refill"],
+  pool_repair_and_refill_premium: ["pool_repair_and_refill_premium"],
+  unattached_structures: ["unattached_structures"],
+  unattached_structures_premium: ["unattached_structures_premium"],
+  temporary_living_expenses: ["temporary_living_expenses"],
+  temporary_living_expense: ["temporary_living_expenses"],
+  temporary_living: ["temporary_living_expenses"],
+  i_temporary_living_expenses: ["temporary_living_expenses"],
+  temporary_living_expenses_premium: ["temporary_living_expenses_premium"],
+  outdoor_trees_shrubs_plants: ["outdoor_trees_shrubs_plants"],
+  outdoor_trees_shrubs_and_plants: ["outdoor_trees_shrubs_plants"],
+  trees_shrubs_and_plants: ["outdoor_trees_shrubs_plants"],
+  trees_shrubs_plants: ["outdoor_trees_shrubs_plants"],
+  outdoor_trees: ["outdoor_trees_shrubs_plants"],
+  outdoor_trees_shrubs_plants_premium: ["outdoor_trees_shrubs_plants_premium"],
+  replacement_cost_on_contents: ["replacement_cost_on_contents"],
+  replacement_cost_on_contents_premium: ["replacement_cost_on_contents_premium"],
+  replacement_cost_on_building: ["replacement_cost_on_building"],
+  replacement_cost_on_building_premium: ["replacement_cost_on_building_premium"],
+  flood_deductible: ["flood_deductible"],
+  flood_deductible_premium: ["flood_deductible_premium"],
   ordinance_law: ["ordinance_or_law"],
   ordinance_or_law: ["ordinance_or_law"],
   ordinance_law_premium: ["ordinance_or_law_premium"],
@@ -100,11 +139,28 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   limited_fungi: ["limited_fungi"],
   limited_fungi_wet_or_dry_rot_or_bacteria: ["limited_fungi"],
   limited_fungi_wet_or_dry_rot_or_bacteria_coverage: ["limited_fungi"],
+  limited_fungi_wet_or_dry_rot_or_bacteria_coverage_property: ["limited_fungi"],
   fungi: ["limited_fungi"],
   mold: ["limited_fungi"],
   limited_fungi_premium: ["limited_fungi_premium"],
   limited_fungi_wet_or_dry_rot_or_bacteria_premium: ["limited_fungi_premium"],
   limited_fungi_wet_or_dry_rot_or_bacteria_coverage_premium: ["limited_fungi_premium"],
+  limited_fungi_liability: ["limited_fungi_liability"],
+  limited_fungi_wet_or_dry_rot_or_bacteria_liability: ["limited_fungi_liability"],
+  limited_fungi_wet_or_dry_rot_or_bacteria_coverage_liability: ["limited_fungi_liability"],
+  limited_fungi_liability_premium: ["limited_fungi_liability_premium"],
+  rental_to_others_short_term: ["rental_to_others_short_term"],
+  rental_to_others_short_term_exclusions: ["rental_to_others_short_term"],
+  rental_to_others_short_term_exclusions_property: ["rental_to_others_short_term"],
+  "rental_to_others_(short_term_exclusions)_property": ["rental_to_others_short_term"],
+  rental_to_others_short_term_premium: ["rental_to_others_short_term_premium"],
+  replacement_cost_buy_back: ["replacement_cost_buy_back"],
+  replacement_cost_buyback: ["replacement_cost_buy_back"],
+  replacement_cost_buy_back_premium: ["replacement_cost_buy_back_premium"],
+  water_damage_exclusion: ["water_damage_exclusion"],
+  water_damage: ["water_damage_exclusion"],
+  sinkhole_exclusion: ["sinkhole_exclusion"],
+  hurricane_protection: ["opening_protection", "hurricane_protection"],
   unit_owners_coverage_a: ["unit_owners_coverage_a"],
   unit_owners_coverage_a_special: ["unit_owners_coverage_a"],
   unit_owners_coverage_a_special_coverage: ["unit_owners_coverage_a"],
@@ -271,6 +327,19 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   coverage_e: ["coverage_e"],
   personal_liability: ["coverage_e"],
   coverage_f: ["coverage_f"],
+  coverage_l: ["coverage_l"],
+  coverage_l_liability: ["coverage_l"],
+  coverage_l_liability_each_occurrence: ["coverage_l"],
+  coverage_l_premium: ["coverage_l_premium"],
+  coverage_m: ["coverage_m"],
+  coverage_m_medical_payments: ["coverage_m"],
+  coverage_m_medical_payments_to_others: ["coverage_m"],
+  coverage_m_premium: ["coverage_m_premium"],
+  coverage_a_fire_premium: ["coverage_a_fire_premium"],
+  fire_premium: ["coverage_a_fire_premium"],
+  coverage_a_extended_premium: ["coverage_a_extended_premium"],
+  extended_coverage_premium: ["coverage_a_extended_premium"],
+  coverage_a_hurricane_premium: ["coverage_a_hurricane_premium"],
   coverage_a_premium: ["coverage_a_premium"],
   dwelling_premium: ["coverage_a_premium"],
   coverage_b_premium: ["coverage_b_premium"],
@@ -333,8 +402,11 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   mortgagee_address: ["mortgagee_address"],
   form: ["form"],
   sprinkler: ["sprinkler"],
+  automatic_sprinkler: ["sprinkler"],
+  automatic_sprinklers: ["sprinkler"],
   fire_alarm: ["central_alarm", "fire_alarm"],
   central_alarm: ["central_alarm"],
+  bceg: ["bceg_grade"],
   bceg_grade: ["bceg_grade"],
   dwelling_type: ["dwelling_type"],
   townhouse_rowhouse: ["dwelling_type", "townhouse_rowhouse"],
@@ -356,7 +428,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   scheduled_shed: ["scheduled_shed"],
   loss_of_rents: ["loss_of_rents"],
   fair_rental_value: ["loss_of_rents", "coverage_d"],
-  landlord_liability: ["landlord_liability", "coverage_e"],
+  landlord_liability: ["landlord_liability", "coverage_l"],
   // Personal Auto dec
   vin: ["vin"],
   vehicle_year: ["vehicle_year"],
@@ -543,7 +615,7 @@ export function normalizeGeminiJsonKey(key: string): string {
   return key
     .trim()
     .toLowerCase()
-    .replace(/[%$#]+/g, "")
+    .replace(/[%$#,]+/g, "")
     .replace(/[\s\-./]+/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");
@@ -575,9 +647,57 @@ const FLOOD_NA_VALUE_KEYS = new Set([
   "building_description_detail",
   "building_description",
   "primary_residence",
+  "primary_home",
   "building_occupancy",
+  "occupancy",
+  "occupancy_type",
   "prior_nfip_claims",
+  "prior_claims",
+  "prior_losses",
+  "prior_flood_claims",
+  "prior_flood_losses",
 ]);
+
+/**
+ * Flood letters are not HO3 coverages. These keys stay on the flood schedule
+ * instead of the homeowners columns.
+ */
+const FLOOD_SHEET_KEY_OVERRIDE: Record<string, string[]> = {
+  coverage_a: ["building_limit"],
+  dwelling: ["building_limit"],
+  dwelling_limit: ["building_limit"],
+  coverage_a_premium: ["building_premium"],
+  dwelling_premium: ["building_premium"],
+  contents: ["contents_limit"],
+  personal_property: ["contents_limit"],
+  coverage_c: ["contents_limit"],
+  contents_premium: ["contents_premium"],
+  personal_property_premium: ["contents_premium"],
+  coverage_c_premium: ["contents_premium"],
+  loss_of_use: ["loss_of_use"],
+  loss_of_use_premium: ["loss_of_use_premium"],
+  additional_living_expense: ["temporary_living_expenses"],
+  temporary_living: ["temporary_living_expenses"],
+  i_temporary_living_expenses: ["temporary_living_expenses"],
+  coverage_m: ["outdoor_trees_shrubs_plants"],
+  outdoor_trees_shrubs_and_plants: ["outdoor_trees_shrubs_plants"],
+  replacement_cost_contents: ["replacement_cost_on_contents"],
+  personal_property_replacement_cost: ["replacement_cost_on_contents"],
+  replacement_cost_contents_premium: ["replacement_cost_on_contents_premium"],
+  personal_property_replacement_cost_premium: ["replacement_cost_on_contents_premium"],
+  replacement_cost_dwelling: ["replacement_cost_on_building"],
+  dwelling_replacement_cost: ["replacement_cost_on_building"],
+  deductible: ["flood_deductible"],
+  deductible_premium: ["flood_deductible_premium"],
+  occupancy: ["building_occupancy"],
+  occupancy_type: ["building_occupancy"],
+  primary_home: ["primary_residence"],
+  prior_losses: ["prior_nfip_claims"],
+  prior_flood_claims: ["prior_nfip_claims"],
+  prior_flood_losses: ["prior_nfip_claims"],
+  method_used_to_determine_first_floor_height: ["ffh_method"],
+  ffh_determination: ["ffh_method"],
+};
 
 function rawPrintedText(raw: unknown): { value: string; confidence: number } | null {
   if (typeof raw === "string" || typeof raw === "number") {
@@ -851,7 +971,8 @@ export function mapGeminiJsonToFields(
       if (printed && /^n\/?a$/i.test(printed.value)) payload = { value: "N/A", confidence: printed.confidence };
     }
     if (!payload) continue;
-    const sheetKeys = sheetKeysForGeminiKey(geminiKey);
+    const sheetKeys =
+      (floodLine ? FLOOD_SHEET_KEY_OVERRIDE[geminiKey] : undefined) ?? sheetKeysForGeminiKey(geminiKey);
     if (sheetKeys.length === 0) {
       const knownKeys = new Set<string>([
         ...GEMINI_EXTRACT_JSON_KEYS,
@@ -877,7 +998,13 @@ export function mapGeminiJsonToFields(
             geminiKey === "year_constructed" ||
             geminiKey === "construction_year" ||
             geminiKey === "yr_of_construction");
-        if (!existing || (existing.normalizedValue.trim() && !yearOfConstruction)) continue;
+        const explicitRoofYear =
+          fieldKey === "roof_year" &&
+          (geminiKey === "roof_year" ||
+            geminiKey === "year_of_roof" ||
+            geminiKey === "year_of_roof_updated" ||
+            geminiKey === "year_roof_updated");
+        if (!existing || (existing.normalizedValue.trim() && !yearOfConstruction && !explicitRoofYear)) continue;
         const letterValue = normalizeExtractedValue(
           fieldKey,
           normalizeOirLetterCode(fieldKey, payload.value),
@@ -990,6 +1117,30 @@ export function mapGeminiJsonToFields(
 
   enforceAutoPhysDam(fields, shopLine);
   enforceHomeDecDollars(fields, shopLine);
+  if (
+    floodLine &&
+    fields.some(
+      (field) => field.fieldKey !== FLOOD_PREMISES_SCHEDULE_STAMP && field.normalizedValue.trim(),
+    )
+  ) {
+    const stamp = fields.find((field) => field.fieldKey === FLOOD_PREMISES_SCHEDULE_STAMP);
+    if (stamp) {
+      stamp.rawValue = FLOOD_PREMISES_SCHEDULE_VERSION;
+      stamp.normalizedValue = FLOOD_PREMISES_SCHEDULE_VERSION;
+    } else {
+      fields.push({
+        fieldKey: FLOOD_PREMISES_SCHEDULE_STAMP,
+        label: "flood premises schedule",
+        rawValue: FLOOD_PREMISES_SCHEDULE_VERSION,
+        normalizedValue: FLOOD_PREMISES_SCHEDULE_VERSION,
+        confidence: 1,
+        flagged: false,
+        source: "inferred",
+        sourceDocTag,
+        matchPath: "gemini",
+      });
+    }
+  }
 
   const glanceRequired = fields.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0;
   return {

@@ -21,7 +21,7 @@ import { renewalDaysPhrase } from "@/lib/renewal/urgency";
 import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
 import { floodRatingFromLimits } from "@/lib/policy/flood-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
-import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
+import { parsePropertyYear, resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { buildHomeOverviewInspections, type HomeInspectionDocument } from "@/lib/policy/home-overview-inspections";
 import { HomeInspectionSections } from "@/components/policy/home-inspection-sections";
@@ -126,6 +126,7 @@ export function PolicyOverviewTab({
     county?: string | null;
     roofCovering?: string | null;
     openingProtection?: string | null;
+    protectionClass?: string | null;
   } | null;
   /** Owner profile Name (person), never AFA / selling agency. */
   producerDisplayName?: string | null;
@@ -177,6 +178,7 @@ export function PolicyOverviewTab({
       row.kind === "additional_interest" ||
       row.kind === "certificate_holder",
   ).length;
+  const sheetValue = (key: string) => String(sheet?.[key]?.value ?? "").trim();
   const dwelling = resolveDwellingFacts({ risk, sheet });
   const floodRating = floodRatingFromLimits(policy.coverageLimits);
   const inspectionSections =
@@ -297,7 +299,7 @@ export function PolicyOverviewTab({
           premisesState: policy.premisesState,
           premisesZip: policy.premisesZip,
           yearBuilt: dwelling.yearBuilt,
-          roofYear: dwelling.roofYear,
+          roofYear: dwelling.roofYear ?? parsePropertyYear(protectionValues.roof_year),
           construction: dwelling.construction,
           typeOfResidence: limits.type_of_residence,
           monthsOccupied: limits.months_occupied,
@@ -306,7 +308,17 @@ export function PolicyOverviewTab({
           mortgageeCount,
           additionalInsuredCount,
           occupancy: dwelling.occupancy,
+          usage: limits.usage || sheetValue("usage"),
           families: limits.number_of_families,
+          protectionClass:
+            risk?.protectionClass || protectionValues.protection_class || sheetValue("protection_class"),
+          bceg: protectionValues.bceg_grade || sheetValue("bceg_grade"),
+          fireAlarm: protectionValues.fire_alarm || sheetValue("fire_alarm"),
+          sprinkler: protectionValues.sprinkler || sheetValue("sprinkler"),
+          roofCovering: protectionValues.roof_covering || risk?.roofCovering || sheetValue("roof_covering"),
+          roofShape: protectionValues.roof_shape || sheetValue("roof_shape"),
+          openingProtection:
+            protectionValues.opening_protection || risk?.openingProtection || sheetValue("opening_protection"),
           dwellingType: limits.dwelling_type,
           county: risk?.county,
           dwellingReplacementCost: limits.dwelling_replacement_cost,

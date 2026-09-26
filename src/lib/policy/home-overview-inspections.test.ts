@@ -41,6 +41,7 @@ describe("home overview inspections", () => {
       "roof_year",
       "roof_year_age",
       "roof_covering",
+      "opening_protection",
       "hvac_year",
       "hvac_year_age",
       "water_heater_year",
@@ -49,9 +50,32 @@ describe("home overview inspections", () => {
       "plumbing_year_age",
     ]);
     expect(combined.fields.find((field) => field.key === "roof_year_age")?.value).toBe("8 yrs");
-    expect(combined.fields.some((field) => field.key === "opening_protection")).toBe(false);
+    expect(combined.fields.find((field) => field.key === "opening_protection")?.value).toBe("Shutters");
     expect(combined.fields.some((field) => field.key === "central_alarm")).toBe(false);
     expect(combined.fields.some((field) => field.key === "electrical_circuit_amps")).toBe(false);
+  });
+
+  it("shows DEC roof rating inside the collapsed section when no inspection file is on the deal", () => {
+    const sections = buildHomeOverviewInspections({
+      nowYear,
+      risk: {
+        roofYear: 2021,
+        roofCovering: "Shingles-Asphalt",
+        openingProtection: "Hurricane Protection",
+      },
+      protection: { roof_shape: "other" },
+    });
+    expect(sections).toHaveLength(1);
+    expect(sections[0]?.title).toBe("Roof & four-point");
+    expect(sections[0]?.note).toBe(NOT_FROM_INSPECTION_NOTE);
+    expect(sections[0]?.document).toBeNull();
+    expect(sections[0]?.fields.find((field) => field.key === "roof_year")?.value).toBe("2021");
+    expect(sections[0]?.fields.find((field) => field.key === "roof_year_age")?.value).toBe("5 yrs");
+    expect(sections[0]?.fields.find((field) => field.key === "roof_covering")?.value).toBe("Shingles-Asphalt");
+    expect(sections[0]?.fields.find((field) => field.key === "roof_shape")?.value).toBe("other");
+    expect(sections[0]?.fields.find((field) => field.key === "opening_protection")?.value).toBe(
+      "Hurricane Protection",
+    );
   });
 
   it("stays collapsed and empty when nothing is on file", () => {

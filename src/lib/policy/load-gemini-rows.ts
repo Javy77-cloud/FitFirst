@@ -1,5 +1,9 @@
 import { MISSING_GEMINI_KEY_MESSAGE } from "@/lib/extraction/gemini/key";
 import { commercialDecCacheSupportsFill, isCommercialShopLine } from "@/lib/policy/commercial-coverage";
+import {
+  FLOOD_PREMISES_SCHEDULE_STAMP,
+  FLOOD_PREMISES_SCHEDULE_VERSION,
+} from "@/lib/policy/flood-coverage";
 import { evaluateMintExtract, normalizeMintFieldKey } from "@/lib/policy/mint-gate";
 
 export const DEC_FILE_MISSING_MESSAGE =
@@ -188,7 +192,16 @@ const GROUND_COVER_COLLAPSE_KEYS = new Set([
  * A–F and dropped Year of Construction / Masonry must be read again.
  * Liability-only caches with no dwelling limit are left alone.
  * A unit-owners endorsement cache that predates Catastrophic Ground Cover Collapse is read again.
+ * A DP dwelling cache with fungi and ground-cover collapse but no Coverage L/M predates the DP-3 schedule teach.
  */
+const DP_LIABILITY_CACHE_KEYS = new Set([
+  "coverage_l",
+  "coverage_l_premium",
+  "coverage_m",
+  "coverage_m_premium",
+  "landlord_liability",
+]);
+
 export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
   let sawDwellingCoverage = false;
   let sawLinePremium = false;
@@ -196,6 +209,9 @@ export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolea
   let sawConstruction = false;
   let sawUnitOwnerEndorsement = false;
   let sawGroundCoverCollapse = false;
+  let sawCoverageF = false;
+  let sawDpLiability = false;
+  let sawLimitedFungi = false;
   for (const row of rows) {
     const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
     if (!value) continue;
@@ -206,9 +222,13 @@ export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolea
     if (HOME_CONSTRUCTION_KEYS.has(key)) sawConstruction = true;
     if (UNIT_OWNER_ENDORSEMENT_KEYS.has(key)) sawUnitOwnerEndorsement = true;
     if (GROUND_COVER_COLLAPSE_KEYS.has(key)) sawGroundCoverCollapse = true;
+    if (key === "coverage_f" || key === "coverage_f_premium") sawCoverageF = true;
+    if (DP_LIABILITY_CACHE_KEYS.has(key)) sawDpLiability = true;
+    if (key === "limited_fungi" || key.startsWith("limited_fungi")) sawLimitedFungi = true;
   }
   if (sawUnitOwnerEndorsement && !sawGroundCoverCollapse) return false;
   if (!sawDwellingCoverage) return true;
+  if (sawLimitedFungi && sawGroundCoverCollapse && !sawCoverageF && !sawDpLiability) return false;
   return sawLinePremium && sawYear && sawConstruction;
 }
 
@@ -250,23 +270,24 @@ export function shouldForceAutoDecReread(input: {
 const FLOOD_RATING_CACHE_KEYS = new Set([
   "building_occupancy",
   "flood_building_occupancy",
+  "occupancy",
   "number_of_units",
   "primary_residence",
+  "primary_home",
   "property_description",
   "prior_nfip_claims",
+  "prior_losses",
   "date_of_construction",
-  "flood_zone",
   "first_floor_height",
   "ffh_method",
   "most_favorable_ffh_method",
   "building_description_detail",
-  "building_limit",
-  "flood_building",
 ]);
 
 /**
- * A flood cache from the homeowners prompt has Coverage A/C and no rating block.
- * Manual Flood Fill reads the declaration again until a rating fact is present.
+ * A homeowners cache, or a Neptune pass that only stored the flood zone and
+ * Building/Contents, has no rating block. Flood zone alone does not count.
+ * Manual Flood Fill reads the declaration again until another rating fact is present.
  */
 export function floodDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
   return rows.some((row) => {
@@ -297,6 +318,17 @@ export function shouldForceCommercialDecReread(input: {
   return true;
 }
 
+/** True after a flood extract from the premises-schedule teach. Older caches re-read. */
+export function floodPremisesScheduleStamped(rows: readonly GeminiMintRow[]): boolean {
+  return rows.some((row) => {
+    const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
+    return (
+      normalizeMintFieldKey(row.fieldKey) === FLOOD_PREMISES_SCHEDULE_STAMP &&
+      value === FLOOD_PREMISES_SCHEDULE_VERSION
+    );
+  });
+}
+
 /** Manual flood Fill re-reads a cache that never captured the NFIP rating block. */
 export function shouldForceFloodDecReread(input: {
   manualFlood: boolean;
@@ -306,6 +338,7 @@ export function shouldForceFloodDecReread(input: {
   reuseFresh: boolean;
 }): boolean {
   if (!input.manualFlood) return false;
+  if (!floodPremisesScheduleStamped(input.rows)) return true;
   if (!evaluateMintExtract(input.rows).ok) return true;
   if (floodDecCacheSupportsFill(input.rows)) return false;
   if (
