@@ -502,7 +502,6 @@ export default async function PolicyDetailPage({
             notice={notice}
             accessLog={accessLog}
             isAdmin={isAdmin}
-            renewalHandled={renewalHandled}
             uploadMode={quoteFileUploadMode({
               vercel: process.env.VERCEL,
               blobReady: blobStoreReady(),
