@@ -83,8 +83,10 @@ import {
   boundStorageLineForInstance,
   dealDetailsStoredAddresses,
   headerSheetForPinnedAddress,
+  headerWithSplitInsuredAddress,
   pinPropertyAddresses,
   quotingFormForProductSheet,
+  sheetWithProductInsuredAddress,
   unscopedRiskInstanceKey,
 } from "@/lib/deals/product-address-pin";
 import {
@@ -376,20 +378,26 @@ export default async function DealPage({
     activeProduct,
   );
   const pinnedSheetValues = headerSheetForPinnedAddress(activeSheet.values, activePin);
-  const headerAddresses = headerAddressesForProductTab({
+  const headerAddresses = headerWithSplitInsuredAddress({
     instanceKey: activeInstance.key,
-    ownsSheet: activeOwnsPropertySheet,
-    sheetValues: pinnedSheetValues,
-    ownRisk: activePin?.address.street
-      ? {
-          address1: activePin.address.street,
-          city: activePin.address.city,
-          state: activePin.address.state,
-          zip: activePin.address.zip,
-        }
-      : null,
-    dwellingFire: headerDwellingFire,
+    legacyOwnerKey: legacyPropertyKey,
+    locationStreet: activePin?.address.street,
     dealStored: dealValues,
+    header: headerAddressesForProductTab({
+      instanceKey: activeInstance.key,
+      ownsSheet: activeOwnsPropertySheet,
+      sheetValues: pinnedSheetValues,
+      ownRisk: activePin?.address.street
+        ? {
+            address1: activePin.address.street,
+            city: activePin.address.city,
+            state: activePin.address.state,
+            zip: activePin.address.zip,
+          }
+        : null,
+      dwellingFire: headerDwellingFire,
+      dealStored: dealValues,
+    }),
   });
   const activePropertyAddress = isPropertyCoveringProduct(activeProduct)
     ? resolveProductPropertyAddress({
@@ -403,9 +411,17 @@ export default async function DealPage({
       })
     : null;
   const profileValues = hideCrossProductDealFacts(
-    activePropertyAddress && !activeOwnsPropertySheet
-      ? overlaySharedProductSheet(pinnedSheetValues, activeInstance.key, activePropertyAddress.address)
-      : pinnedSheetValues,
+    sheetWithProductInsuredAddress(
+      activePropertyAddress && !activeOwnsPropertySheet
+        ? overlaySharedProductSheet(pinnedSheetValues, activeInstance.key, activePropertyAddress.address)
+        : pinnedSheetValues,
+      {
+        instanceKey: activeInstance.key,
+        legacyOwnerKey: legacyPropertyKey,
+        locationStreet: activePin?.address.street,
+        dealStored: dealValues,
+      },
+    ),
     productInstances.length > 1,
     { includeAddress: activeInstance.key !== legacyPropertyKey },
   );

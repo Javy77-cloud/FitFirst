@@ -9,12 +9,14 @@ import {
   type ProductInstance,
 } from "@/lib/deals/product-instances";
 import {
+  addressFromInsuredFields,
   addressFromRiskRow,
   addressHasLocation,
   dealLevelPropertyAddress,
   EMPTY_PROPERTY_ADDRESS,
   isPropertyCoveringProduct,
   legacyPropertyOwnerKey,
+  type ProductTabHeaderAddress,
   type PropertyAddress,
 } from "@/lib/deals/product-property";
 
@@ -23,9 +25,12 @@ import {
  *
  * Shop order gives the plain `home` line to the first property product.
  * A dec `form` on that line (DP3 facts stamped HO3) does not move the
- * insured address onto the sibling. The unscoped risk stays with the first
+ * location onto the sibling. The unscoped risk stays with the first
  * property product. A later product does not reuse that street, and does
  * not reuse another product's keyed street, unless it has its own risk row.
+ * Deal Details insured address stays the deal field. When that street
+ * differs from the first product's location, the header shows the deal
+ * street and the chip keeps the location.
  */
 
 type SheetValues = Record<string, { value?: string | null } | null | undefined> | null | undefined;
@@ -386,6 +391,67 @@ const HEADER_INSURED_SHEET_KEYS = [
   "applicant_address",
   "property_address",
 ] as const;
+
+/**
+ * Package-header "Insured address" for the first property product.
+ * The chip and risk stay the location (Gloria HO3: 10358 Doral). When Deal
+ * Details insured is a different street (8944), the header shows that street
+ * — not the risk and not a sibling mailing (16021). Keyed copies and a blank
+ * pin are left alone.
+ */
+export function headerWithSplitInsuredAddress<
+  T extends { insured: ProductTabHeaderAddress; mailing: ProductTabHeaderAddress },
+>(input: {
+  instanceKey: string;
+  legacyOwnerKey: string | null;
+  locationStreet: string | null | undefined;
+  dealStored?: Record<string, string | null | undefined> | null;
+  header: T;
+}): T {
+  if (!input.legacyOwnerKey || input.instanceKey !== input.legacyOwnerKey) return input.header;
+  if (!propertyStreetKey(input.locationStreet)) return input.header;
+  const insured = addressFromInsuredFields(input.dealStored);
+  if (!insured.street || propertyStreetsMatch(input.locationStreet, insured.street)) return input.header;
+  return {
+    ...input.header,
+    insured: {
+      address1: insured.street,
+      city: insured.city,
+      state: insured.state,
+      zip: insured.zip,
+    },
+  };
+}
+
+/**
+ * Applicant on the open sheet is the insured person, not the risk and not
+ * another product's street. Display only — does not write the sheet.
+ */
+export function sheetWithProductInsuredAddress(
+  values: SheetValues,
+  input: {
+    instanceKey: string;
+    legacyOwnerKey: string | null;
+    locationStreet: string | null | undefined;
+    dealStored?: Record<string, string | null | undefined> | null;
+  },
+): SheetValues {
+  if (!values) return values;
+  if (!input.legacyOwnerKey || input.instanceKey !== input.legacyOwnerKey) return values;
+  if (!propertyStreetKey(input.locationStreet)) return values;
+  const insured = addressFromInsuredFields(input.dealStored);
+  if (!insured.street || propertyStreetsMatch(input.locationStreet, insured.street)) return values;
+  const applicant = cell(values, "applicant_address");
+  if (!applicant || propertyStreetsMatch(applicant, insured.street)) return values;
+  if (propertyStreetsMatch(applicant, input.locationStreet)) return values;
+  const current = values.applicant_address;
+  return {
+    ...values,
+    applicant_address: current
+      ? { ...current, value: insured.street }
+      : { value: insured.street },
+  };
+}
 
 /** Header insured location follows the pin. A blank pin does not fall through to a sibling street on the sheet. */
 export function headerSheetForPinnedAddress(
