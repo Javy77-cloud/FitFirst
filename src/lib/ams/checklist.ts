@@ -215,6 +215,8 @@ function checkItem(
       mortgagee: "Mortgagee endorsement is not on file.",
       coi: "Certificate of insurance is not on file.",
       ai_endorsements: "Additional insured endorsement is not on file.",
+      roof_docs: "Roof docs not on file yet.",
+      loss_runs: "Loss runs not on file yet.",
     };
     const doneHints: Partial<Record<ServicingCheckKey, string>> = {
       id_cards: "ID card file is attached.",
@@ -222,6 +224,8 @@ function checkItem(
       mortgagee: "Mortgagee endorsement is on file.",
       coi: "Certificate of insurance is on file.",
       ai_endorsements: "Additional insured endorsement is on file.",
+      roof_docs: "Roof docs are on file.",
+      loss_runs: "Loss runs are on file.",
     };
     return {
       key,
@@ -238,18 +242,14 @@ function checkItem(
     };
   }
   const emptyHints: Partial<Record<ServicingCheckKey, string>> = {
-    roof_docs: "Roof docs not on file yet.",
     beneficiary: "Beneficiary not confirmed. Link a contact when the insured names one.",
     medical_exam: "Medical exam not marked complete.",
     underwriting: "Underwriting packet still open.",
-    loss_runs: "Loss runs not collected yet.",
   };
   const doneHints: Partial<Record<ServicingCheckKey, string>> = {
-    roof_docs: "Roof docs marked complete.",
     beneficiary: "Beneficiary marked complete.",
     medical_exam: "Medical exam marked complete.",
     underwriting: "Underwriting marked complete.",
-    loss_runs: "Loss runs marked complete.",
   };
   return {
     key,

@@ -45,6 +45,8 @@ export function autoTagDocType(docType: string): string {
   const normalized = docType.trim().toLowerCase().replaceAll("-", "_").replaceAll(/\s+/g, "_");
   const raw = normalized.replaceAll("_", " ");
   if (normalized === "renewal_docs") return "Renewal docs";
+  if (normalized === "roof_docs") return "Roof docs";
+  if (normalized === "loss_runs" || normalized === "loss_run") return "Loss runs";
   if (/(?:^|_)(?:dec|declaration)(?:s|_page)?$/.test(normalized)) return "Issued declaration page";
   if (/endors/i.test(docType)) return "Endorsement";
   if (/appl/i.test(docType)) return "Application";

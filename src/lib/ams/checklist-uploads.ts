@@ -2,11 +2,13 @@ import { isPolicyAttachDocType } from "@/lib/documents/document-labels";
 
 /**
  * Servicing checklist row → Policy Documents Type (`?tab=documents&docType=`).
- * Null means the row is not file-backed (no Mark complete removal, no Documents button).
+ * Null means the row is not file-backed: Mark complete stays, no Documents button.
+ * Those rows are beneficiary (link a contact), medical exam, and underwriting.
  *
  * mortgagee and AI endorsements share `endorsement` — the closest existing
- * category (lender / additional-insured endorsements). renewal_docs is its own
- * category so a renewal packet is not typed as an issued DEC.
+ * category (lender / additional-insured endorsements). renewal_docs, roof_docs,
+ * and loss_runs are their own categories so they are not typed as an issued DEC
+ * or as the Inspection row.
  */
 export const CHECKLIST_ROW_ATTACH_DOC_TYPE = {
   dec: "policy_dec",
@@ -18,6 +20,8 @@ export const CHECKLIST_ROW_ATTACH_DOC_TYPE = {
   renewal_docs: "renewal_docs",
   coi: "coi",
   ai_endorsements: "endorsement",
+  roof_docs: "roof_docs",
+  loss_runs: "loss_runs",
 } as const;
 
 export type ChecklistUploadRowKey = keyof typeof CHECKLIST_ROW_ATTACH_DOC_TYPE;
@@ -32,6 +36,8 @@ const ROW_FILE_TYPES: Record<ChecklistUploadRowKey, readonly string[]> = {
   renewal_docs: ["renewal_docs"],
   coi: ["coi", "certificate"],
   ai_endorsements: ["endorsement"],
+  roof_docs: ["roof_docs", "wind_mit", "wind_mitigation"],
+  loss_runs: ["loss_runs", "loss_run"],
 };
 
 export function checklistRowAttachDocType(key: string): string | null {

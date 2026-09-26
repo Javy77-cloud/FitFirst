@@ -50,6 +50,8 @@ export const DOCUMENT_CATEGORIES = [
   { value: "coi", label: "COI" },
   { value: "inspection", label: "Inspection" },
   { value: "renewal_docs", label: "Renewal docs" },
+  { value: "roof_docs", label: "Roof docs" },
+  { value: "loss_runs", label: "Loss runs" },
 ] as const;
 
 /** @deprecated alias — prefer DOCUMENT_CATEGORIES */

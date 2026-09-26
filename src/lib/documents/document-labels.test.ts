@@ -27,6 +27,8 @@ describe("document labels + term role", () => {
       "coi",
       "inspection",
       "renewal_docs",
+      "roof_docs",
+      "loss_runs",
     ]);
     expect(POLICY_ATTACH_DOC_TYPES[0]?.label).toBe("Issued declaration page");
     expect(isPolicyAttachDocType("aor")).toBe(true);
