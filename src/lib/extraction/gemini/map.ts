@@ -82,6 +82,30 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   icc_premium: ["increased_cost_of_compliance_premium"],
   debris_removal: ["debris_removal"],
   debris_removal_premium: ["debris_removal_premium"],
+  sandbags_supplies_labor: ["sandbags_supplies_labor"],
+  sandbags_supplies_and_labor: ["sandbags_supplies_labor"],
+  sandbags: ["sandbags_supplies_labor"],
+  sandbags_supplies_labor_premium: ["sandbags_supplies_labor_premium"],
+  property_removed_to_safety: ["property_removed_to_safety"],
+  property_removed: ["property_removed_to_safety"],
+  property_removed_to_safety_premium: ["property_removed_to_safety_premium"],
+  basement_contents: ["basement_contents"],
+  basement_contents_premium: ["basement_contents_premium"],
+  pool_repair_and_refill: ["pool_repair_and_refill"],
+  pool_repair_refill: ["pool_repair_and_refill"],
+  pool_repair: ["pool_repair_and_refill"],
+  pool_repair_and_refill_premium: ["pool_repair_and_refill_premium"],
+  unattached_structures: ["unattached_structures"],
+  unattached_structures_premium: ["unattached_structures_premium"],
+  temporary_living_expenses: ["temporary_living_expenses"],
+  temporary_living_expense: ["temporary_living_expenses"],
+  temporary_living_expenses_premium: ["temporary_living_expenses_premium"],
+  replacement_cost_on_contents: ["replacement_cost_on_contents"],
+  replacement_cost_on_contents_premium: ["replacement_cost_on_contents_premium"],
+  replacement_cost_on_building: ["replacement_cost_on_building"],
+  replacement_cost_on_building_premium: ["replacement_cost_on_building_premium"],
+  flood_deductible: ["flood_deductible"],
+  flood_deductible_premium: ["flood_deductible_premium"],
   ordinance_law: ["ordinance_or_law"],
   ordinance_or_law: ["ordinance_or_law"],
   ordinance_law_premium: ["ordinance_or_law_premium"],
@@ -572,9 +596,53 @@ const FLOOD_NA_VALUE_KEYS = new Set([
   "building_description_detail",
   "building_description",
   "primary_residence",
+  "primary_home",
   "building_occupancy",
+  "occupancy",
+  "occupancy_type",
   "prior_nfip_claims",
+  "prior_claims",
+  "prior_losses",
+  "prior_flood_claims",
+  "prior_flood_losses",
 ]);
+
+/**
+ * Flood letters are not HO3 coverages. These keys stay on the flood schedule
+ * instead of the homeowners columns.
+ */
+const FLOOD_SHEET_KEY_OVERRIDE: Record<string, string[]> = {
+  coverage_a: ["building_limit"],
+  dwelling: ["building_limit"],
+  dwelling_limit: ["building_limit"],
+  coverage_a_premium: ["building_premium"],
+  dwelling_premium: ["building_premium"],
+  contents: ["contents_limit"],
+  personal_property: ["contents_limit"],
+  coverage_c: ["contents_limit"],
+  contents_premium: ["contents_premium"],
+  personal_property_premium: ["contents_premium"],
+  coverage_c_premium: ["contents_premium"],
+  loss_of_use: ["loss_of_use"],
+  loss_of_use_premium: ["loss_of_use_premium"],
+  additional_living_expense: ["loss_of_use"],
+  replacement_cost_contents: ["replacement_cost_on_contents"],
+  personal_property_replacement_cost: ["replacement_cost_on_contents"],
+  replacement_cost_contents_premium: ["replacement_cost_on_contents_premium"],
+  personal_property_replacement_cost_premium: ["replacement_cost_on_contents_premium"],
+  replacement_cost_dwelling: ["replacement_cost_on_building"],
+  dwelling_replacement_cost: ["replacement_cost_on_building"],
+  deductible: ["flood_deductible"],
+  deductible_premium: ["flood_deductible_premium"],
+  occupancy: ["building_occupancy"],
+  occupancy_type: ["building_occupancy"],
+  primary_home: ["primary_residence"],
+  prior_losses: ["prior_nfip_claims"],
+  prior_flood_claims: ["prior_nfip_claims"],
+  prior_flood_losses: ["prior_nfip_claims"],
+  method_used_to_determine_first_floor_height: ["ffh_method"],
+  ffh_determination: ["ffh_method"],
+};
 
 function rawPrintedText(raw: unknown): { value: string; confidence: number } | null {
   if (typeof raw === "string" || typeof raw === "number") {
@@ -842,7 +910,8 @@ export function mapGeminiJsonToFields(
       if (printed && /^n\/?a$/i.test(printed.value)) payload = { value: "N/A", confidence: printed.confidence };
     }
     if (!payload) continue;
-    const sheetKeys = sheetKeysForGeminiKey(geminiKey);
+    const sheetKeys =
+      (floodLine ? FLOOD_SHEET_KEY_OVERRIDE[geminiKey] : undefined) ?? sheetKeysForGeminiKey(geminiKey);
     if (sheetKeys.length === 0) {
       const knownKeys = new Set<string>([
         ...GEMINI_EXTRACT_JSON_KEYS,

@@ -249,23 +249,24 @@ export function shouldForceAutoDecReread(input: {
 const FLOOD_RATING_CACHE_KEYS = new Set([
   "building_occupancy",
   "flood_building_occupancy",
+  "occupancy",
   "number_of_units",
   "primary_residence",
+  "primary_home",
   "property_description",
   "prior_nfip_claims",
+  "prior_losses",
   "date_of_construction",
-  "flood_zone",
   "first_floor_height",
   "ffh_method",
   "most_favorable_ffh_method",
   "building_description_detail",
-  "building_limit",
-  "flood_building",
 ]);
 
 /**
- * A flood cache from the homeowners prompt has Coverage A/C and no rating block.
- * Manual Flood Fill reads the declaration again until a rating fact is present.
+ * A homeowners cache, or a Neptune pass that only stored the flood zone and
+ * Building/Contents, has no rating block. Flood zone alone does not count.
+ * Manual Flood Fill reads the declaration again until another rating fact is present.
  */
 export function floodDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
   return rows.some((row) => {
