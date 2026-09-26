@@ -103,7 +103,7 @@ export function renewalAgreedEffectiveKey(input: RenewalAgreedStampInput): strin
  * renewed term's effective date. The stamp clears on that day.
  */
 export function showRenewalAgreedStamp(input: RenewalAgreedStampInput): boolean {
-  if (!input.renewalHandled) return false;
+  if (input.renewalHandled !== true) return false;
   const start = renewalAgreedEffectiveKey(input);
   if (!start) return false;
   const today = etDateKey(input.asOf ?? new Date());

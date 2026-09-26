@@ -152,6 +152,9 @@ describe("renewal agreed stamp", () => {
     expect(css).toMatch(/@container \(max-width: 40rem\)/);
     expect(css).not.toMatch(/max-width:\s*calc\(100% - 13rem\)/);
     expect(readFileSync("src/lib/policies/renewal-agreed.ts", "utf8")).toContain("Renewal agreed");
+    expect(readFileSync("src/app/policies/[id]/page.tsx", "utf8")).toMatch(
+      /isRenewalHandledStageValue\(renewalQueueRow\?\.stage\)/,
+    );
     expect(readFileSync("src/app/policies/[id]/page.tsx", "utf8")).toMatch(/renewalHandled=\{renewalHandled\}/);
   });
 });

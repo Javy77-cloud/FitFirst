@@ -23,6 +23,7 @@ import { renewalQueueLine } from "@/lib/ams/renewal-queue";
 import { sendDeskEmail } from "@/app/actions/comms";
 import { createDeal } from "@/app/actions/crm";
 import type { HomeLineKey } from "@/lib/home/lines";
+import type { ClientStayingEarlyResult } from "@/lib/renewal/handled";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -204,7 +205,9 @@ export async function createRenewalCrossSellDeal(formData: FormData) {
 }
 
 /** Client staying — leave active chase, land in quiet Handled filter (not archive). */
-export async function markClientStaying(formData: FormData) {
+export async function markClientStaying(
+  formData: FormData,
+): Promise<{ ok: true } | ClientStayingEarlyResult> {
   const session = await currentDeskSession();
   if (!session.signedIn) throw new Error("Sign in required.");
   const policyId = str(formData, "policyId");
@@ -241,11 +244,19 @@ export async function markClientStaying(formData: FormData) {
     RENEWAL_HANDLED_EVENT,
     RENEWAL_HANDLED_CLEAR_KINDS,
     assertClientStayingAvailable,
+    clientStayingEarlyRefusal,
+    confirmEarlyClientStayingRequested,
   } = await import("@/lib/renewal/handled");
   const { deskNow } = await import("@/lib/home/as-of");
   const { resolveCurrentTerm } = await import("@/lib/policies/current-term");
   const resolved = resolveCurrentTerm({ ...policy, terms }, deskNow());
-  assertClientStayingAvailable(resolved.renewalAnchor ?? policy.renewalDate, deskNow());
+  const confirmEarly = confirmEarlyClientStayingRequested(formData.get("confirmEarlyClientStaying"));
+  const anchor = resolved.renewalAnchor ?? policy.renewalDate;
+  const now = deskNow();
+  // Outside the 90-day window, refuse without writing unless the agent confirmed.
+  const early = clientStayingEarlyRefusal(anchor, now, { confirmEarlyClientStaying: confirmEarly });
+  if (early) return early;
+  assertClientStayingAvailable(anchor, now, { confirmEarlyClientStaying: confirmEarly });
 
   const [existing] = await db
     .select()
@@ -308,4 +319,5 @@ export async function markClientStaying(formData: FormData) {
   revalidatePath("/notifications");
   revalidatePath("/");
   revalidatePath("/policies");
+  return { ok: true };
 }

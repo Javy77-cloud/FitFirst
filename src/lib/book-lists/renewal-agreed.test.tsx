@@ -77,6 +77,13 @@ describe("showRenewalAgreedBadge", () => {
         asOf: new Date("2026-10-01T16:00:00.000Z"),
       }),
     ).toBe(false);
+    expect(
+      showRenewalAgreedBadge({
+        handled: false,
+        termExpiration: EXPIRING,
+        asOf: new Date("2026-10-01T16:00:00.000Z"),
+      }),
+    ).toBe(false);
   });
 
   it("prefers a recorded renewed-term effective date", () => {
