@@ -132,6 +132,7 @@ import {
   normalizeDealPageStageSlug,
 } from "@/lib/deals/new-deal-write";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
+import { DealResumeNotice } from "@/components/deal/deal-resume-notice";
 import { PromiseChips } from "@/components/notifications/promise-chips";
 import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
 import { serializeCommitments } from "@/lib/notifications/commitments";
@@ -172,6 +173,13 @@ import { carriersForDealLine } from "@/lib/deals/carriers-for-line";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB, formatMoney } from "@/lib/domain";
 import { parseQuickCommsKind } from "@/lib/desk/quick-comms-open";
+import {
+  selectResumeProduct,
+  selectResumeTab,
+  shouldPersistDealResume,
+  type DealStepCompletion,
+} from "@/lib/deals/deal-resume";
+import { loadDealResume, saveDealResumePlace } from "@/lib/deals/deal-resume-store";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
@@ -316,16 +324,24 @@ export default async function DealPage({
     policySubType: deal.policySubType,
   });
   const splitHome = splitHomeProducts(dealProducts);
+  const resumeMemory = session.userId ? await loadDealResume(session.userId) : null;
+  const rememberedPlace = resumeMemory?.deals[deal.id] ?? null;
+  const resumeProduct = selectResumeProduct({
+    explicitProduct: product,
+    explicitLine: lineParam,
+    rememberedProductKey: rememberedPlace?.productKey,
+    instanceKeys: productInstances.map((row) => row.key),
+  });
   const activeInstance = resolveActiveProductInstance({
-    productParam: product,
-    lineParam,
+    productParam: resumeProduct.productParam === undefined ? product : resumeProduct.productParam,
+    lineParam: resumeProduct.ignoreLine ? null : lineParam,
     instances: productInstances,
     quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
     quotingForm: deal.quotingForm,
   });
   const activeProduct = activeInstance.productId;
   const activePackageLine = resolveActivePackageLine({
-    lineParam,
+    lineParam: resumeProduct.ignoreLine ? null : lineParam,
     packageLines,
     quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
     lineOfBusiness: deal.lineOfBusiness,
@@ -467,7 +483,7 @@ export default async function DealPage({
   const health = activeSheet ? reportFromSheet(sheetLine, profileValues) : null;
   const unlocked = quotingUnlockedForLine({ deal, sheet: activeSheet });
   const tabParam = tab;
-  const activeTab = tabParam
+  const defaultTab = tabParam
     ? parseAgentDealTab(tabParam)
     : resolveDealResumeTab({
         recordValues: dealValues,
@@ -581,6 +597,26 @@ export default async function DealPage({
     saved: shopFlowLive,
     line: storageLine,
   });
+  const resumeCompletion: DealStepCompletion = {
+    details: flowCompletion.isComplete("details"),
+    documents: flowCompletion.isComplete("documents"),
+    markets: flowCompletion.isComplete("markets"),
+    quotes: flowCompletion.isComplete("quotes"),
+  };
+  const resumeTab = selectResumeTab({
+    explicitTab: tab,
+    rememberedTab: rememberedPlace?.tab,
+    completion: resumeCompletion,
+    defaultTab,
+  });
+  const activeTab = resumeTab.tab;
+  if (session.userId && shouldPersistDealResume({ tab, product, line: lineParam })) {
+    await saveDealResumePlace(session.userId, {
+      dealId: deal.id,
+      productKey: activeInstance.key,
+      tab: activeTab,
+    });
+  }
   const productStages = isHeatherCamirandDeal(deal)
     ? stripStaleCamirandProductNotices(parseProductStages(shopFlow.productStages))
     : parseProductStages(shopFlow.productStages);
@@ -989,7 +1025,13 @@ export default async function DealPage({
           corner={
             <DealRailCharts progress={shoppingRows} mix={appetiteMix} />
           }
-          banner={null}
+          banner={
+            <DealResumeNotice
+              missingProductKey={resumeProduct.fallback?.missingProductKey}
+              openedLabel={activeInstanceLabel}
+              advancedTab={resumeTab.source === "furthest-unfinished" ? activeTab : null}
+            />
+          }
           sidePanel={
             <div className="min-w-0 w-full space-y-3" data-ff-deal-rail-stack="">
               <div className="relative min-w-0 w-full max-w-full overflow-visible" data-ff-deal-quick-comms="">
