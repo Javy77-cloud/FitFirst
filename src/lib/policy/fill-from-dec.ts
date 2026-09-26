@@ -1,6 +1,7 @@
 /**
- * Map one declaration extract onto a policy's Overview + Coverage (HO/DP)
- * or Vehicles + Coverage (Auto). Does not touch deal quote_sheets.
+ * Map one declaration extract onto a policy's Overview + Coverage (HO/DP),
+ * Flood rating + Building/Contents, or Vehicles + Coverage (Auto).
+ * Does not touch deal quote_sheets.
  */
 import { monthsBetweenTermDates } from "@/lib/documents/document-labels";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
@@ -12,6 +13,7 @@ import {
 } from "@/lib/policy/mint-gate";
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import { splitPremisesAddress, type PremisesAddressParts } from "@/lib/policy/premises";
+import { floodFormCodeFromText, isFloodPolicy } from "@/lib/policy/flood-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { ratingOccupancyValue } from "@/lib/policy/rating-occupancy";
 import { businessDateKey, noonUtcFromBusinessDate } from "@/lib/policies/current-term";
@@ -220,8 +222,9 @@ export function fillFamilyForPolicy(input: {
   insuranceType?: string | null;
   policySubType?: string | null;
   formType?: string | null;
-}): "homeowners" | "auto" | "other" {
+}): "homeowners" | "auto" | "flood" | "other" {
   const family = resolveLobOverviewFamily(input);
+  if (family === "flood" || isFloodPolicy(input)) return "flood";
   if (family === "auto") return "auto";
   if (family === "homeowners") return "homeowners";
   return "other";
@@ -1164,10 +1167,197 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
   return out;
 }
 
+function yearInText(raw: string): number | null {
+  const match = raw.match(/\b(?:18|19|20)\d{2}\b/);
+  if (match) {
+    const year = Number(match[0]);
+    if (year >= 1800 && year <= 2100) return year;
+  }
+  return parsePropertyYear(raw);
+}
+
+/** Printed N/A stays. Yes/No folds to Yes or No. */
+function printedYesNo(raw: string): string {
+  const text = raw.replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  if (/^n\/?a$/i.test(text)) return "N/A";
+  return yesNo(text);
+}
+
+function floodZoneValue(raw: string): string {
+  const text = raw.replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  if (/^[a-z0-9]{1,4}$/i.test(text)) return text.toUpperCase();
+  return text;
+}
+
+/** Two or more NFIP rating facts, or an FLD / Flood form. A stray flood zone on HO3 is not enough. */
+function looksLikeFloodExtract(rows: readonly MintGeminiRow[]): boolean {
+  const form = rawCell(rows, "form", "policy_form");
+  if (floodFormCodeFromText(form) === "FLD" || /^flood$/i.test(form.trim())) return true;
+  const signals = [
+    "building_occupancy",
+    "first_floor_height",
+    "ffh_method",
+    "most_favorable_ffh_method",
+    "prior_nfip_claims",
+    "date_of_construction",
+    "building_limit",
+    "property_description",
+    "number_of_units",
+    "primary_residence",
+    "building_description_detail",
+  ].filter((key) => rawCell(rows, key));
+  return signals.length >= 2;
+}
+
+/**
+ * NFIP / Selective Flood. Building and Contents replace HO3 Coverage A and C.
+ * Mortgagee is stored on the desk interest. No carrier API.
+ */
+function proposeFlood(rows: readonly MintGeminiRow[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  proposeTermDates(out, rows);
+  putAddress(
+    out,
+    "premises",
+    rawCell(
+      rows,
+      "property_address",
+      "location_description",
+      "property_information",
+      "insured_property",
+      "residence_premises",
+      "address",
+      "address1",
+    ),
+  );
+  putAddress(out, "mailing", rawCell(rows, "mailing_address", "contact_mailing_address"));
+
+  const printedDate = rawCell(rows, "date_of_construction", "year_of_construction");
+  const year =
+    yearInText(printedDate) ??
+    parsePropertyYear(rawCell(rows, "year_built", "year_of_construction", "year_constructed"));
+  if (printedDate && !/^\d{4}$/.test(printedDate)) put(out, "floodDateOfConstruction", printedDate);
+  else if (year) put(out, "floodDateOfConstruction", String(year));
+  if (year) put(out, "yearBuilt", String(year));
+
+  put(out, "floodBuildingOccupancy", rawCell(rows, "building_occupancy", "flood_occupancy"));
+  put(out, "floodNumberOfUnits", rawCell(rows, "number_of_units", "units"));
+  put(out, "floodPrimaryResidence", printedYesNo(rawCell(rows, "primary_residence")));
+  put(out, "floodPropertyDescription", rawCell(rows, "property_description"));
+  put(out, "floodPriorNfipClaims", rawCell(rows, "prior_nfip_claims", "prior_claims", "nfip_claims"));
+  put(out, "floodZone", floodZoneValue(rawCell(rows, "flood_zone", "current_flood_zone")));
+  put(
+    out,
+    "floodFirstFloorHeight",
+    rawCell(rows, "first_floor_height", "ffh", "first_floor_elevation"),
+  );
+  put(
+    out,
+    "floodFfhMethod",
+    rawCell(rows, "ffh_method", "most_favorable_ffh_method", "ffh_determination"),
+  );
+  put(
+    out,
+    "floodBuildingDescription",
+    rawCell(rows, "building_description_detail", "building_description"),
+  );
+
+  const form = floodFormCodeFromText(
+    rawCell(rows, "form", "policy_form"),
+    rawCell(rows, "policy_number"),
+  );
+  put(out, "formType", form);
+  put(out, "policySubType", form);
+  put(out, "policyType", "Flood");
+
+  const totalPremium = rawCell(rows, "premium", "current_premium", "total_premium");
+  const buildingLimit = rawCell(rows, "building_limit", "building", "coverage_a", "dwelling", "dwelling_limit");
+  const buildingMoney = parseMoney(buildingLimit);
+  if (buildingMoney != null && buildingMoney > 0) put(out, "coverageA", String(Math.round(buildingMoney)));
+  const buildingDisplay = formatHomeDollarAmount(buildingLimit);
+  if (buildingDisplay && !buildingDisplay.includes("%")) put(out, "floodBuilding", buildingDisplay);
+  put(
+    out,
+    "floodBuildingPremium",
+    rejectCopiedPremium(
+      formatCoverageLinePremium(rawCell(rows, "building_premium", "coverage_a_premium", "dwelling_premium")),
+      "",
+      totalPremium,
+    ),
+  );
+  put(
+    out,
+    "floodBuildingDeductible",
+    formatDecDeductible(rawCell(rows, "building_deductible", "coverage_a_deductible")),
+  );
+
+  const contentsDisplay = formatHomeDollarAmount(
+    rawCell(rows, "contents_limit", "contents", "coverage_c", "personal_property"),
+  );
+  if (contentsDisplay && !contentsDisplay.includes("%")) put(out, "floodContents", contentsDisplay);
+  put(
+    out,
+    "floodContentsPremium",
+    rejectCopiedPremium(
+      formatCoverageLinePremium(
+        rawCell(rows, "contents_premium", "coverage_c_premium", "personal_property_premium"),
+      ),
+      "",
+      totalPremium,
+    ),
+  );
+  put(
+    out,
+    "floodContentsDeductible",
+    formatDecDeductible(rawCell(rows, "contents_deductible", "coverage_c_deductible")),
+  );
+
+  const lossDisplay = formatHomeDollarAmount(
+    rawCell(rows, "loss_of_use", "coverage_d", "additional_living_expense"),
+  );
+  if (lossDisplay) put(out, "floodLossOfUse", lossDisplay);
+  put(
+    out,
+    "floodLossOfUsePremium",
+    rejectCopiedPremium(
+      formatCoverageLinePremium(rawCell(rows, "loss_of_use_premium", "coverage_d_premium")),
+      "",
+      totalPremium,
+    ),
+  );
+
+  const icc = formatHomeDollarAmount(
+    rawCell(rows, "increased_cost_of_compliance", "icc", "icc_limit"),
+  );
+  const debris = formatHomeDollarAmount(rawCell(rows, "debris_removal"));
+  if (icc) {
+    put(out, "floodIcc", icc);
+    put(
+      out,
+      "floodIccPremium",
+      formatCoverageLinePremium(rawCell(rows, "increased_cost_of_compliance_premium", "icc_premium")),
+    );
+  } else if (debris) {
+    put(out, "floodDebris", debris);
+    put(out, "floodDebrisPremium", formatCoverageLinePremium(rawCell(rows, "debris_removal_premium")));
+  }
+
+  const premiumAmount = parseMoney(totalPremium);
+  if (premiumAmount != null) put(out, "premium", premiumAmount.toFixed(2));
+  const mortgagee = rawCell(rows, "mortgagee", "mortgagee_name");
+  if (mortgagee && !isNoMortgageValue(mortgagee)) put(out, "mortgageeName", mortgagee);
+  put(out, "mortgageeLoanNumber", rawCell(rows, "loan_number"));
+  return out;
+}
+
 export function proposeFillFromDec(input: {
-  family: "homeowners" | "auto" | "other";
+  family: "homeowners" | "auto" | "flood" | "other";
   rows: readonly MintGeminiRow[];
 }): Record<string, string> {
+  if (input.family === "flood") return proposeFlood(input.rows);
+  if (input.family === "other" && looksLikeFloodExtract(input.rows)) return proposeFlood(input.rows);
   const sniffed =
     input.family === "other"
       ? rawCell(input.rows, "vin", "vehicle_year", "vehicle_2_vin")
@@ -1296,6 +1486,28 @@ const LIMIT_KEYS: Record<string, string> = {
   collision_limit: "collisionLimit",
   collision_premium: "collisionPremium",
   discounts: "discounts",
+  flood_building_occupancy: "floodBuildingOccupancy",
+  flood_number_of_units: "floodNumberOfUnits",
+  flood_primary_residence: "floodPrimaryResidence",
+  flood_property_description: "floodPropertyDescription",
+  flood_prior_nfip_claims: "floodPriorNfipClaims",
+  flood_date_of_construction: "floodDateOfConstruction",
+  flood_zone: "floodZone",
+  flood_first_floor_height: "floodFirstFloorHeight",
+  flood_ffh_method: "floodFfhMethod",
+  flood_building_description_detail: "floodBuildingDescription",
+  flood_building: "floodBuilding",
+  flood_building_premium: "floodBuildingPremium",
+  flood_building_deductible: "floodBuildingDeductible",
+  flood_contents: "floodContents",
+  flood_contents_premium: "floodContentsPremium",
+  flood_contents_deductible: "floodContentsDeductible",
+  flood_loss_of_use: "floodLossOfUse",
+  flood_loss_of_use_premium: "floodLossOfUsePremium",
+  flood_icc: "floodIcc",
+  flood_icc_premium: "floodIccPremium",
+  flood_debris: "floodDebris",
+  flood_debris_premium: "floodDebrisPremium",
 };
 
 export type FillSnapshotInput = {
@@ -1646,6 +1858,28 @@ export function groupAppliedFill(
     ["collisionLimit", "collision_limit"],
     ["collisionPremium", "collision_premium"],
     ["discounts", "discounts"],
+    ["floodBuildingOccupancy", "flood_building_occupancy"],
+    ["floodNumberOfUnits", "flood_number_of_units"],
+    ["floodPrimaryResidence", "flood_primary_residence"],
+    ["floodPropertyDescription", "flood_property_description"],
+    ["floodPriorNfipClaims", "flood_prior_nfip_claims"],
+    ["floodDateOfConstruction", "flood_date_of_construction"],
+    ["floodZone", "flood_zone"],
+    ["floodFirstFloorHeight", "flood_first_floor_height"],
+    ["floodFfhMethod", "flood_ffh_method"],
+    ["floodBuildingDescription", "flood_building_description_detail"],
+    ["floodBuilding", "flood_building"],
+    ["floodBuildingPremium", "flood_building_premium"],
+    ["floodBuildingDeductible", "flood_building_deductible"],
+    ["floodContents", "flood_contents"],
+    ["floodContentsPremium", "flood_contents_premium"],
+    ["floodContentsDeductible", "flood_contents_deductible"],
+    ["floodLossOfUse", "flood_loss_of_use"],
+    ["floodLossOfUsePremium", "flood_loss_of_use_premium"],
+    ["floodIcc", "flood_icc"],
+    ["floodIccPremium", "flood_icc_premium"],
+    ["floodDebris", "flood_debris"],
+    ["floodDebrisPremium", "flood_debris_premium"],
   ];
   for (const [fieldKey, limitKey] of limitPairs) {
     const value = take(fieldKey);

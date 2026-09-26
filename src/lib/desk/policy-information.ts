@@ -7,6 +7,7 @@ import {
 import { partyLabel } from "@/lib/desk/policy-name";
 import { policyFormProductLabel } from "@/lib/policy/form-label";
 import { displayHomeCoverageLimit } from "@/lib/extraction/gemini/home-dollar";
+import { isFloodPolicy } from "@/lib/policy/flood-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { formatPremisesDisplay, premisesLinesEqual } from "@/lib/policy/premises";
 
@@ -101,8 +102,24 @@ export function distinctMailingLabel(input: {
   return null;
 }
 
-function coverageLimitsLine(limits: Record<string, string> | null | undefined): string | null {
+function coverageLimitsLine(
+  limits: Record<string, string> | null | undefined,
+  flood: boolean,
+): string | null {
   if (!limits) return null;
+  if (flood) {
+    const parts: string[] = [];
+    const push = (label: string, key: string) => {
+      const value = limits[key]?.trim();
+      if (value) parts.push(`${label} ${displayHomeCoverageLimit(key, value)}`);
+    };
+    push("Building", "flood_building");
+    push("Contents", "flood_contents");
+    push("Loss of use", "flood_loss_of_use");
+    if (!limits.flood_building?.trim()) push("Building", "coverage_a");
+    if (!limits.flood_contents?.trim()) push("Contents", "coverage_c");
+    return parts.length ? parts.join(" · ") : null;
+  }
   const parts = Object.entries(limits)
     .filter(([, value]) => value?.trim())
     .map(([key, value]) => `${titleCase(key)} ${displayHomeCoverageLimit(key, value.trim())}`);
@@ -137,7 +154,9 @@ export function policyInformationFields(input: {
   } | null;
 }): PolicyInfoField[] {
   const { policy } = input;
-  const homePc = resolveLobOverviewFamily(policy) === "homeowners";
+  const family = resolveLobOverviewFamily(policy);
+  const homePc = family === "homeowners";
+  const flood = family === "flood" || isFloodPolicy(policy);
   const fields: PolicyInfoField[] = [];
   const product = policyFormProductLabel(policy);
   const lineProduct = [policy.lineOfBusiness, product]
@@ -168,15 +187,27 @@ export function policyInformationFields(input: {
   push(fields, "status", "Status", policy.status, undefined, { always: true });
   push(fields, "carrier", "Carrier", input.carrierName ?? "Carrier TBD", undefined, { always: true });
   push(fields, "line", "Line / product", lineProduct || policy.lineOfBusiness, undefined, { always: true });
-  push(fields, "subType", homePc ? "Form" : "Subtype", policy.policySubType);
+  push(
+    fields,
+    "subType",
+    homePc || flood ? "Form" : "Subtype",
+    flood ? policyFormProductLabel(policy) || policy.policySubType : policy.policySubType,
+  );
   push(fields, "insuranceType", "Insurance type", policy.insuranceType);
   push(fields, "effective", "Effective date", formatDay(policy.effectiveDate), undefined, { always: true });
   push(fields, "expiration", "Expiration date", formatDay(policy.expirationDate), undefined, { always: true });
   push(fields, "renewal", "Renewal date", formatDay(policy.renewalDate));
   push(fields, "premium", "Premium", formatMoney(policy.premium), undefined, { always: true });
   push(fields, "billing", "Billing", billing ? titleCase(billing) : null);
-  push(fields, "coverageA", "Coverage A", policy.coverageA != null ? formatMoney(policy.coverageA) : null);
-  push(fields, "limits", "Key limits", coverageLimitsLine(policy.coverageLimits));
+  if (flood) {
+    const building =
+      policy.coverageLimits?.flood_building?.trim() ||
+      (policy.coverageA != null ? formatMoney(policy.coverageA) : null);
+    push(fields, "building", "Building", building);
+  } else {
+    push(fields, "coverageA", "Coverage A", policy.coverageA != null ? formatMoney(policy.coverageA) : null);
+  }
+  push(fields, "limits", "Key limits", coverageLimitsLine(policy.coverageLimits, flood));
   push(fields, "faceAmount", "Face amount", policy.faceAmount != null ? formatMoney(policy.faceAmount) : null);
   push(fields, "insured", "Insured", insured || null, insuredHref, { always: true });
   const insuredLocation = premisesLine(policy);

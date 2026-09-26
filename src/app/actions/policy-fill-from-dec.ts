@@ -25,9 +25,11 @@ import { readStoredFile } from "@/lib/files/object-store";
 import { isUuid } from "@/lib/ids";
 import { loadFillDecDocument } from "@/lib/policy/fill-dec-document";
 import { issuedPolicyDocType } from "@/lib/policy/issued-upload";
+import { floodCoverageLimitsAfterFill } from "@/lib/policy/flood-coverage";
 import {
   loadGeminiRows,
   shouldForceAutoDecReread,
+  shouldForceFloodDecReread,
   shouldForceHomeDecReread,
   type GeminiMintRow,
 } from "@/lib/policy/load-gemini-rows";
@@ -225,6 +227,13 @@ async function prepareFill(input: {
       newestAt: cached.newestAt,
       now,
       reuseFresh,
+    }) ||
+    shouldForceFloodDecReread({
+      manualFlood: Boolean(input.forceExtract) && familyForExtract === "flood",
+      rows: cached.rows,
+      newestAt: cached.newestAt,
+      now,
+      reuseFresh,
     });
   const gemini = await loadGeminiRows(
     {
@@ -406,7 +415,12 @@ export async function fillPolicyFromDec(input: {
     if (patch.policy.effectiveDate) policySet.effectiveDate = patch.policy.effectiveDate;
     if (patch.policy.expirationDate) policySet.expirationDate = patch.policy.expirationDate;
     if (patch.policy.termMonths != null) policySet.termMonths = patch.policy.termMonths;
-    if (Object.keys(patch.coverageLimits).length > 0) {
+    if (fillFamilyForPolicy(policy) === "flood") {
+      policySet.coverageLimits = floodCoverageLimitsAfterFill(
+        policy.coverageLimits,
+        patch.coverageLimits,
+      );
+    } else if (Object.keys(patch.coverageLimits).length > 0) {
       policySet.coverageLimits = { ...(policy.coverageLimits ?? {}), ...patch.coverageLimits };
     }
     const nextProtection = propertyProtectionWithDwelling(policy.propertyProtection, {

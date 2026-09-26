@@ -37,4 +37,29 @@ describe("policy form product label", () => {
     expect(policyFormBesideLine("Homeowners", { policyType: "Home" })).toBe("");
     expect(policyFormBesideLine("Auto", { policyType: "Auto" })).toBe("");
   });
+
+  it("uses Flood or FLD on a flood line, never Home", () => {
+    expect(policyFormCode("FLD")).toBe("FLD");
+    expect(policyFormCode("FLD1200043")).toBe("FLD");
+    expect(policyFormCode("FLOOD")).toBe("Flood");
+    expect(policyFormCode("Selective Flood")).toBe("Flood");
+    expect(policyFormCode("NFIP")).toBe("Flood");
+    const zoila = {
+      lineOfBusiness: "FLOOD",
+      policyType: "Home",
+      formType: "Home",
+      policySubType: "Home",
+    };
+    expect(policyFormChipLabel(zoila)).toBe("Flood");
+    expect(policyFormProductLabel(zoila)).toBe("Flood");
+    expect(policyFormProductLabel({ ...zoila, formType: "FLD", policySubType: "FLD" })).toBe("FLD");
+    expect(
+      policyFormProductLabel({ lineOfBusiness: "FLOOD", formType: "HO3", policyType: "Home" }),
+    ).toBe("Flood");
+    expect(policyFormBesideLine("Flood", { lineOfBusiness: "FLOOD", formType: "FLD" })).toBe("FLD");
+    expect(policyFormBesideLine("Flood", { lineOfBusiness: "FLOOD" })).toBe("");
+    expect(policyFormProductLabel({ policyType: "Home", formType: "HO3", lineOfBusiness: "HO" })).toBe(
+      "HO3",
+    );
+  });
 });

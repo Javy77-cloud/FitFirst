@@ -19,6 +19,7 @@ import {
 } from "@/lib/policies/current-term";
 import { renewalDaysPhrase } from "@/lib/renewal/urgency";
 import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
+import { floodRatingFromLimits } from "@/lib/policy/flood-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
@@ -177,6 +178,7 @@ export function PolicyOverviewTab({
       row.kind === "certificate_holder",
   ).length;
   const dwelling = resolveDwellingFacts({ risk, sheet });
+  const floodRating = floodRatingFromLimits(policy.coverageLimits);
   const inspectionSections =
     family === "homeowners"
       ? buildHomeOverviewInspections({
@@ -272,8 +274,12 @@ export function PolicyOverviewTab({
       <LobOverviewSections
         readOnly={readOnly}
         headingAside={
-          family === "homeowners" && declaration
-            ? { dwelling: <DecDocumentEye document={declaration} /> }
+          declaration && (family === "homeowners" || family === "flood")
+            ? {
+                [family === "flood" ? "flood-rating" : "dwelling"]: (
+                  <DecDocumentEye document={declaration} />
+                ),
+              }
             : undefined
         }
         input={{
@@ -315,6 +321,16 @@ export function PolicyOverviewTab({
             : null,
           mobileHomeUnit: mobileHomeUnit || null,
           scheduledStructures: scheduledStructures || null,
+          floodBuildingOccupancy: floodRating.buildingOccupancy,
+          floodNumberOfUnits: floodRating.numberOfUnits,
+          floodPrimaryResidence: floodRating.primaryResidence,
+          floodPropertyDescription: floodRating.propertyDescription,
+          floodPriorNfipClaims: floodRating.priorNfipClaims,
+          floodDateOfConstruction: floodRating.dateOfConstruction,
+          floodZone: floodRating.floodZone,
+          floodFirstFloorHeight: floodRating.firstFloorHeight,
+          floodFfhMethod: floodRating.ffhMethod,
+          floodBuildingDescription: floodRating.buildingDescription,
         }}
         insertAfter={
           family === "homeowners"

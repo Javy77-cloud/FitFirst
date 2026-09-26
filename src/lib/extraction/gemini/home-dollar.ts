@@ -276,7 +276,8 @@ function upsertForm(fields: ExtractedField[], value: string) {
  * and classify a manufactured-home dec as MHO instead of generic Home / HO3.
  */
 export function enforceHomeDecDollars(fields: ExtractedField[], shopLine?: string | null): void {
-  if (isAutoShopLine(shopLine)) return;
+  const line = (shopLine ?? "").trim().toLowerCase();
+  if (isAutoShopLine(shopLine) || line === "flood") return;
   for (const field of fields) {
     if (!field.normalizedValue.trim()) continue;
     if (HOME_COVERAGE_LINE_PREMIUM_KEYS.has(field.fieldKey)) {
