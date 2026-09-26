@@ -390,10 +390,28 @@ export const GEMINI_FLOOD_EXTRACT_JSON_KEYS = [
   "contents_deductible",
   "loss_of_use",
   "loss_of_use_premium",
-  "increased_cost_of_compliance",
-  "increased_cost_of_compliance_premium",
   "debris_removal",
   "debris_removal_premium",
+  "sandbags_supplies_labor",
+  "sandbags_supplies_labor_premium",
+  "property_removed_to_safety",
+  "property_removed_to_safety_premium",
+  "increased_cost_of_compliance",
+  "increased_cost_of_compliance_premium",
+  "replacement_cost_on_contents",
+  "replacement_cost_on_contents_premium",
+  "basement_contents",
+  "basement_contents_premium",
+  "pool_repair_and_refill",
+  "pool_repair_and_refill_premium",
+  "unattached_structures",
+  "unattached_structures_premium",
+  "temporary_living_expenses",
+  "temporary_living_expenses_premium",
+  "replacement_cost_on_building",
+  "replacement_cost_on_building_premium",
+  "flood_deductible",
+  "flood_deductible_premium",
 ] as const;
 
 export type GeminiExtractKey =
@@ -447,10 +465,14 @@ Rules:
   where confidence is 0..1.
 - Extract ONLY what is printed. Never invent. N/A printed on the page is the value N/A, not a blank.
 - form is FLD when the form block or the policy number starts with FLD. Otherwise form is Flood. Never Home, HO3, HO, or Dwelling.
-- Rating Information, when that label is printed: building_occupancy, number_of_units, primary_residence (Yes or No), property_description, prior_nfip_claims, date_of_construction (the printed date, not only the year), year_built (the four-digit year from that date), flood_zone, first_floor_height (include the unit, such as feet), ffh_method (most favorable FFH method), building_description_detail.
-- Coverages are Building, Contents, and Loss of use. NFIP sometimes prints Building as Coverage A and Contents as Coverage C. Store Building on building_limit, building_premium, and building_deductible. Store Contents on contents_limit, contents_premium, and contents_deductible. Store Loss of use only when that row is printed (loss_of_use and loss_of_use_premium). Do not return homeowners Coverage B, E, or F. Do not invent other structures, liability, medical payments, ordinance or law, water backup, or sinkhole.
-- One extra coverage only when printed: increased_cost_of_compliance, or debris_removal. Leave it null when the page does not have it.
-- Dollar limits use a leading $. Premiums are digits only, or Included. A line premium is never the total policy premium. current_premium / premium is the policy total.
+- Rating facts, on every page, when printed. Selective / NFIP often titles this Rating Information or Location and Property Information. Neptune and other private flood carriers may title it Property Information, Building Information, or Underwriting, or print the flood zone in a summary box and the other facts elsewhere. A flood zone alone is not the whole block. Read each of these when that fact is printed, and leave it null when it is not: building_occupancy (Building Occupancy or Occupancy), number_of_units, primary_residence (Primary Residence or Primary Home; Yes or No), property_description, prior_nfip_claims (Prior NFIP Claims, Prior Claims, or Prior Losses — copy the printed words, do not invent a count), date_of_construction (the printed date, not only the year), year_built (the four-digit year from that date), flood_zone (Flood Zone or Current Flood Zone), first_floor_height (First Floor Height or FFH, include the unit), ffh_method (Most Favorable FFH Method, or Method Used to Determine First Floor Height), building_description_detail. N/A stays N/A.
+- Coverages come from the premises schedule (Coverages & Premiums at the Premises, or the NFIP coverage table). Read every row. A printed $0 is the value 0. Included stays Included. No stays No. Do not turn Included or No into a dollar, and do not invent a dollar for a blank cell.
+- Building / A. Dwelling → building_limit, building_premium, building_deductible. Contents / B. Personal Property → contents_limit, contents_premium, contents_deductible, even when the limit is $0. NFIP may print those as Coverage A and Coverage C.
+- Loss of use only when the page prints Loss of use (loss_of_use and loss_of_use_premium). Neptune Temporary Living Expenses is temporary_living_expenses, not loss of use.
+- Also copy each of these rows when printed, including a $0 limit or a $0 premium: debris_removal (Included / Included stays Included), sandbags_supplies_labor (Sandbags, Supplies, and Labor), property_removed_to_safety, increased_cost_of_compliance, replacement_cost_on_contents (No stays No), basement_contents, pool_repair_and_refill, unattached_structures, temporary_living_expenses, replacement_cost_on_building (No stays No). Each row has its own premium key. "C. Other Coverages" is a heading, not a row. Do not invent a row the page skips (there is no J on the Neptune table).
+- The Deductible row → flood_deductible (the dollar) and flood_deductible_premium. Keep a printed credit negative (-131.00). That dollar applies separately to Building and Personal Property when the footnote says so. Do not copy the credit onto the building or contents premium.
+- Do not return homeowners Coverage B, E, or F. Neptune letter B is personal property, not other structures. Neptune letter D is increased cost of compliance, not loss of use. Neptune letters E and F are replacement cost on contents and basement contents, not liability or medical payments. Do not invent ordinance or law, water backup, or sinkhole.
+- Dollar limits use a leading $. Premiums are digits only, Included, or a negative credit. A line premium is never the total policy premium. current_premium / premium is the policy total.
 - mortgagee and loan_number only when an additional interest is printed. Do not invent a lender.
 - property_address is the insured building. mailing_address only when it differs.
 `;
@@ -634,7 +656,7 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
   const line = (shopLine ?? "").trim().toLowerCase();
   if (line === "flood") {
     focus =
-      "This is a Flood declaration (Selective Flood or NFIP), not homeowners. Do not fill HO3 Coverage A–F. form is FLD when the form or policy number starts with FLD, otherwise Flood — never Home or HO3. MUST fill Rating Information when printed: building_occupancy, number_of_units, primary_residence, property_description, prior_nfip_claims, date_of_construction (full printed date) and year_built (four-digit year), flood_zone, first_floor_height, ffh_method, building_description_detail. N/A stays N/A. Building (NFIP Coverage A) → building_limit, building_premium, building_deductible. Contents (NFIP Coverage C) → contents_limit, contents_premium, contents_deductible. Loss of use only when printed. Increased cost of compliance or debris removal only when printed. Do not invent Coverage B, E, or F. Mortgagee only when printed. Policy number, dates, and the total premium when printed.";
+      "This is a Flood declaration (Selective Flood, NFIP, or Neptune / private flood), not homeowners. Do not fill HO3 Coverage A–F. form is FLD when the form or policy number starts with FLD, otherwise Flood — never Home or HO3. MUST fill the rating block when those facts are printed, including on a later page and under Property Information, Building Information, Location and Property Information, or Underwriting — not only under the heading Rating Information. A flood zone alone is not enough: building_occupancy, number_of_units, primary_residence, property_description, prior_nfip_claims, date_of_construction (full printed date) and year_built (four-digit year), flood_zone, first_floor_height, ffh_method, building_description_detail. Leave a rating fact null when it is not printed. N/A stays N/A. Read every row of Coverages & Premiums at the Premises. Building / A. Dwelling → building_limit and building_premium. Contents / B. Personal Property → contents_limit and contents_premium, including a printed $0. Debris removal, sandbags supplies and labor, property removed to safety, increased cost of compliance, replacement cost on contents, basement contents, pool repair and refill, unattached structures, temporary living expenses, and replacement cost on building — copy each row that is printed, including $0, No, and Included. Do not invent a dollar for Included or No. Do not drop a printed $0. Temporary living expenses is not loss of use. The Deductible row is flood_deductible and flood_deductible_premium; keep a credit negative. Do not invent Coverage B, E, or F, and do not invent a row the page does not print. Mortgagee only when printed. Policy number, dates, and the total premium when printed.";
   }
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
     focus =
