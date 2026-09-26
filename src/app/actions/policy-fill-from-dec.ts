@@ -45,6 +45,7 @@ import {
 } from "@/lib/policy/promote-current-dec";
 import { riskIdForExtractedFieldsCache } from "@/lib/renewal/fill-compare-from-decs";
 import {
+  applyInForceFillTermDateGuard,
   buildPolicyFillAuditInsert,
   classifyFillFields,
   countFillOverwrites,
@@ -53,6 +54,7 @@ import {
   fillOverwriteWarning,
   formatFillServerTime,
   groupAppliedFill,
+  guardInForceFillTermDates,
   manualFillReasonError,
   proposeFillFromDec,
   snapshotFillTargets,
@@ -161,6 +163,8 @@ type PreparedFill = {
   proposed: Record<string, string>;
   existing: Record<string, string>;
   classified: ReturnType<typeof classifyFillFields>;
+  /** Set when in-force term dates were held off an older or already-ended DEC. */
+  termDateNote: string | null;
 };
 
 async function prepareFill(input: {
@@ -306,8 +310,17 @@ async function prepareFill(input: {
       licenseState: driver.licenseState,
     })),
   });
-  const classified = classifyFillFields(existing, proposed);
-  return { ok: true, prepared: { policy, doc, proposed, existing, classified } };
+  const termDateGuard = guardInForceFillTermDates({
+    status: policy.status,
+    proposed,
+    existing,
+    now,
+  });
+  const classified = applyInForceFillTermDateGuard(classifyFillFields(existing, proposed), termDateGuard.hold);
+  return {
+    ok: true,
+    prepared: { policy, doc, proposed, existing, classified, termDateNote: termDateGuard.note },
+  };
 }
 
 /** Agent, clock, and declaration name. Does not read the PDF. */
@@ -403,7 +416,7 @@ export async function fillPolicyFromDec(input: {
     reuseFreshAutoExtract: input.source === "manual",
   });
   if (!prepared.ok) return prepared;
-  const { policy, doc, proposed, classified } = prepared.prepared;
+  const { policy, doc, proposed, classified, termDateNote } = prepared.prepared;
   const overwriteCount = countFillOverwrites(classified);
   const applyOverwrites = input.source === "issue" || input.confirmOverwrite === true;
   if (input.source === "manual" && overwriteCount > 0 && !applyOverwrites) {
@@ -699,6 +712,7 @@ export async function fillPolicyFromDec(input: {
       agentId,
       agentName,
       reason: input.reason ?? null,
+      auditNote: termDateNote,
       documentId: doc.id,
       documentFilename: doc.filename ?? null,
       fieldsWritten,
