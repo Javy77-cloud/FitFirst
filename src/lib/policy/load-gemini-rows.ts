@@ -1,4 +1,8 @@
 import { MISSING_GEMINI_KEY_MESSAGE } from "@/lib/extraction/gemini/key";
+import {
+  FLOOD_PREMISES_SCHEDULE_STAMP,
+  FLOOD_PREMISES_SCHEDULE_VERSION,
+} from "@/lib/policy/flood-coverage";
 import { evaluateMintExtract, normalizeMintFieldKey } from "@/lib/policy/mint-gate";
 
 export const DEC_FILE_MISSING_MESSAGE =
@@ -276,6 +280,17 @@ export function floodDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boole
   });
 }
 
+/** True after a flood extract from the premises-schedule teach. Older caches re-read. */
+export function floodPremisesScheduleStamped(rows: readonly GeminiMintRow[]): boolean {
+  return rows.some((row) => {
+    const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
+    return (
+      normalizeMintFieldKey(row.fieldKey) === FLOOD_PREMISES_SCHEDULE_STAMP &&
+      value === FLOOD_PREMISES_SCHEDULE_VERSION
+    );
+  });
+}
+
 /** Manual flood Fill re-reads a cache that never captured the NFIP rating block. */
 export function shouldForceFloodDecReread(input: {
   manualFlood: boolean;
@@ -285,6 +300,7 @@ export function shouldForceFloodDecReread(input: {
   reuseFresh: boolean;
 }): boolean {
   if (!input.manualFlood) return false;
+  if (!floodPremisesScheduleStamped(input.rows)) return true;
   if (!evaluateMintExtract(input.rows).ok) return true;
   if (floodDecCacheSupportsFill(input.rows)) return false;
   if (
