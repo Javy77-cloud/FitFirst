@@ -1135,6 +1135,13 @@
       "when": 1793200000000,
       "tag": "0161_auto_vehicle_dec_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 162,
+      "version": "7",
+      "when": 1793300000000,
+      "tag": "0162_deal_resume",
+      "breakpoints": true
     }
   ]
 }

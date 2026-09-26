@@ -126,7 +126,7 @@ describe("deal title is the client name only", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/displayDealTitle/);
     expect(page).not.toMatch(/dealTitleForActiveProduct/);
-    expect(page).toMatch(/insuredAddressForProductTab/);
+    expect(page).toMatch(/pinPropertyAddresses/);
     expect(source("src/lib/crm/convert.ts")).toMatch(/formatDealTitle|dealTitleFromPerson|buildDealTitle/);
     expect(source("src/lib/crm/convert.ts")).not.toMatch(/\$\{lead\.lastName\} · \$\{line\} shop/);
     expect(dealTitleLobWord("HO")).toBe("Homeowners");

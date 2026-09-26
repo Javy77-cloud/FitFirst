@@ -1,4 +1,9 @@
 import { formatMoney } from "@/lib/domain";
+import {
+  displayProductLabel,
+  looksLikeRawProductKey,
+  presentProductLabel,
+} from "@/lib/deals/product-chip-label";
 import { splitHomeProducts } from "@/lib/deals/deal-products";
 import { noticeStampPhrase } from "@/lib/deals/notices";
 import { quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
@@ -288,9 +293,17 @@ export type StackProductLine = {
 
 export function stackProductName(product: string, fallback?: string | null): string {
   const fromChip = fallback?.trim();
-  // Form cell = form code only. Never quote language stuffed into a label field.
-  if (fromChip && !isStackQuoteLanguage(fromChip)) return fromChip;
-  return STACK_PRODUCT_NAMES[product] ?? product;
+  // Form cell = form code only. Never quote language or a storage key stuffed into a label field.
+  if (fromChip && !isStackQuoteLanguage(fromChip) && !looksLikeRawProductKey(fromChip)) return fromChip;
+  const named = STACK_PRODUCT_NAMES[product];
+  if (named) return named;
+  const labeled = presentProductLabel(product) || displayProductLabel(product);
+  if (labeled && !looksLikeRawProductKey(labeled)) return labeled;
+  if (fromChip && looksLikeRawProductKey(fromChip)) {
+    const scrubbed = presentProductLabel(fromChip);
+    if (scrubbed && !looksLikeRawProductKey(scrubbed)) return scrubbed;
+  }
+  return "Product";
 }
 
 export function stackPlaceLabel(stage: string | null | undefined): string {

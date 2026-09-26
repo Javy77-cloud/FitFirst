@@ -1649,6 +1649,18 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   container-type: inline-size;
   overflow: visible;
 }
+.ff-links-renewal-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 3;
+}
+.ff-compare-terms-persistent {
+  position: relative;
+  z-index: 3;
+}
 .ff-links-renewal-staying {
   display: inline-flex;
   anchor-name: --ff-links-renewal-staying;
@@ -1668,6 +1680,13 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   position-anchor: --ff-links-renewal-staying;
   /* 12px past the button; the tilt leaves about a 10px visible gap. */
   left: calc(anchor(right) + 12px);
+}
+/* After Client staying is pushed the button is gone. Keep the stamp in the corner, off Compare. */
+[data-ff-policy-links-renewal]:has([data-ff-renewal-agreed-stamp]):not(:has(.ff-links-renewal-staying)) .ff-renewal-agreed-stamp {
+  top: 0.45rem;
+  right: 0.45rem;
+  left: auto;
+  transform: none;
 }
 [data-ff-renewal-agreed-stamp] .ff-deal-status-stamp {
   max-width: none;
@@ -1706,6 +1725,12 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   }
   [data-ff-policy-links-renewal]:has([data-ff-renewal-agreed-stamp]) .ff-links-renewal-copy h2 {
     padding-right: 11rem;
+  }
+  [data-ff-policy-links-renewal]:has([data-ff-renewal-agreed-stamp]) .ff-links-renewal-heading {
+    max-width: calc(100% - 11.5rem);
+  }
+  [data-ff-policy-links-renewal]:has([data-ff-renewal-agreed-stamp]) .ff-links-renewal-heading h2 {
+    padding-right: 0;
   }
 }
 

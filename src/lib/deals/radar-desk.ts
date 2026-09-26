@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { activityLogs, carriers, documents, quotes } from "@/lib/db/schema";
 import type { DealListRow } from "@/lib/db/queries";
 import { inferDealProducts, dealProductDef } from "@/lib/deals/deal-products";
+import { displayProductLabel } from "@/lib/deals/product-chip-label";
 import { RADAR_TREND_DAYS } from "@/lib/deals/radar-glance";
 import { visibleDealTitle } from "@/lib/deals/deal-title";
 import {
@@ -378,7 +379,11 @@ export function presentRadarCards(
           ) || "—",
         lineOfBusiness: deal.lineOfBusiness,
         family: bookFamily(deal.lineOfBusiness),
-        productLabels: products.map((id) => dealProductDef(id)?.label ?? id),
+        productLabels: products.map((id) => {
+          const label = dealProductDef(id)?.label ?? "";
+          if (label && !String(id).includes("~")) return label;
+          return displayProductLabel(id) || label || "Product";
+        }),
         stageStamp,
         stageLabel,
         ownerId: deal.ownerId ?? null,

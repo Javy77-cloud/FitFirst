@@ -111,6 +111,7 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                           policyId={card.policyId}
                           clientName={card.clientName}
                           canCompare={card.canCompare}
+                          renewalHandled={card.stage === "handled"}
                           clientHealth={card.clientHealth}
                           policyHealth={card.policyHealth}
                         />

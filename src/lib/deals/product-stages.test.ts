@@ -260,7 +260,7 @@ describe("per-product stages", () => {
     expect(writesDealLine(["HO"], "AUTO")).toBe(false);
     expect(writesDealLine(["FLOOD"], "FLOOD")).toBe(true);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(
-      /const scoringRisk = activePropertyRisk \?\? risk/,
+      /const scoringRisk = activePropertyRisk \?\? legacyRiskForTab/,
     );
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(
       /evaluateDealMarkets\(scoringRisk, profileValues, activeLob\)/,
@@ -455,6 +455,54 @@ describe("per-product stages", () => {
       "DP3",
       "HO3 16021 Northwest 79th",
     ]);
+    const gloriaDecOnHomeLine = listProductStageChips({
+      shopProducts: ["homeowners", "landlord", "homeowners~88uvyj"],
+      quotingForm: "HO3",
+      sheets: [
+        {
+          line: "home",
+          values: {
+            form: { value: "DP3" },
+            quoting_form: { value: "HO3" },
+            address1: { value: "10358 NW 30th TER" },
+            city: { value: "Doral" },
+            mailing_address: { value: "16021 NW 79Th CT" },
+          },
+        },
+        {
+          line: "home~landlord",
+          values: {
+            quoting_form: { value: "DP3" },
+            address1: { value: "10358 Northwest 30th Terrace" },
+            city: { value: "Doral" },
+          },
+        },
+        {
+          line: "home~homeowners~88uvyj",
+          values: {
+            quoting_form: { value: "HO3" },
+            address1: { value: "16021 Northwest 79th Court" },
+            city: { value: "Miami Lakes" },
+          },
+        },
+      ],
+      risks: [
+        { productKey: null, address1: "10358 NW 30th TER", city: "Doral" },
+        {
+          productKey: "homeowners~88uvyj",
+          address1: "16021 Northwest 79th Court",
+          city: "Miami Lakes",
+        },
+      ],
+    });
+    expect(gloriaDecOnHomeLine.map((chip) => chip.label)).toEqual([
+      "HO3",
+      "DP3 10358 Northwest 30th",
+      "HO3 16021 Northwest 79th",
+    ]);
+    expect(gloriaDecOnHomeLine[0]?.label).not.toMatch(/16021|10358/);
+    expect(gloriaDecOnHomeLine[1]?.label).not.toMatch(/16021/);
+    expect(gloriaDecOnHomeLine[2]?.label).not.toMatch(/10358/);
     const heather = listProductStageChips({
       shopProducts: ["homeowners", "auto", "flood"],
       quotingForm: "HO3",

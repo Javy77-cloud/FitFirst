@@ -27,6 +27,8 @@ describe("arrivingDeclarationBecomesCurrent", () => {
       "inspection",
       "coi",
       "renewal_docs",
+      "roof_docs",
+      "loss_runs",
       "quote_pdf",
       "binder",
       "other",

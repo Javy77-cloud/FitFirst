@@ -136,7 +136,9 @@ describe("servicing checklist", () => {
     expect(life.items.find((item) => item.key === "beneficiary")?.toggleable).toBe(true);
     expect(life.items.find((item) => item.key === "beneficiary")?.attachDocType).toBeUndefined();
     expect(life.items.find((item) => item.key === "medical_exam")?.toggleable).toBe(true);
+    expect(life.items.find((item) => item.key === "medical_exam")?.attachDocType).toBeUndefined();
     expect(life.items.find((item) => item.key === "underwriting")?.toggleable).toBe(true);
+    expect(life.items.find((item) => item.key === "underwriting")?.attachDocType).toBeUndefined();
 
     const commercial = buildServicingChecklist({
       files: [{ docType: "coi" }, { docType: "endorsement" }],
@@ -155,17 +157,116 @@ describe("servicing checklist", () => {
       toggleable: false,
       attachDocType: "endorsement",
     });
-    expect(commercial.items.find((item) => item.key === "loss_runs")?.toggleable).toBe(true);
+    expect(commercial.items.find((item) => item.key === "loss_runs")).toMatchObject({
+      ok: false,
+      toggleable: false,
+      attachDocType: "loss_runs",
+      detail: "Loss runs not on file yet.",
+    });
+
+    const lossOnFile = buildServicingChecklist({
+      files: [{ docType: "loss_run" }],
+      expirationDate: null,
+      nextTask: null,
+      lineOfBusiness: "GL",
+      checks: [{ key: "loss_runs", status: "incomplete" }],
+      asOf: DESK_AS_OF,
+    });
+    expect(lossOnFile.items.find((item) => item.key === "loss_runs")).toMatchObject({
+      ok: true,
+      onFile: true,
+      toggleable: false,
+      attachDocType: "loss_runs",
+      detail: "Loss runs are on file.",
+    });
 
     const home = buildServicingChecklist({
       files: [],
       expirationDate: null,
       nextTask: null,
       lineOfBusiness: "HO3",
+      checks: [{ key: "roof_docs", status: "complete" }],
       asOf: DESK_AS_OF,
     });
-    expect(home.items.find((item) => item.key === "roof_docs")?.toggleable).toBe(true);
-    expect(home.items.find((item) => item.key === "roof_docs")?.attachDocType).toBeUndefined();
+    expect(home.items.find((item) => item.key === "roof_docs")).toMatchObject({
+      ok: false,
+      onFile: false,
+      toggleable: false,
+      attachDocType: "roof_docs",
+      detail: "Roof docs not on file yet.",
+    });
+
+    const roofOnFile = buildServicingChecklist({
+      files: [{ docType: "wind_mit" }],
+      expirationDate: null,
+      nextTask: null,
+      lineOfBusiness: "HO3",
+      checks: [{ key: "roof_docs", status: "incomplete" }],
+      asOf: DESK_AS_OF,
+    });
+    expect(roofOnFile.items.find((item) => item.key === "roof_docs")).toMatchObject({
+      ok: true,
+      onFile: true,
+      toggleable: false,
+      detail: "Roof docs are on file.",
+    });
+    expect(roofOnFile.items.find((item) => item.key === "inspection")?.ok).toBe(false);
+  });
+
+  it("keeps Mark complete only on rows that are not file-backed", () => {
+    const manual = new Set(["beneficiary", "medical_exam", "underwriting"]);
+    const seen = new Map<string, { toggleable: boolean; attachDocType?: string | null }>();
+    for (const lineOfBusiness of [undefined, "PA", "HO3", "LIFE", "GL"] as const) {
+      const checklist = buildServicingChecklist({
+        files: [],
+        expirationDate: "2026-10-01",
+        nextTask: null,
+        lineOfBusiness,
+        checks: [
+          { key: "beneficiary", status: "complete" },
+          { key: "medical_exam", status: "complete" },
+          { key: "underwriting", status: "complete" },
+          { key: "roof_docs", status: "complete" },
+          { key: "loss_runs", status: "complete" },
+        ],
+        asOf: DESK_AS_OF,
+      });
+      for (const item of checklist.items) {
+        seen.set(item.key, { toggleable: item.toggleable, attachDocType: item.attachDocType });
+      }
+    }
+
+    expect([...seen.keys()].sort()).toEqual(
+      [
+        "ai_endorsements",
+        "beneficiary",
+        "coi",
+        "dec",
+        "id_cards",
+        "inspection",
+        "loss_runs",
+        "medical_exam",
+        "mortgagee",
+        "next_task",
+        "renewal_docs",
+        "roof_docs",
+        "underwriting",
+      ].sort(),
+    );
+
+    for (const [key, row] of seen) {
+      if (key === "next_task") {
+        expect(row).toEqual({ toggleable: false, attachDocType: undefined });
+        continue;
+      }
+      if (manual.has(key)) {
+        expect(row.toggleable, key).toBe(true);
+        expect(row.attachDocType, key).toBeUndefined();
+        continue;
+      }
+      expect(row.toggleable, key).toBe(false);
+      expect(row.attachDocType, key).toBeTruthy();
+    }
   });
 
   it("flags an empty servicing packet", () => {

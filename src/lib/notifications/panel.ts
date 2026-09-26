@@ -233,7 +233,7 @@ export const PANEL_EMPTY_BOARD =
   "Nothing the system caught — keep shopping. Work chores and Inbox awareness land on their lanes.";
 
 export const PANEL_EMPTY_WORK =
-  "No Work items. Quiet renewals, declines, Autopilot, and stale docs land here.";
+  "No Work items. Quiet renewals, Autopilot, and stale docs land here.";
 
 export const PANEL_EMPTY_INBOX =
   "Inbox is clear. Day-of term starts, matched agency mail, and assigned threads land here.";

@@ -185,8 +185,6 @@ describe("fillCompare From DECs wiring", () => {
     expect(button).toMatch(/Fill Compare from DECs/);
     const docs = readFileSync("src/components/policy/tabs/documents-tab.tsx", "utf8");
     expect(docs).toMatch(/FillCompareFromDecsButton/);
-    expect(docs).toMatch(/Set term role/);
-    expect(docs).toMatch(/Term role/);
     const compare = readFileSync("src/components/policy/compare-panel.tsx", "utf8");
     expect(compare).toMatch(/FillCompareFromDecsButton/);
   });

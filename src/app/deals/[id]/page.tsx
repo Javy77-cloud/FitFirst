@@ -67,6 +67,7 @@ import {
   sheetLineForProduct,
   splitHomeProducts,
 } from "@/lib/deals/deal-products";
+import { presentProductLabel } from "@/lib/deals/product-chip-label";
 import {
   addressFactsFromSheetValues,
   labelProductInstances,
@@ -76,24 +77,24 @@ import {
   attemptLogMatchesInstance,
   resolveActiveProductInstance,
   resolveVisibleProductInstances,
-  storageLineForInstance,
 } from "@/lib/deals/product-instances";
 import { hideCrossProductDealFacts } from "@/lib/quote-sheet/product-fact-scope";
 import {
+  boundStorageLineForInstance,
+  pinPropertyAddresses,
+  quotingFormForProductSheet,
+  unscopedRiskInstanceKey,
+} from "@/lib/deals/product-address-pin";
+import {
   headerAddressesForProductTab,
-  headerRiskOwnerKey,
   instanceOwnsSheet,
-  insuredAddressForProductTab,
   insuredFieldsFromAddress,
   isPropertyCoveringProduct,
   legacyPropertyOwnerKey,
   overlaySharedProductSheet,
   resolveProductPropertyAddress,
 } from "@/lib/deals/product-property";
-import {
-  listDealRisks,
-  riskForInstance,
-} from "@/lib/deals/product-property-store";
+import { listDealRisks } from "@/lib/deals/product-property-store";
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
@@ -132,6 +133,7 @@ import {
   normalizeDealPageStageSlug,
 } from "@/lib/deals/new-deal-write";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
+import { DealResumeNotice } from "@/components/deal/deal-resume-notice";
 import { PromiseChips } from "@/components/notifications/promise-chips";
 import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
 import { serializeCommitments } from "@/lib/notifications/commitments";
@@ -172,6 +174,12 @@ import { carriersForDealLine } from "@/lib/deals/carriers-for-line";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB, formatMoney } from "@/lib/domain";
 import { parseQuickCommsKind } from "@/lib/desk/quick-comms-open";
+import {
+  selectResumeProduct,
+  selectResumeTab,
+  shouldPersistDealResume,
+} from "@/lib/deals/deal-resume";
+import { loadDealResume, saveDealResumePlace } from "@/lib/deals/deal-resume-store";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
@@ -316,16 +324,24 @@ export default async function DealPage({
     policySubType: deal.policySubType,
   });
   const splitHome = splitHomeProducts(dealProducts);
+  const resumeMemory = session.userId ? await loadDealResume(session.userId) : null;
+  const rememberedPlace = resumeMemory?.deals[deal.id] ?? null;
+  const resumeProduct = selectResumeProduct({
+    explicitProduct: product,
+    explicitLine: lineParam,
+    rememberedProductKey: rememberedPlace?.productKey,
+    instanceKeys: productInstances.map((row) => row.key),
+  });
   const activeInstance = resolveActiveProductInstance({
-    productParam: product,
-    lineParam,
+    productParam: resumeProduct.productParam === undefined ? product : resumeProduct.productParam,
+    lineParam: resumeProduct.ignoreLine ? null : lineParam,
     instances: productInstances,
     quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
     quotingForm: deal.quotingForm,
   });
   const activeProduct = activeInstance.productId;
   const activePackageLine = resolveActivePackageLine({
-    lineParam,
+    lineParam: resumeProduct.ignoreLine ? null : lineParam,
     packageLines,
     quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
     lineOfBusiness: deal.lineOfBusiness,
@@ -338,18 +354,37 @@ export default async function DealPage({
       quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
       lineOfBusiness: deal.lineOfBusiness,
     });
-  const storageLine = storageLineForInstance(activeInstance, productInstances);
+  const sheetRefs = sheets.map((row) => ({ line: row.line, values: row.values }));
+  const storageLine = boundStorageLineForInstance(activeInstance, productInstances, sheetRefs);
   const activeSheet =
     sheets.find((row) => row.line === storageLine) ?? (await ensureQuoteSheet(deal.id, storageLine));
   const sheetsForProperties = sheets.some((row) => row.id === activeSheet.id)
     ? sheets
     : [...sheets, activeSheet];
+  const propertySheetRefs = sheetsForProperties.map((row) => ({ line: row.line, values: row.values }));
   const propertyRiskRows = await listDealRisks(deal.id, deal.tenantId);
+  const propertyPins = pinPropertyAddresses({
+    instances: productInstances,
+    sheets: propertySheetRefs,
+    risks: propertyRiskRows,
+    storedDeal: dealValues,
+  });
+  const activePin = propertyPins.get(activeInstance.key) ?? null;
   const legacyPropertyKey = legacyPropertyOwnerKey(productInstances);
   const activeOwnsPropertySheet = instanceOwnsSheet(activeInstance, productInstances);
-  const activePropertyRisk = isPropertyCoveringProduct(activeProduct)
-    ? riskForInstance(propertyRiskRows, activeInstance.key, legacyPropertyKey)
-    : null;
+  const activePropertyRisk = (() => {
+    if (!isPropertyCoveringProduct(activeProduct)) return null;
+    const keyed = propertyRiskRows.find((row) => (row.productKey ?? "").trim() === activeInstance.key);
+    if (keyed) return keyed;
+    const unscoped = propertyRiskRows.find((row) => !String(row.productKey ?? "").trim());
+    if (
+      unscoped &&
+      unscopedRiskInstanceKey(unscoped, productInstances, propertySheetRefs) === activeInstance.key
+    ) {
+      return unscoped;
+    }
+    return null;
+  })();
   const headerDwellingFire = isDwellingFireProduct(
     dealProductDef(activeProduct).quotingForm,
     activeProduct,
@@ -358,7 +393,14 @@ export default async function DealPage({
     instanceKey: activeInstance.key,
     ownsSheet: activeOwnsPropertySheet,
     sheetValues: activeSheet.values,
-    ownRisk: riskForInstance(propertyRiskRows, activeInstance.key, headerRiskOwnerKey(productInstances)),
+    ownRisk: activePin?.address.street
+      ? {
+          address1: activePin.address.street,
+          city: activePin.address.city,
+          state: activePin.address.state,
+          zip: activePin.address.zip,
+        }
+      : null,
     dwellingFire: headerDwellingFire,
     dealStored: dealValues,
   });
@@ -384,13 +426,15 @@ export default async function DealPage({
     activePropertyAddress && activeInstance.key !== legacyPropertyKey
       ? insuredFieldsFromAddress(activePropertyAddress.address)
       : null;
-  const lineForm = resolveLineQuotingForm({
-    sheetValues: activeSheet.values,
-    sheetLine,
-    dealQuotingForm: deal.quotingForm,
-    dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
-    dealLineOfBusiness: deal.lineOfBusiness,
-  });
+  const lineForm =
+    quotingFormForProductSheet(activeProduct, activeSheet.values) ??
+    resolveLineQuotingForm({
+      sheetValues: activeSheet.values,
+      sheetLine,
+      dealQuotingForm: deal.quotingForm,
+      dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
+      dealLineOfBusiness: deal.lineOfBusiness,
+    });
   const lineQuotingForm = quotingFormById(lineForm);
   const activeLob = SHOP_LINE_TO_LOB[sheetLine] ?? deal.lineOfBusiness;
   const isPrimaryPackageLine = !packageLines.length || packageLines[0] === sheetLine;
@@ -437,8 +481,13 @@ export default async function DealPage({
   const sheetFilled = sheetHasMarketFacts(profileValues);
   const marketsUseSheet = !isLifeHealthShopLine(sheetLine);
   const sheetReady = marketsUseSheet && sheetFilled;
-  const scoringRisk =
-    activePropertyRisk ?? (activeInstance.key === legacyPropertyKey ? risk : null);
+  const legacyRiskForTab =
+    risk &&
+    !String((risk as { productKey?: string | null }).productKey ?? "").trim() &&
+    unscopedRiskInstanceKey(risk, productInstances, propertySheetRefs) === activeInstance.key
+      ? risk
+      : null;
+  const scoringRisk = activePropertyRisk ?? legacyRiskForTab;
   const evalMarkets = Boolean(scoringRisk && sheetReady);
   const rawMatches =
     evalMarkets && scoringRisk
@@ -467,7 +516,7 @@ export default async function DealPage({
   const health = activeSheet ? reportFromSheet(sheetLine, profileValues) : null;
   const unlocked = quotingUnlockedForLine({ deal, sheet: activeSheet });
   const tabParam = tab;
-  const activeTab = tabParam
+  const defaultTab = tabParam
     ? parseAgentDealTab(tabParam)
     : resolveDealResumeTab({
         recordValues: dealValues,
@@ -511,18 +560,11 @@ export default async function DealPage({
     ]),
   );
   const instanceLabelRows = productInstances.map((instance) => {
-    const line = storageLineForInstance(instance, productInstances);
+    const line = boundStorageLineForInstance(instance, productInstances, propertySheetRefs);
     const sheet = sheetsForProperties.find((row) => row.line === line) ?? null;
-    const owns = instanceOwnsSheet(instance, productInstances);
     const property = isPropertyCoveringProduct(instance.productId);
-    const insured = property
-      ? insuredAddressForProductTab({
-          instanceKey: instance.key,
-          ownsSheet: owns,
-          sheetValues: sheet?.values,
-          ownRisk: riskForInstance(propertyRiskRows, instance.key, legacyPropertyKey),
-        })
-      : null;
+    const pin = propertyPins.get(instance.key);
+    const insured = property ? pin?.address ?? null : null;
     const sheetFacts = addressFactsFromSheetValues(sheet?.values);
     const facts = insured
       ? {
@@ -545,7 +587,9 @@ export default async function DealPage({
     };
   });
   const instanceLabels = labelProductInstances(instanceLabelRows);
-  const activeInstanceLabel = instanceLabels.get(activeInstance.key) ?? dealProductDef(activeProduct).label;
+  const activeInstanceLabel = presentProductLabel(
+    instanceLabels.get(activeInstance.key) ?? dealProductDef(activeProduct).label,
+  );
   const quoteCompletenessByProduct = Object.fromEntries(
     productInstances.map((instance) => [
       instance.key,
@@ -581,6 +625,19 @@ export default async function DealPage({
     saved: shopFlowLive,
     line: storageLine,
   });
+  const resumeTab = selectResumeTab({
+    explicitTab: tab,
+    rememberedTab: rememberedPlace?.tab,
+    defaultTab,
+  });
+  const activeTab = resumeTab.tab;
+  if (session.userId && shouldPersistDealResume({ tab, product, line: lineParam })) {
+    await saveDealResumePlace(session.userId, {
+      dealId: deal.id,
+      productKey: activeInstance.key,
+      tab: activeTab,
+    });
+  }
   const productStages = isHeatherCamirandDeal(deal)
     ? stripStaleCamirandProductNotices(parseProductStages(shopFlow.productStages))
     : parseProductStages(shopFlow.productStages);
@@ -946,21 +1003,16 @@ export default async function DealPage({
                 )}
                 formLabels={Object.fromEntries(
                   productInstances.map((instance) => {
-                    const line = storageLineForInstance(instance, productInstances);
-                    const sheet = sheets.find((row) => row.line === line);
-                    const fromSheet =
-                      quotingFormFromSheet(sheet?.values) ??
-                      resolveLineQuotingForm({
-                        sheetValues: sheet?.values,
-                        sheetLine: sheetLine,
-                        dealQuotingForm: deal.quotingForm,
-                        dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
-                        dealLineOfBusiness: deal.lineOfBusiness,
-                      });
+                    const line = boundStorageLineForInstance(
+                      instance,
+                      productInstances,
+                      propertySheetRefs,
+                    );
+                    const sheet = sheetsForProperties.find((row) => row.line === line);
+                    const fromSheet = quotingFormForProductSheet(instance.productId, sheet?.values);
                     return [
                       instance.key,
-                      sheetFormForProduct(instance.productId, fromSheet) ??
-                        dealProductDef(instance.productId).quotingForm,
+                      fromSheet ?? dealProductDef(instance.productId).quotingForm,
                     ];
                   }),
                 )}
@@ -989,7 +1041,12 @@ export default async function DealPage({
           corner={
             <DealRailCharts progress={shoppingRows} mix={appetiteMix} />
           }
-          banner={null}
+          banner={
+            <DealResumeNotice
+              missingProductKey={resumeProduct.fallback?.missingProductKey}
+              openedLabel={activeInstanceLabel}
+            />
+          }
           sidePanel={
             <div className="min-w-0 w-full space-y-3" data-ff-deal-rail-stack="">
               <div className="relative min-w-0 w-full max-w-full overflow-visible" data-ff-deal-quick-comms="">
@@ -1070,10 +1127,7 @@ export default async function DealPage({
                     ) : id === "documents" ? (
                       <DocumentsPanel
                         dealId={deal.id}
-                        riskId={
-                          activePropertyRisk?.id ??
-                          (activeInstance.key === legacyPropertyKey ? risk.id : "")
-                        }
+                        riskId={activePropertyRisk?.id ?? legacyRiskForTab?.id ?? ""}
                         docs={docs}
                         fields={fields}
                         jobs={jobs}

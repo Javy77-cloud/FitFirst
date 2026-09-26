@@ -1,6 +1,10 @@
 import { formatPropertyAddress } from "@/lib/address-links";
 import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
-import { productChipLabel } from "@/lib/deals/product-chip-label";
+import {
+  displayProductLabel,
+  looksLikeRawProductKey,
+  productChipLabel,
+} from "@/lib/deals/product-chip-label";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 
 export type VehicleLabelFact = {
@@ -401,7 +405,9 @@ export function labelForProductInstance(
   rows: readonly ProductInstanceLabelInput[],
   key: string,
 ): string {
-  return labelProductInstances(rows).get(key) ?? key;
+  const labeled = labelProductInstances(rows).get(key);
+  if (labeled && !looksLikeRawProductKey(labeled)) return labeled;
+  return displayProductLabel(key) || "Product";
 }
 
 function cell(values: Record<string, QuoteSheetFieldValue | undefined> | null | undefined, key: string): string {

@@ -29,6 +29,7 @@ import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { enrichRenewalCards } from "@/lib/renewal/board-enrich";
 import type { HealthChipView } from "@/lib/health/model";
 import { loadRenewalHealthMap } from "@/lib/health/load";
+import { daysUntilRenewalEvent, type RenewalClockAnchor } from "@/lib/renewal/days-to-renewal";
 import { renewalWhyLine, type RenewalRiskLevel } from "@/lib/renewal/urgency";
 
 export type RenewalBoardCard = {
@@ -52,6 +53,8 @@ export type RenewalBoardCard = {
   /** Policy renewalDate — Client staying 90-day gate (no expiration fallback). */
   renewalDate: Date | string | null;
   daysUntil: number;
+  /** What `daysUntil` is counting. Renew-into effective vs in-force expiration. */
+  clockAnchor?: RenewalClockAnchor;
   premium: string | null;
   proposedPremium: string | null;
   premiumDelta: number | null;
@@ -222,7 +225,16 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     if (!exp) continue;
     // Keep lost/bound cards even outside window; filter others to window.
     const stage = normalizeRenewalQueueStage(row.queue.stage) ?? row.queue.stage ?? "upcoming";
-    const days = resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
+    const clock = daysUntilRenewalEvent(
+      resolved,
+      {
+        effectiveDate: row.policy.effectiveDate,
+        expirationDate: row.policy.expirationDate,
+        renewalDate: row.policy.renewalDate,
+      },
+      asOf,
+    );
+    const days = clock.days ?? resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
     if (stage !== "lost" && stage !== "bound" && stage !== "archive" && stage !== "archived") {
       if (days < -14 || days > windowDays) continue;
       if (!resolved.countsAsInForce && stage === "upcoming") continue;
@@ -277,6 +289,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       expirationDate: resolved.bookExpiration ?? row.policy.expirationDate,
       renewalDate: resolved.renewalAnchor ?? row.policy.renewalDate ?? null,
       daysUntil: days,
+      clockAnchor: clock.anchor,
       premium: built.currentPremium,
       proposedPremium: built.proposedPremium,
       premiumDelta: built.delta,
@@ -335,6 +348,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       daysUntil: card.daysUntil,
       premiumDelta: card.premiumDelta,
       whyExtra: row.clientHealth.why,
+      clockAnchor: card.clockAnchor,
     });
   }
 

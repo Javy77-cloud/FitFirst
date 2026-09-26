@@ -7,7 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDay, formatMoney } from "@/lib/domain";
-import type { Policy, PolicyCoverageLine, PolicyTerm, RenewalCompareLog } from "@/lib/db/schema";
+import type {
+  Policy,
+  PolicyCoverageLine,
+  PolicyTerm,
+  RenewalCompareLog,
+  RenewalCompareSnapshot,
+} from "@/lib/db/schema";
 import {
   coverageRows,
   deductiblesForLine,
@@ -33,66 +39,108 @@ export function ComparePanel({
   current,
   proposed,
   logs,
+  compareBaseline,
+  compareRenewal,
+  baselineLabel = "Current term",
+  renewalLabel = "Proposed term",
+  renewalHandled = false,
+  frozenSnapshot = null,
 }: {
   policy: Policy;
   current: PolicyTerm | undefined;
   proposed: PolicyTerm | undefined;
   logs: RenewalCompareLog[];
+  /** Displayed left column. Defaults to the current term (unstamped compare). */
+  compareBaseline?: PolicyTerm;
+  /** Displayed right column. Defaults to the proposed term (unstamped compare). */
+  compareRenewal?: PolicyTerm;
+  baselineLabel?: string;
+  renewalLabel?: string;
+  /** Client staying already pushed — do not show the chase control again. */
+  renewalHandled?: boolean;
+  /** Old vs new frozen when Client staying was pushed. Wins over live roles. */
+  frozenSnapshot?: RenewalCompareSnapshot | null;
 }) {
-  const currentPremium = parseMoney(current?.premium);
-  const proposedPremium = parseMoney(proposed?.premium);
+  const frozen = frozenSnapshot ?? null;
+  const baseline = frozen ? undefined : (compareBaseline ?? current);
+  const renewal = frozen ? undefined : (compareRenewal ?? proposed);
+  const shownBaselineLabel = frozen?.baselineLabel || baselineLabel;
+  const shownRenewalLabel = frozen?.renewalLabel || renewalLabel;
+  const currentPremium = parseMoney(frozen ? frozen.currentPremium : baseline?.premium);
+  const proposedPremium = parseMoney(frozen ? frozen.proposedPremium : renewal?.premium);
   const change =
     currentPremium != null && proposedPremium != null
       ? premiumChange(currentPremium, proposedPremium)
       : null;
   const deductibleDefs = deductiblesForLine(policy.lineOfBusiness);
-  const rows = coverageRows(current?.coverages, proposed?.coverages);
+  const rows = frozen ? frozen.coverageRows : coverageRows(baseline?.coverages, renewal?.coverages);
 
   return (
     <div className="space-y-4">
       <section className="ff-card flex flex-wrap items-center gap-3 p-4">
         <FillCompareFromDecsButton policyId={policy.id} />
-        <ClientStayingButton policyId={policy.id} renewalDate={policy.renewalDate} size="sm" />
+        {renewalHandled ? null : (
+          <ClientStayingButton policyId={policy.id} renewalDate={policy.renewalDate} size="sm" />
+        )}
 
       </section>
-      {change ? <PremiumChangeSummary change={change} /> : (
+      {change ? <PremiumChangeSummary change={change} /> : shownBaselineLabel === "Prior term" || shownBaselineLabel === "Old term" ? (
+        <section className="ff-card p-4 text-base text-muted-foreground">
+          Prior term and current term are open for compare. Premium change shows once both
+          terms have a premium. FitFirst does not rate this policy.
+        </section>
+      ) : (
         <section className="ff-card p-4 text-base text-muted-foreground">
           Record the carrier&apos;s proposed term to see the premium-change summary. FitFirst
           does not rate this policy.
         </section>
       )}
 
-      <section className="ff-card overflow-x-auto">
+      {frozen ? (
+        <p className="text-sm text-muted-foreground" data-ff-compare-frozen-note="">
+          Frozen when Client staying was pushed. Compare reopens this old-vs-new snapshot after
+          the prior term flips.
+        </p>
+      ) : null}
+      <section className="ff-card overflow-x-auto" data-ff-compare-frozen={frozen ? "true" : "false"}>
         <table className="ff-table">
           <thead>
             <tr>
               <th>Item</th>
-              <th>Current term</th>
-              <th>Proposed term</th>
+              <th>{shownBaselineLabel}</th>
+              <th>{shownRenewalLabel}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td className="font-medium">Term</td>
               <td>
-                {current
-                  ? `${formatDay(current.termEffective)} → ${formatDay(current.termExpiration)}`
-                  : "—"}
+                {frozen?.currentTermEffective
+                  ? `${formatDay(frozen.currentTermEffective)} → ${formatDay(frozen.currentTermExpiration)}`
+                  : baseline
+                    ? `${formatDay(baseline.termEffective)} → ${formatDay(baseline.termExpiration)}`
+                    : "—"}
               </td>
               <td>
-                {proposed
-                  ? `${formatDay(proposed.termEffective)} → ${formatDay(proposed.termExpiration)}`
-                  : "—"}
+                {frozen?.proposedTermEffective
+                  ? `${formatDay(frozen.proposedTermEffective)} → ${formatDay(frozen.proposedTermExpiration)}`
+                  : renewal
+                    ? `${formatDay(renewal.termEffective)} → ${formatDay(renewal.termExpiration)}`
+                    : "—"}
               </td>
             </tr>
             <tr className={change && change.direction !== "flat" ? "bg-fit-flag-bg/40" : undefined}>
               <td className="font-medium">Premium</td>
-              <td>{formatMoney(current?.premium)}</td>
-              <td className="font-semibold">{formatMoney(proposed?.premium)}</td>
+              <td>{formatMoney(frozen ? frozen.currentPremium : baseline?.premium)}</td>
+              <td className="font-semibold">{formatMoney(frozen ? frozen.proposedPremium : renewal?.premium)}</td>
             </tr>
             {deductibleDefs.map((field) => {
-              const left = current?.[field.key] ?? "—";
-              const right = proposed?.[field.key] ?? "—";
+              const left = frozen
+                ? (frozen.currentDeductibles?.[field.key] || "—")
+                : (baseline?.[field.key] ?? "—");
+              const right = frozen
+                ? (frozen.proposedDeductibles?.[field.key] || "—")
+                : (renewal?.[field.key] ?? "—");
               const changed = left !== right;
               return (
                 <tr key={field.key} className={cn(changed && "bg-fit-flag-bg/40")}>

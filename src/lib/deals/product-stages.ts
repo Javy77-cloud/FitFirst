@@ -10,13 +10,8 @@ import {
   resolveVisibleProductInstances,
   storageLineForInstance,
 } from "@/lib/deals/product-instances";
-import {
-  instanceOwnsSheet,
-  insuredAddressForProductTab,
-  isPropertyCoveringProduct,
-  legacyPropertyOwnerKey,
-  tabRiskForInstance,
-} from "@/lib/deals/product-property";
+import { pinPropertyAddresses } from "@/lib/deals/product-address-pin";
+import { isPropertyCoveringProduct } from "@/lib/deals/product-property";
 import {
   addressFactsFromSheetValues,
   labelProductInstances,
@@ -958,23 +953,21 @@ export function listProductStageChips(input: {
 }): ListProductStageChip[] {
   const instances = resolveVisibleProductInstances(input);
   const stages = productStagesFromShopFlow(input.shopFlow);
-  const sheetByLine = new Map((input.sheets ?? []).map((sheet) => [sheet.line, sheet.values ?? {}]));
-  const legacyOwner = legacyPropertyOwnerKey(instances);
+  const sheetRefs = (input.sheets ?? []).map((sheet) => ({ line: sheet.line, values: sheet.values ?? {} }));
+  const sheetByLine = new Map(sheetRefs.map((sheet) => [sheet.line, sheet.values ?? {}]));
+  const pins = pinPropertyAddresses({
+    instances,
+    sheets: sheetRefs,
+    risks: input.risks ?? [],
+  });
   const labels = labelProductInstances(
     instances.map((instance) => {
       const line = storageLineForInstance(instance, instances);
       const values = sheetByLine.get(line);
       const property = isPropertyCoveringProduct(instance.productId);
-      const insured = property
-        ? insuredAddressForProductTab({
-            instanceKey: instance.key,
-            ownsSheet: instanceOwnsSheet(instance, instances),
-            sheetValues: values as never,
-            ownRisk: tabRiskForInstance(input.risks ?? [], instance.key, legacyOwner),
-          })
-        : null;
-      const facts = insured
-        ? { address: insured.street, city: insured.city }
+      const pin = property ? pins.get(instance.key) : null;
+      const facts = pin
+        ? { address: pin.address.street, city: pin.address.city }
         : addressFactsFromSheetValues(values as never);
       return {
         key: instance.key,

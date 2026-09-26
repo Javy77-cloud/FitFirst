@@ -33,6 +33,8 @@ import { floodFormCodeFromText, isFloodPolicy } from "@/lib/policy/flood-coverag
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { ratingOccupancyValue } from "@/lib/policy/rating-occupancy";
 import { businessDateKey, noonUtcFromBusinessDate } from "@/lib/policies/current-term";
+import { isInForceStatus } from "@/lib/policy/status";
+import { etTodayDateKey } from "@/lib/time/et";
 import {
   formatAutoDollarDeductible,
   isAutoDollarDeductible,
@@ -68,6 +70,11 @@ export type PolicyFillAuditInsert = {
   documentFilename: string | null;
   fieldsWritten: string[];
   fieldsOverwritten: string[];
+};
+
+/** `auditNote` is folded into `reason` and is not a column. */
+export type PolicyFillAuditInput = PolicyFillAuditInsert & {
+  auditNote?: string | null;
 };
 
 export type DecDocLike = {
@@ -219,7 +226,20 @@ export function formatFillServerTime(now: Date): string {
   }).format(now);
 }
 
-export function buildPolicyFillAuditInsert(input: PolicyFillAuditInsert): PolicyFillAuditInsert {
+/** Manual reason, plus a system note. Issue stores the note only. */
+export function fillAuditReason(
+  source: FillSource,
+  reason: string | null | undefined,
+  auditNote: string | null | undefined,
+): string | null {
+  const note = String(auditNote ?? "").trim();
+  if (source !== "manual") return note || null;
+  const user = String(reason ?? "").trim();
+  if (user && note) return `${user} ${note}`;
+  return user || note || null;
+}
+
+export function buildPolicyFillAuditInsert(input: PolicyFillAuditInput): PolicyFillAuditInsert {
   return {
     tenantId: input.tenantId,
     policyId: input.policyId,
@@ -227,7 +247,7 @@ export function buildPolicyFillAuditInsert(input: PolicyFillAuditInsert): Policy
     source: input.source,
     agentId: input.agentId,
     agentName: input.agentName.trim() || (input.source === "issue" ? "System" : "Agent"),
-    reason: input.source === "manual" ? String(input.reason ?? "").trim() || null : null,
+    reason: fillAuditReason(input.source, input.reason, input.auditNote),
     documentId: input.documentId,
     documentFilename: input.documentFilename,
     fieldsWritten: [...input.fieldsWritten],
@@ -1700,6 +1720,80 @@ export function classifyFillFields(
     else overwritten.push(key);
   }
   return { filled, overwritten, skipped };
+}
+
+/**
+ * Term columns Fill-from-DEC can write. `groupAppliedFill` copies
+ * effectiveDate / expirationDate onto the policy row and the current term.
+ * renewalDate is included so a later proposer cannot sneak it past this guard.
+ * termMonths travels with the same extracted span.
+ */
+export const FILL_TERM_DATE_KEYS = ["effectiveDate", "expirationDate", "renewalDate", "termMonths"] as const;
+
+export type InForceTermDateGuard = {
+  /** Keys that must not be written. Empty when the fill may apply term dates. */
+  hold: string[];
+  /** Audit sentence. Null when nothing was held back. */
+  note: string | null;
+};
+
+function termDayKey(value: string | null | undefined): string | null {
+  const text = (value ?? "").trim();
+  if (!text) return null;
+  return parseDecTermDate(text) ?? businessDateKey(text);
+}
+
+/**
+ * Desk Fill, book mass Fill, and the mint issue hook all write through
+ * `fillPolicyFromDec` → `groupAppliedFill`. Gemini only proposes the dates.
+ *
+ * An in-force policy (active, bound, pending) must not take term dates from a
+ * DEC whose expiration is already before today in America/New_York, or from a
+ * prior term that ended on or before the policy's current effective date.
+ * Coverage and overview fields are not in this set.
+ */
+export function guardInForceFillTermDates(input: {
+  status: string | null | undefined;
+  proposed: Record<string, string>;
+  existing: Record<string, string>;
+  now?: Date;
+}): InForceTermDateGuard {
+  if (!isInForceStatus(input.status ?? "")) return { hold: [], note: null };
+
+  const proposedExp = termDayKey(input.proposed.expirationDate);
+  const existingEff = termDayKey(input.existing.effectiveDate);
+  const today = etTodayDateKey(input.now ?? new Date());
+  const expirationBeforeToday = Boolean(proposedExp && proposedExp < today);
+  const priorTerm = Boolean(proposedExp && existingEff && proposedExp <= existingEff);
+  if (!expirationBeforeToday && !priorTerm) return { hold: [], note: null };
+
+  const hold = FILL_TERM_DATE_KEYS.filter((key) => {
+    const next = termDayKey(input.proposed[key]) ?? (input.proposed[key] ?? "").trim();
+    if (!next) return false;
+    const prev = (input.existing[key] ?? "").trim();
+    if (!prev) return true;
+    return !fillValuesEqual(key, prev, input.proposed[key] ?? "");
+  });
+  if (hold.length === 0) return { hold: [], note: null };
+
+  const listed = hold.join(", ");
+  const note = expirationBeforeToday
+    ? `Skipped term dates (${listed}): extracted expiration ${proposedExp} is before today ${today} (America/New_York) on an in-force policy.`
+    : `Skipped term dates (${listed}): extracted term ending ${proposedExp} ended on or before the in-force effective date ${existingEff}.`;
+  return { hold, note };
+}
+
+/** Move held term-date keys out of filled/overwritten and into skipped. */
+export function applyInForceFillTermDateGuard(classified: FillClassify, hold: readonly string[]): FillClassify {
+  if (hold.length === 0) return classified;
+  const held = new Set(hold);
+  const skipped = classified.skipped.filter((key) => !held.has(key));
+  for (const key of hold) skipped.push(key);
+  return {
+    filled: classified.filled.filter((key) => !held.has(key)),
+    overwritten: classified.overwritten.filter((key) => !held.has(key)),
+    skipped,
+  };
 }
 
 const LIMIT_KEYS: Record<string, string> = {
