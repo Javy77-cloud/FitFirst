@@ -3,7 +3,6 @@ import {
   buildPolicyCareItems,
   formatMissingDocsWhy,
   policyTabCareCounts,
-  shouldShowManualRenewalHelp,
 } from "./care-strip";
 
 describe("policy care strip", () => {
@@ -40,11 +39,6 @@ describe("policy care strip", () => {
       label: "Renewal docs",
     });
     expect(items[0]?.why).toMatch(/Expires in 17 days — upload current \+ renewal paper here/);
-    expect(shouldShowManualRenewalHelp({
-      expirationDate: "2026-10-06T00:00:00.000Z",
-      status: "active",
-      asOf,
-    })).toBe(true);
   });
 
   it("jumps to the waiting tab and only counts open work", () => {
@@ -78,16 +72,6 @@ describe("policy care strip", () => {
     );
   });
 
-  it("hides manual renewal help when expiration is far out", () => {
-    expect(
-      shouldShowManualRenewalHelp({
-        expirationDate: "2027-03-01T00:00:00.000Z",
-        status: "active",
-        asOf,
-      }),
-    ).toBe(false);
-  });
-
   it("skips renewal care when Client staying / Handled is active", () => {
     expect(
       buildPolicyCareItems({
@@ -101,14 +85,6 @@ describe("policy care strip", () => {
         renewalHandled: true,
       }),
     ).toEqual([]);
-    expect(
-      shouldShowManualRenewalHelp({
-        expirationDate: "2026-10-06T00:00:00.000Z",
-        status: "active",
-        asOf,
-        renewalHandled: true,
-      }),
-    ).toBe(false);
   });
 
   it("frames past expiration as overdue, not a future countdown", () => {
@@ -125,13 +101,6 @@ describe("policy care strip", () => {
     expect(items[0]?.key).toBe("renewal");
     expect(items[0]?.why).toMatch(/^172 days overdue — upload current \+ renewal paper here/);
     expect(items[0]?.why).not.toMatch(/Expires in/);
-    expect(
-      shouldShowManualRenewalHelp({
-        expirationDate: "2026-03-31T00:00:00.000Z",
-        status: "active",
-        asOf,
-      }),
-    ).toBe(true);
   });
 
   it("still skips past-expiration renewal care when Handled", () => {
@@ -164,14 +133,6 @@ describe("policy care strip", () => {
         }),
         status,
       ).toEqual([]);
-      expect(
-        shouldShowManualRenewalHelp({
-          expirationDate: "2027-08-07T00:00:00.000Z",
-          status,
-          asOf,
-        }),
-        status,
-      ).toBe(false);
     }
   });
 

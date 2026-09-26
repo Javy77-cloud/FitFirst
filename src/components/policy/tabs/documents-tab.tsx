@@ -11,8 +11,6 @@ import {
   type PolicyDocRow,
 } from "@/components/policy/tabs/documents-table";
 import { IdCardsUploadPanel } from "@/components/policy/id-cards-upload-panel";
-import { deskNow } from "@/lib/home/as-of";
-import { shouldShowManualRenewalHelp } from "@/lib/policy/care-strip";
 import { FillCompareFromDecsButton } from "@/components/policy/fill-compare-from-decs-button";
 import { FillPolicyFromDecButton } from "@/components/policy/fill-policy-from-dec-button";
 import { canFillCompareFromTermRoleDocs } from "@/lib/renewal/fill-compare-from-decs";
@@ -27,7 +25,6 @@ export function PolicyDocumentsTab({
   notice,
   accessLog = [],
   isAdmin = false,
-  renewalHandled = false,
   uploadMode = { onVercel: false, directBlob: false },
   presetDocType,
 }: {
@@ -35,8 +32,6 @@ export function PolicyDocumentsTab({
     id: string;
     dealId: string | null;
     riskId: string | null;
-    status?: string | null;
-    expirationDate?: Date | string | null;
     esignStatus: string;
     esignRequestedAt: Date | null;
     esignSignedAt: Date | null;
@@ -59,49 +54,14 @@ export function PolicyDocumentsTab({
     filename?: string | null;
   }>;
   isAdmin?: boolean;
-  renewalHandled?: boolean;
   uploadMode?: { onVercel: boolean; directBlob: boolean };
   /** `?docType=` on the policy Documents tab. AOR collect uses `aor`. */
   presetDocType?: string | null;
 }) {
-  const showManualRenewalHelp = shouldShowManualRenewalHelp({
-    expirationDate: policy.expirationDate,
-    status: policy.status,
-    asOf: deskNow(),
-    renewalHandled,
-  });
   const canFillCompare = canFillCompareFromTermRoleDocs(files);
 
   return (
     <div className="space-y-4" data-ff-policy-tab="documents">
-      {showManualRenewalHelp ? (
-        <section
-          className="ff-card border-amber-200/80 bg-amber-50/40 p-4"
-          data-ff-manual-renewal-help=""
-        >
-          <h2 className="text-base font-semibold text-navy">Manual renewal upload</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            No AMS renewal API yet — park paper here, then compare terms.
-          </p>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-navy/90">
-            <li>Upload Prior/Current and Renewal DECs.</li>
-            <li>
-              Set <strong>Term role</strong> on each row (Prior / Current / Renewal / Archive), or click the
-              filename → <strong>Set term role</strong>.
-            </li>
-            <li>
-              Click <strong>Fill Compare from DECs</strong>, then Overview → <strong>Compare terms</strong> to
-              see $ and % change.
-            </li>
-          </ol>
-          {canFillCompare ? (
-            <div className="mt-3">
-              <FillCompareFromDecsButton policyId={policy.id} />
-            </div>
-          ) : null}
-
-        </section>
-      ) : null}
       <section className="ff-card p-4">
         <h2 className="text-base font-semibold text-navy">Policy documents</h2>
 
@@ -112,7 +72,7 @@ export function PolicyDocumentsTab({
           uploadMode={uploadMode}
           presetDocType={presetDocType}
         />
-        {canFillCompare && !showManualRenewalHelp ? (
+        {canFillCompare ? (
           <div className="my-3 flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/20 p-3">
             <FillPolicyFromDecButton policyId={policy.id} />
             <FillCompareFromDecsButton policyId={policy.id} />

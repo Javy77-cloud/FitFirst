@@ -25,19 +25,6 @@ export function formatMissingDocsWhy(count: number, names?: readonly string[] | 
   return `${n} ${noun}: ${head}, and ${last}`;
 }
 
-/** True when care strip would surface renewal — Documents shows manual-upload help. */
-export function shouldShowManualRenewalHelp(input: {
-  expirationDate?: Date | string | null;
-  status?: string | null;
-  asOf: Date;
-  renewalHandled?: boolean;
-}): boolean {
-  if (isOffBookStatus(input.status)) return false;
-  if (!renewalProximityDrivesCare(input.renewalHandled)) return false;
-  const daysUntil = daysUntilDate(input.expirationDate ?? null, input.asOf);
-  return daysUntil != null && daysUntil < 30;
-}
-
 export function buildPolicyCareItems(input: {
   expirationDate?: Date | string | null;
   updatedAt?: Date | string | null;
