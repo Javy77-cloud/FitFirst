@@ -2,13 +2,14 @@
 
 import { ProcessingLabel } from "@/components/desk/wait-hold";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   attachPolicyFiles,
   preparePolicyBlobUpload,
   savePolicyDocumentFromBlob,
 } from "@/app/actions/policy-files";
+import { AttachDocTypeConfirmDialog } from "@/components/policy/attach-doc-type-confirm";
 import { ChooseFiles } from "@/components/choose-files";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -34,7 +35,7 @@ export function PolicyDocumentsAttach({
   policyId: string;
   dealId?: string | null;
   uploadMode?: UploadMode;
-  /** From `?tab=documents&docType=` — AOR collect paths pass `aor`. */
+  /** From `?tab=documents&docType=` — checklist Documents links pass the row's attach type. */
   presetDocType?: string | null;
 }) {
   const router = useRouter();
@@ -44,9 +45,12 @@ export function PolicyDocumentsAttach({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pick, setPick] = useState(0);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const commitLock = useRef(false);
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     if (!file) {
       setError("Choose a file to attach. Nothing was saved.");
       return;
@@ -62,6 +66,27 @@ export function PolicyDocumentsAttach({
       setError(plan.error);
       return;
     }
+    setError(null);
+    setConfirmOpen(true);
+  }
+
+  async function commitAttach() {
+    if (!file || commitLock.current) return;
+    commitLock.current = true;
+    const plan = planUpload({
+      filename: file.name,
+      byteLength: file.size,
+      mimeType: file.type,
+      onVercel: uploadMode.onVercel,
+      directBlob: uploadMode.directBlob,
+    });
+    if (!plan.ok) {
+      commitLock.current = false;
+      setConfirmOpen(false);
+      setError(plan.error);
+      return;
+    }
+    setConfirmOpen(false);
     setError(null);
     setSaving(true);
     try {
@@ -117,11 +142,13 @@ export function PolicyDocumentsAttach({
       console.error("[PolicyDocumentsAttach]", saveError);
       setError(messageFromUploadError(saveError, file.name));
     } finally {
+      commitLock.current = false;
       setSaving(false);
     }
   }
 
   return (
+    <>
     <form
       onSubmit={onSubmit}
       className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-3"
@@ -174,5 +201,14 @@ export function PolicyDocumentsAttach({
         {saving ? <ProcessingLabel>Attaching…</ProcessingLabel> : "Attach file"}
       </Button>
     </form>
+    <AttachDocTypeConfirmDialog
+      open={confirmOpen}
+      docTypes={[docType]}
+      onCancel={() => setConfirmOpen(false)}
+      onConfirm={() => {
+        void commitAttach();
+      }}
+    />
+    </>
   );
 }

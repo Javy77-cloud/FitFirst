@@ -1,3 +1,4 @@
+import { checklistRowAttachDocType } from "@/lib/ams/checklist-uploads";
 import { isPolicyAttachDocType } from "@/lib/documents/document-labels";
 
 /** Default Type/Category on Policy Documents attach when the URL has no preset. */
@@ -20,10 +21,9 @@ export function policyDocumentsTabHref(policyId: string, docType?: string | null
 }
 
 /**
- * Optional servicing packet → Documents.
- * AOR collect paths preset Type/Category to the AOR packet so the upload is not an issued DEC.
+ * Optional servicing packet → Documents with that row's attach type preset.
+ * AOR opens as AOR packet. ID cards open as ID card. Neither is an issued DEC.
  */
 export function optionalServicingPacketDocumentsHref(policyId: string, packetKey: string): string {
-  if (packetKey === "aor") return policyDocumentsTabHref(policyId, "aor");
-  return policyDocumentsTabHref(policyId);
+  return policyDocumentsTabHref(policyId, checklistRowAttachDocType(packetKey));
 }

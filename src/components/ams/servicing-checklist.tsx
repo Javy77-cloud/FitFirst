@@ -5,11 +5,30 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   optionalExtraPacketKeys,
+  type ChecklistItem,
   type ServicingChecklist,
 } from "@/lib/ams/checklist";
 import type { PacketTask } from "@/lib/ams/packet-tasks";
-import { SERVICING_DOC_KEYS, SERVICING_DOC_LABELS, type ServicingDocKey } from "@/lib/domain-ams";
-import { optionalServicingPacketDocumentsHref } from "@/lib/policy/policy-documents-href";
+import {
+  isServicingCheckKey,
+  SERVICING_DOC_KEYS,
+  SERVICING_DOC_LABELS,
+  type ServicingDocKey,
+} from "@/lib/domain-ams";
+import {
+  optionalServicingPacketDocumentsHref,
+  policyDocumentsTabHref,
+} from "@/lib/policy/policy-documents-href";
+
+function checklistStatusWord(item: ChecklistItem): string {
+  if (item.attachDocType) {
+    if (item.onFile) return "On file";
+    if (item.ok) return "Complete";
+    return "Missing";
+  }
+  if (item.ok) return item.toggleable ? "Complete" : "On file";
+  return item.toggleable ? "Incomplete" : "Missing";
+}
 
 export function ServicingChecklistCard({
   policyId,
@@ -67,6 +86,12 @@ export function ServicingChecklistCard({
               : null;
           const openTask = packetKey ? packetByKey[packetKey] : undefined;
           const taskId = item.taskId || openTask?.id || null;
+          const statusWord = checklistStatusWord(item);
+          const showPacketCollect = Boolean(
+            !item.ok && packetKey && missingPackets.includes(packetKey) && !openTask,
+          );
+          const showCreateTask =
+            !item.ok && !taskId && isServicingCheckKey(item.key) && !showPacketCollect;
           return (
             <li
               key={item.key}
@@ -78,14 +103,9 @@ export function ServicingChecklistCard({
                 className={`shrink-0 text-xs font-semibold uppercase ${
                   item.ok ? "text-[var(--ff-green)]" : "text-muted-foreground"
                 }`}
+                data-ff-checklist-status={statusWord}
               >
-                {item.ok
-                  ? item.toggleable
-                    ? "Complete"
-                    : "On file"
-                  : item.toggleable
-                    ? "Incomplete"
-                    : "Missing"}
+                {statusWord}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium text-navy">{item.label}</div>
@@ -106,31 +126,34 @@ export function ServicingChecklistCard({
               </div>
               <div className="flex flex-wrap gap-1">
                 {item.toggleable ? (
-                  <>
-                    <form action={toggleServicingCheck}>
-                      <input type="hidden" name="policyId" value={policyId} />
-                      <input type="hidden" name="itemKey" value={item.key} />
-                      <input
-                        type="hidden"
-                        name="status"
-                        value={item.ok ? "incomplete" : "complete"}
-                      />
-                      <Button type="submit" size="sm" variant={item.ok ? "outline" : "default"}>
-                        {item.ok ? "Reopen" : "Mark complete"}
-                      </Button>
-                    </form>
-                    {!item.ok && !taskId ? (
-                      <CreateServicingTaskDialog
-                        policyId={policyId}
-                        itemKey={item.key}
-                        mode="servicing"
-                        label="Create task"
-                        triggerVariant="secondary"
-                      />
-                    ) : null}
-                  </>
+                  <form action={toggleServicingCheck}>
+                    <input type="hidden" name="policyId" value={policyId} />
+                    <input type="hidden" name="itemKey" value={item.key} />
+                    <input
+                      type="hidden"
+                      name="status"
+                      value={item.ok ? "incomplete" : "complete"}
+                    />
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant={item.ok ? "outline" : "default"}
+                      data-ff-checklist-mark={item.key}
+                    >
+                      {item.ok ? "Reopen" : "Mark complete"}
+                    </Button>
+                  </form>
                 ) : null}
-                {!item.ok && packetKey && missingPackets.includes(packetKey) && !openTask ? (
+                {showCreateTask ? (
+                  <CreateServicingTaskDialog
+                    policyId={policyId}
+                    itemKey={item.key}
+                    mode="servicing"
+                    label="Create task"
+                    triggerVariant="secondary"
+                  />
+                ) : null}
+                {showPacketCollect && packetKey ? (
                   <CreateServicingTaskDialog
                     policyId={policyId}
                     itemKey={packetKey}
@@ -138,6 +161,15 @@ export function ServicingChecklistCard({
                     label="Collect packet"
                     triggerVariant="outline"
                   />
+                ) : null}
+                {item.attachDocType ? (
+                  <Link
+                    href={policyDocumentsTabHref(policyId, item.attachDocType)}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    data-ff-checklist-documents={item.key}
+                  >
+                    Documents
+                  </Link>
                 ) : null}
               </div>
             </li>
@@ -176,15 +208,14 @@ export function ServicingChecklistCard({
                   </p>
                 ) : null}
               </div>
-              {!onFile ? (
-                <Link
-                  href={optionalServicingPacketDocumentsHref(policyId, key)}
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                  data-ff-optional-packet-docs={key}
-                >
-                  Documents
-                </Link>
-              ) : null}
+              <Link
+                href={optionalServicingPacketDocumentsHref(policyId, key)}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                data-ff-optional-packet-docs={key}
+                data-ff-checklist-documents={key}
+              >
+                Documents
+              </Link>
             </li>
           );
         })}
