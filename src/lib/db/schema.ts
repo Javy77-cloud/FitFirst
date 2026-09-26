@@ -140,6 +140,13 @@ export type RenewalCompareSnapshot = {
     proposedValue: string;
     changed: boolean;
   }[];
+  /** Set on the renewal-agreed freeze so Compare can reopen after roles flip. */
+  currentTermEffective?: string | null;
+  currentTermExpiration?: string | null;
+  proposedTermEffective?: string | null;
+  proposedTermExpiration?: string | null;
+  baselineLabel?: string;
+  renewalLabel?: string;
 };
 
 const tenantCol = () =>

@@ -242,6 +242,7 @@ export async function enrichRenewalCards(cards: RenewalBoardCard[]): Promise<Ren
         daysUntil: card.daysUntil,
         premiumDelta: card.premiumDelta,
         whyExtra: topFactor,
+        clockAnchor: card.clockAnchor,
       }),
       hasCurrentTerm,
       hasProposedTerm,

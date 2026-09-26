@@ -164,6 +164,7 @@ export function RenewalBoardCardView({
             open={compareOpen}
             onOpenChange={setCompareOpen}
             hideTrigger
+            renewalHandled={card.stage === "handled"}
             clientHealth={card.clientHealth}
             policyHealth={card.policyHealth}
           />
