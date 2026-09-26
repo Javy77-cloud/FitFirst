@@ -62,7 +62,7 @@ export const PC_SHOPPING_STAGES: { slug: string; name: string }[] = [
 /** Life / Health default to the same seed as P&C; each board is independently editable. */
 export const LIFE_HEALTH_STAGES: { slug: string; name: string }[] = [...PC_SHOPPING_STAGES];
 
-/** Admin ⋮ Edit stages — P&C, Life, and Health shopping boards. */
+/** Agency settings stage editor — P&C, Life, and Health shopping boards. */
 export const EDITABLE_DEAL_PIPELINE_SLUGS = ["p-c", "health", "life"] as const;
 
 /**

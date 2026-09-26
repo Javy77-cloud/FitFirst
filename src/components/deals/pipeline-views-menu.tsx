@@ -3,16 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
-import { PipelineStageEditor } from "@/components/pipeline/stage-editor";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { StageColorMenu } from "@/components/deals/stage-color-menu";
 import { useClientMounted } from "@/hooks/use-client-mounted";
 import type { PipelineStageBoard, PipelineStageView } from "@/lib/wire/pipeline-cards";
-import { pipelineTabLabel } from "@/lib/wire/pipeline";
 import { cn } from "@/lib/utils";
 
 const triggerClass = cn(
@@ -34,9 +27,17 @@ function boardsFromProps(
   return [];
 }
 
+function returnPath() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("flash");
+  url.searchParams.delete("flashKind");
+  const search = url.searchParams.toString();
+  return search ? `${url.pathname}?${search}` : url.pathname;
+}
+
 /**
- * ⋯ beside List/Grid/Board/Funnel — same on every view.
- * First item: Edit stages (opens dialog). More items can land here later.
+ * ⋯ beside the view chips on Deals and Renewals.
+ * Agents get stage colors only. Rename, add, delete, and reorder live in agency settings.
  */
 export function PipelineViewsMenu({
   pipelineId,
@@ -47,16 +48,16 @@ export function PipelineViewsMenu({
   pipelineId?: string | null;
   stages?: PipelineStageView[];
   stageBoards?: PipelineStageBoard[];
+  /** Kept so callers can mark admin vs agent. Structure edits are not offered here. */
   canEditStages?: boolean;
 }) {
   const mounted = useClientMounted();
   const [open, setOpen] = useState(false);
-  const [stagesOpen, setStagesOpen] = useState(false);
   const [panel, setPanel] = useState<{ top: number; right: number } | null>(null);
+  const [returnTo, setReturnTo] = useState("/deals");
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const boards = boardsFromProps(pipelineId, stages, stageBoards);
-  const canStages = Boolean(canEditStages && boards.length > 0);
   const [activeId, setActiveId] = useState(pipelineId || boards[0]?.id || "");
 
   useEffect(() => {
@@ -84,14 +85,11 @@ export function PipelineViewsMenu({
 
   if (!mounted) {
     return (
-      <button type="button" aria-label="Pipeline menu" title="More" className={triggerClass}>
+      <button type="button" aria-label="Pipeline menu" title="Stage colors" className={triggerClass}>
         <MoreHorizontal className="size-3.5" />
       </button>
     );
   }
-
-  const active = boards.find((board) => board.id === activeId) ?? boards[0] ?? null;
-  const showBoardPicker = boards.length > 1;
 
   return (
     <>
@@ -101,13 +99,17 @@ export function PipelineViewsMenu({
         aria-expanded={open}
         aria-haspopup="true"
         aria-label="Pipeline menu"
-        title="More"
+        title="Stage colors"
         data-ff-pipeline-views-menu=""
-        onClick={() => setOpen((current) => !current)}
+        data-ff-can-edit-stages={canEditStages ? "true" : "false"}
+        onClick={() => {
+          setReturnTo(returnPath());
+          setOpen((current) => !current);
+        }}
         className={triggerClass}
       >
         <MoreHorizontal className="size-3.5" />
-        <span className="sr-only">More</span>
+        <span className="sr-only">Stage colors</span>
       </button>
       {open && panel && typeof document !== "undefined"
         ? createPortal(
@@ -115,77 +117,20 @@ export function PipelineViewsMenu({
               ref={panelRef}
               role="menu"
               data-ff-pipeline-views-menu-panel=""
-              className="fixed z-[80] min-w-[11rem] rounded-md border border-border bg-card py-1 text-sm shadow-md"
+              data-ff-agent-stage-menu=""
+              className="fixed z-[80] max-h-[min(70vh,32rem)] w-[18.5rem] overflow-y-auto rounded-md border border-border bg-card py-1 text-sm shadow-md"
               style={{ top: panel.top, right: panel.right }}
             >
-              <button
-                type="button"
-                role="menuitem"
-                disabled={!canStages}
-                className={cn(
-                  "flex w-full px-3 py-1.5 text-left text-navy hover:bg-muted",
-                  !canStages && "cursor-not-allowed opacity-50",
-                )}
-                onClick={() => {
-                  if (!canStages) return;
-                  if (pipelineId && boards.some((board) => board.id === pipelineId)) {
-                    setActiveId(pipelineId);
-                  } else if (boards[0]?.id) {
-                    setActiveId(boards[0].id);
-                  }
-                  setOpen(false);
-                  setStagesOpen(true);
-                }}
-              >
-                Edit stages
-              </button>
+              <StageColorMenu
+                boards={boards}
+                activeId={activeId}
+                onSelectBoard={setActiveId}
+                returnTo={returnTo}
+              />
             </div>,
             document.body,
           )
         : null}
-
-      <Dialog open={stagesOpen} onOpenChange={setStagesOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto" data-ff-edit-stages-dialog="">
-          <DialogHeader>
-            <DialogTitle>Edit stages</DialogTitle>
-
-          </DialogHeader>
-          {canStages && active ? (
-            <div className="space-y-3" data-ff-edit-stages-boards="">
-              {showBoardPicker ? (
-                <div
-                  className="flex flex-wrap gap-1.5"
-                  role="tablist"
-                  aria-label="Pipeline to edit"
-                  data-ff-edit-stages-family=""
-                >
-                  {boards.map((board) => {
-                    const on = board.id === active.id;
-                    return (
-                      <button
-                        key={board.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={on}
-                        className={cn(
-                          "rounded-md border px-2 py-1 text-xs",
-                          on
-                            ? "border-navy bg-navy text-white"
-                            : "border-border bg-card text-navy hover:bg-muted",
-                        )}
-                        onClick={() => setActiveId(board.id)}
-                      >
-                        {pipelineTabLabel(board)}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-              <PipelineStageEditor pipelineId={active.id} stages={active.stages} bare />
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import {
   addPipelineStage,
@@ -31,11 +31,14 @@ export function PipelineStageEditor({
   pipelineId,
   stages,
   bare = false,
+  returnTo,
 }: {
   pipelineId: string;
   stages: PipelineStageView[];
   /** Dialog body — no details/summary chrome. */
   bare?: boolean;
+  /** Stay on this path after a color save. */
+  returnTo?: string;
 }) {
   const canDelete = stages.length > 1;
   const nameCh = useMemo(() => nameColumnCh(stages), [stages]);
@@ -53,6 +56,7 @@ export function PipelineStageEditor({
             total={stages.length}
             canDelete={canDelete}
             nameWidth={nameWidth}
+            returnTo={returnTo}
           />
         ))}
       </ul>
@@ -98,17 +102,17 @@ function StageEditorRow({
   total,
   canDelete,
   nameWidth,
+  returnTo,
 }: {
   stage: PipelineStageView;
   index: number;
   total: number;
   canDelete: boolean;
   nameWidth: { width: string };
+  returnTo?: string;
 }) {
-  const [previewColor, setPreviewColor] = useState(stage.color ?? "slate");
-  useEffect(() => {
-    setPreviewColor(stage.color ?? "slate");
-  }, [stage.color]);
+  const [draftColor, setDraftColor] = useState<string | null>(null);
+  const previewColor = draftColor ?? stage.color ?? "slate";
 
   return (
     <li className="flex items-center gap-2 px-2 py-1.5" data-ff-stage-row={stage.id}>
@@ -154,6 +158,7 @@ function StageEditorRow({
 
       <form action={setPipelineStageColor} className="flex shrink-0 items-center gap-1">
         <input type="hidden" name="stageId" value={stage.id} />
+        {returnTo ? <input type="hidden" name="next" value={returnTo} /> : null}
         <label className="sr-only" htmlFor={`stage-color-${stage.id}`}>
           Color for {stage.name}
         </label>
@@ -161,7 +166,7 @@ function StageEditorRow({
           id={`stage-color-${stage.id}`}
           name="color"
           value={previewColor}
-          onChange={(event) => setPreviewColor(event.target.value)}
+          onChange={(event) => setDraftColor(event.target.value)}
           className={cn(
             "h-7 w-[5.75rem] rounded-md border border-input bg-card px-1.5 text-xs capitalize",
           )}

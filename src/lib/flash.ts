@@ -108,6 +108,7 @@ export const FLASH_COPY = {
   "tag-added": "Tag added",
   "tag-created": "Tag created",
   "tag-color-saved": "Tag color saved",
+  "stage-color-saved": "Stage color saved",
   "document-deleted": "File hidden. An admin can restore it from Recently deleted.",
   "document-restored": "File restored",
   "document-unlinked-from-product": "Removed from this product (file stays on the deal)",

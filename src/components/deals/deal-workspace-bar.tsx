@@ -82,10 +82,10 @@ export function DealWorkspaceBar({
   scope?: string | null;
   valueBand?: string | null;
   settings: DeskLineSettings;
-  /** Active board for Edit stages (⋯ menu). */
+  /** Active board for stage colors (⋯ menu). */
   stagePipelineId?: string | null;
   stageRows?: PipelineStageView[];
-  /** P&C / Life / Health boards so Edit stages works from All and every tab. */
+  /** P&C / Life / Health boards so stage colors work from All and every tab. */
   stageBoards?: PipelineStageBoard[];
   canEditStages?: boolean;
   hrefBuilder?: (opts?: PipelineDeskHrefOpts) => string;

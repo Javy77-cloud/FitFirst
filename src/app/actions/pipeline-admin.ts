@@ -14,7 +14,11 @@ import { defaultStageColor, STATUS_COLOR_KEYS, type StatusColorKey } from "@/lib
 import { isUuid } from "@/lib/ids";
 import { matchDealLookup } from "@/lib/deals/lookup";
 import { listDealLookup } from "@/lib/db/queries";
-import { flashAction, flashSettings } from "@/lib/flash-action";
+import { flashAction, flashSettings, flashStay } from "@/lib/flash-action";
+import {
+  assertStageColorMutation,
+  assertStageStructureMutation,
+} from "@/lib/deals/stage-permissions";
 import { insertRequiredDealRisk } from "@/lib/deals/ensure-risk";
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 import { dealStageForPipeline, resolveStageMove } from "@/lib/wire/pipeline";
@@ -37,6 +41,14 @@ async function assertAdmin() {
   const session = await currentDeskSession();
   if (!session.isAdmin) throw new Error("Admin only.");
   return session;
+}
+
+async function assertStructureAdmin() {
+  assertStageStructureMutation(await currentDeskSession());
+}
+
+async function assertColorActor() {
+  assertStageColorMutation(await currentDeskSession());
 }
 
 export async function createPipelineDeal(formData: FormData) {
@@ -152,7 +164,7 @@ export async function createPipelineDeal(formData: FormData) {
 }
 
 export async function addPipelineStage(formData: FormData) {
-  await assertAdmin();
+  await assertStructureAdmin();
   const pipelineId = str(formData, "pipelineId");
   const name = str(formData, "name");
   if (!pipelineId || !name) return;
@@ -187,7 +199,7 @@ export async function addPipelineStage(formData: FormData) {
 }
 
 export async function relabelPipelineStage(formData: FormData) {
-  await assertAdmin();
+  await assertStructureAdmin();
   const id = str(formData, "stageId");
   const name = str(formData, "name");
   if (!id || !name) return;
@@ -199,11 +211,12 @@ export async function relabelPipelineStage(formData: FormData) {
   revalidatePath("/renewals");
 }
 
-/** Tip sep7gs: Admin can set stage pill color from Edit stages.
+/** Signed-in agents and admins may set stage pill color.
  * Same slug (e.g. gather) shares one color across every pipeline board (P&C / Flood / Life / Health).
+ * Rename, add, delete, and reorder stay admin-only.
  */
 export async function setPipelineStageColor(formData: FormData) {
-  await assertAdmin();
+  await assertColorActor();
   const id = str(formData, "stageId");
   const color = str(formData, "color").toLowerCase();
   if (!id || !(STATUS_COLOR_KEYS as readonly string[]).includes(color)) return;
@@ -223,11 +236,12 @@ export async function setPipelineStageColor(formData: FormData) {
     );
   revalidatePath("/deals");
   revalidatePath("/renewals");
-  flashAction("/deals", "stage-color-saved");
+  revalidatePath("/settings/pipeline-stages");
+  flashStay(formData, "/deals", "stage-color-saved");
 }
 
 export async function deletePipelineStage(formData: FormData) {
-  await assertAdmin();
+  await assertStructureAdmin();
   const id = str(formData, "stageId");
   if (!id) return;
   const [stage] = await db
@@ -277,7 +291,7 @@ export async function deletePipelineStage(formData: FormData) {
 }
 
 export async function reorderPipelineStage(formData: FormData) {
-  await assertAdmin();
+  await assertStructureAdmin();
   const id = str(formData, "stageId");
   const direction = Number(str(formData, "direction") || "0");
   if (!id || (direction !== -1 && direction !== 1)) return;

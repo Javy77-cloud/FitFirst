@@ -62,6 +62,7 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/settings/sms")).toBe(true);
     expect(isAdminOnlyPath("/settings/phone")).toBe(true);
     expect(isAdminOnlyPath("/settings/lines")).toBe(true);
+    expect(isAdminOnlyPath("/settings/pipeline-stages")).toBe(true);
     expect(isAdminOnlyPath("/settings/agents")).toBe(true);
     expect(isAdminOnlyPath("/settings/agents/abc/performance")).toBe(true);
     expect(isAdminOnlyPath("/settings/export")).toBe(true);
