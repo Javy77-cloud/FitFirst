@@ -18,6 +18,7 @@ import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { autoCoverageExtras, autoCoverageSchedule, autoVehicleCoverageBlocks } from "@/lib/policy/auto-coverage";
 import {
+  applyInForceFillTermDateGuard,
   buildPolicyFillAuditInsert,
   classifyFillFields,
   countFillOverwrites,
@@ -25,6 +26,7 @@ import {
   fillOverwriteWarning,
   formatDecDeductible,
   groupAppliedFill,
+  guardInForceFillTermDates,
   manualFillReasonError,
   parseDecTermDate,
   pickPolicyDecDocument,
@@ -1570,6 +1572,175 @@ describe("fill overwrite count", () => {
   });
 });
 
+describe("in-force Fill-from-DEC term dates", () => {
+  const now = new Date("2026-09-26T15:00:00.000Z");
+
+  function oldFloodDec() {
+    return proposeFillFromDec({
+      family: "flood",
+      rows: rows({
+        effective_date: "09/17/2025",
+        expiration_date: "09/17/2026",
+        term_months: "12",
+        building_limit: "250000",
+        building_deductible: "2000",
+        flood_zone: "AE",
+      }),
+    });
+  }
+
+  it("does not regress an in-force expiration onto a prior DEC that already ended", () => {
+    const proposed = oldFloodDec();
+    const existing = snapshotFillTargets({
+      policy: {
+        effectiveDate: "2026-09-17",
+        expirationDate: "2027-09-17",
+        termMonths: 12,
+        coverageLimits: { flood_building: "$200,000", flood_zone: "X" },
+      },
+    });
+    const guard = guardInForceFillTermDates({ status: "active", proposed, existing, now });
+    expect(guard.hold).toEqual(expect.arrayContaining(["effectiveDate", "expirationDate"]));
+    expect(guard.hold).not.toContain("floodBuilding");
+    expect(guard.note).toMatch(/Skipped term dates/);
+    expect(guard.note).toMatch(/2026-09-17 is before today 2026-09-26 \(America\/New_York\)/);
+    expect(guard.note).toMatch(/in-force/);
+
+    const classified = applyInForceFillTermDateGuard(classifyFillFields(existing, proposed), guard.hold);
+    expect(classified.overwritten).not.toContain("effectiveDate");
+    expect(classified.overwritten).not.toContain("expirationDate");
+    expect(classified.filled).not.toContain("effectiveDate");
+    expect(classified.skipped).toEqual(expect.arrayContaining(["effectiveDate", "expirationDate"]));
+    expect(classified.overwritten).toEqual(expect.arrayContaining(["floodBuilding", "floodZone"]));
+
+    const patch = groupAppliedFill(proposed, [...classified.filled, ...classified.overwritten]);
+    expect(patch.policy.effectiveDate).toBeUndefined();
+    expect(patch.policy.expirationDate).toBeUndefined();
+    expect(patch.term.termEffective).toBeUndefined();
+    expect(patch.term.termExpiration).toBeUndefined();
+    expect(patch.coverageLimits.flood_building).toBe("$250,000");
+    expect(patch.coverageLimits.flood_zone).toBe("AE");
+  });
+
+  it("keeps an AOR renewal when an older flood DEC would put expiration in the past", () => {
+    const proposed = proposeFillFromDec({
+      family: "flood",
+      rows: rows({
+        effective_date: "07/31/2025",
+        expiration_date: "07/30/2026",
+        building_limit: "250000",
+      }),
+    });
+    const existing = snapshotFillTargets({
+      policy: {
+        effectiveDate: "2026-07-30",
+        expirationDate: "2027-07-30",
+        termMonths: 12,
+        coverageLimits: { flood_building: "$100,000" },
+      },
+    });
+    for (const status of ["active", "bound", "pending"] as const) {
+      const guard = guardInForceFillTermDates({ status, proposed, existing, now });
+      const classified = applyInForceFillTermDateGuard(classifyFillFields(existing, proposed), guard.hold);
+      expect(classified.overwritten, status).not.toContain("expirationDate");
+      expect(classified.overwritten, status).not.toContain("effectiveDate");
+      expect(classified.overwritten, status).toContain("floodBuilding");
+      const patch = groupAppliedFill(proposed, [...classified.filled, ...classified.overwritten]);
+      expect(patch.policy.expirationDate, status).toBeUndefined();
+      expect(patch.coverageLimits.flood_building, status).toBe("$250,000");
+    }
+  });
+
+  it("does not demote an in-force policy onto a prior term that has not reached today yet", () => {
+    const early = new Date("2026-06-01T16:00:00.000Z");
+    const proposed = proposeFillFromDec({
+      family: "flood",
+      rows: rows({
+        effective_date: "07/31/2025",
+        expiration_date: "07/30/2026",
+        contents_limit: "100000",
+      }),
+    });
+    const existing = snapshotFillTargets({
+      policy: {
+        effectiveDate: "2026-07-30",
+        expirationDate: "2027-07-30",
+        coverageLimits: { flood_contents: "$50,000" },
+      },
+    });
+    const guard = guardInForceFillTermDates({ status: "active", proposed, existing, now: early });
+    expect(guard.note).toMatch(/ended on or before the in-force effective date 2026-07-30/);
+    const classified = applyInForceFillTermDateGuard(classifyFillFields(existing, proposed), guard.hold);
+    expect(classified.skipped).toEqual(expect.arrayContaining(["effectiveDate", "expirationDate"]));
+    expect(classified.overwritten).toContain("floodContents");
+    const patch = groupAppliedFill(proposed, [...classified.filled, ...classified.overwritten]);
+    expect(patch.policy.expirationDate).toBeUndefined();
+    expect(patch.coverageLimits.flood_contents).toBe("$100,000");
+  });
+
+  it("still writes a current-term DEC onto an in-force policy", () => {
+    const proposed = proposeFillFromDec({
+      family: "flood",
+      rows: rows({
+        effective_date: "09/17/2026",
+        expiration_date: "09/17/2027",
+        building_limit: "250000",
+      }),
+    });
+    const existing = snapshotFillTargets({
+      policy: {
+        effectiveDate: "2025-09-17",
+        expirationDate: "2026-09-17",
+        coverageLimits: { flood_building: "$200,000" },
+      },
+    });
+    const guard = guardInForceFillTermDates({ status: "active", proposed, existing, now });
+    expect(guard).toEqual({ hold: [], note: null });
+    const classified = applyInForceFillTermDateGuard(classifyFillFields(existing, proposed), guard.hold);
+    expect(classified.overwritten).toEqual(expect.arrayContaining(["effectiveDate", "expirationDate"]));
+    const patch = groupAppliedFill(proposed, [...classified.filled, ...classified.overwritten]);
+    expect(patch.policy.expirationDate?.toISOString()).toBe("2027-09-17T12:00:00.000Z");
+    expect(patch.term.termExpiration?.toISOString()).toBe("2027-09-17T12:00:00.000Z");
+    expect(patch.coverageLimits.flood_building).toBe("$250,000");
+  });
+
+  it("still accepts historical term dates on ended policies", () => {
+    const proposed = oldFloodDec();
+    const existing = snapshotFillTargets({
+      policy: {
+        effectiveDate: "2024-09-17",
+        expirationDate: "2025-09-17",
+        termMonths: 12,
+        coverageLimits: { flood_building: "$200,000" },
+      },
+    });
+    for (const status of ["lapsed", "cancelled", "expired", "non_renewed"] as const) {
+      const guard = guardInForceFillTermDates({ status, proposed, existing, now });
+      expect(guard, status).toEqual({ hold: [], note: null });
+      const classified = applyInForceFillTermDateGuard(classifyFillFields(existing, proposed), guard.hold);
+      expect(classified.overwritten, status).toEqual(
+        expect.arrayContaining(["effectiveDate", "expirationDate"]),
+      );
+      const patch = groupAppliedFill(proposed, [...classified.filled, ...classified.overwritten]);
+      expect(patch.policy.effectiveDate?.toISOString(), status).toBe("2025-09-17T12:00:00.000Z");
+      expect(patch.policy.expirationDate?.toISOString(), status).toBe("2026-09-17T12:00:00.000Z");
+    }
+  });
+
+  it("refuses to fill a blank in-force expiration from a DEC that already ended", () => {
+    const proposed = oldFloodDec();
+    const existing = snapshotFillTargets({
+      policy: { coverageLimits: { flood_zone: "X" } },
+    });
+    const guard = guardInForceFillTermDates({ status: "active", proposed, existing, now });
+    expect(guard.hold).toEqual(expect.arrayContaining(["effectiveDate", "expirationDate"]));
+    const classified = applyInForceFillTermDateGuard(classifyFillFields(existing, proposed), guard.hold);
+    expect(classified.filled).not.toContain("expirationDate");
+    expect(classified.skipped).toContain("expirationDate");
+    expect(classified.overwritten).toContain("floodZone");
+  });
+});
+
 describe("policy fill audit insert", () => {
   it("builds an immutable audit row with agent, reason, policy, dec, and field lists", () => {
     const row = buildPolicyFillAuditInsert({
@@ -1621,6 +1792,45 @@ describe("policy fill audit insert", () => {
     expect(row.fieldsWritten).toEqual(["coverageA"]);
   });
 
+  it("records a term-date skip on the audit and keeps the agent reason", () => {
+    const note =
+      "Skipped term dates (effectiveDate, expirationDate): extracted expiration 2026-09-17 is before today 2026-09-26 (America/New_York) on an in-force policy.";
+    const manual = buildPolicyFillAuditInsert({
+      tenantId: "tenant",
+      policyId: "policy",
+      policyNumber: "1150129045",
+      source: "manual",
+      agentId: "agent-1",
+      agentName: "Book Fill",
+      reason: "Book Fill-from-DEC.",
+      auditNote: note,
+      documentId: "doc-1",
+      documentFilename: "Flood  Insurance 2025-2026.pdf",
+      fieldsWritten: ["floodZone"],
+      fieldsOverwritten: ["floodBuilding"],
+    });
+    expect(manual.reason).toBe(`Book Fill-from-DEC. ${note}`);
+    expect(manual.fieldsOverwritten).toEqual(["floodBuilding"]);
+    expect(manual.fieldsOverwritten).not.toContain("expirationDate");
+    expect(manual).not.toHaveProperty("auditNote");
+
+    const issue = buildPolicyFillAuditInsert({
+      tenantId: "tenant",
+      policyId: "policy",
+      policyNumber: "1150129045",
+      source: "issue",
+      agentId: null,
+      agentName: "System",
+      reason: "should not stick",
+      auditNote: note,
+      documentId: "doc-1",
+      documentFilename: "Flood  Insurance 2025-2026.pdf",
+      fieldsWritten: [],
+      fieldsOverwritten: [],
+    });
+    expect(issue.reason).toBe(note);
+  });
+
   it("requires a non-blank reason only on the manual path", () => {
     expect(manualFillReasonError("manual", "  ")).toBe("Reason is required.");
     expect(manualFillReasonError("manual", "lender corrected the DEC")).toBeNull();
@@ -1668,6 +1878,9 @@ describe("fillPolicyFromDec wiring", () => {
     expect(action).toMatch(/insert\(policyFillAudit\)/);
     expect(action).toMatch(/policySet\.effectiveDate = patch\.policy\.effectiveDate/);
     expect(action).toMatch(/policySet\.expirationDate = patch\.policy\.expirationDate/);
+    expect(action.indexOf("guardInForceFillTermDates")).toBeGreaterThan(-1);
+    expect(action.indexOf("guardInForceFillTermDates")).toBeLessThan(action.indexOf("groupAppliedFill(proposed"));
+    expect(action).toMatch(/auditNote: termDateNote/);
     expect(action).toMatch(/policySet\.termMonths = patch\.policy\.termMonths/);
     expect(action).toMatch(/source: input\.source/);
     expect(action).toMatch(/forceExtract: input\.source === "manual"/);
