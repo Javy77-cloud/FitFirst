@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { DOCUMENT_CATEGORIES } from "@/lib/desk/policy-family";
 import { flashAction } from "@/lib/flash-client";
 import { messageFromUploadError, planUpload } from "@/lib/files/upload-plan";
+import { presetPolicyAttachDocType } from "@/lib/policy/policy-documents-href";
 
 type UploadMode = { onVercel: boolean; directBlob: boolean };
 
@@ -28,14 +29,17 @@ export function PolicyDocumentsAttach({
   policyId,
   dealId,
   uploadMode = { onVercel: false, directBlob: false },
+  presetDocType,
 }: {
   policyId: string;
   dealId?: string | null;
   uploadMode?: UploadMode;
+  /** From `?tab=documents&docType=` — AOR collect paths pass `aor`. */
+  presetDocType?: string | null;
 }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
-  const [docType, setDocType] = useState("policy_dec");
+  const [docType, setDocType] = useState(() => presetPolicyAttachDocType(presetDocType));
   const [expiresAt, setExpiresAt] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +140,7 @@ export function PolicyDocumentsAttach({
           name="docType"
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
           value={docType}
+          data-ff-policy-attach-doc-type={docType}
           onChange={(event) => setDocType(event.target.value)}
         >
           {DOCUMENT_CATEGORIES.map((option) => (

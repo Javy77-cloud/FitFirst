@@ -35,6 +35,8 @@ describe("declaration create-policy prompt", () => {
     expect(isDeclarationDocType("Declaration")).toBe(true);
     expect(isDeclarationDocType("agency_quote")).toBe(false);
     expect(isDeclarationDocType("photo")).toBe(false);
+    expect(isDeclarationDocType("aor")).toBe(false);
+    expect(isDeclarationDocType("AOR")).toBe(false);
     expect(coerceDeclarationDocType("declaration")).toBe("dec");
 
     expect(shouldPromptCreatePolicy({ docType: "dec", looksLikeDec: true })).toBe(true);
@@ -42,6 +44,7 @@ describe("declaration create-policy prompt", () => {
     expect(shouldPromptCreatePolicy({ docType: "dec", looksLikeDec: false })).toBe(false);
     expect(shouldPromptCreatePolicy({ docType: "photo", looksLikeDec: true })).toBe(false);
     expect(shouldPromptCreatePolicy({ docType: "agency_quote", looksLikeDec: true })).toBe(false);
+    expect(shouldPromptCreatePolicy({ docType: "aor", looksLikeDec: true })).toBe(false);
     expect(allowCreatePolicyPrompt({ stage: "gathering" })).toBe(false);
     expect(allowCreatePolicyPrompt({ stage: "markets" })).toBe(false);
     expect(allowCreatePolicyPrompt({ stage: "quote_review" })).toBe(false);

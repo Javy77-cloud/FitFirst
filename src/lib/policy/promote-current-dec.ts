@@ -22,7 +22,7 @@ import { documents, policies } from "@/lib/db/schema";
 import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
 import { markPolicyDecAsCurrent } from "@/lib/policy/mark-dec-current";
 
-/** Issued declaration types that replace the Current page. Not id cards, endorsements, or a full policy packet. */
+/** Issued declaration types that replace the Current page. Not AOR packets, id cards, endorsements, or a full policy packet. */
 export function arrivingDeclarationBecomesCurrent(docType: string | null | undefined): boolean {
   return isDeclarationDocType(docType);
 }

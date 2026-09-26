@@ -17,8 +17,18 @@ describe("arrivingDeclarationBecomesCurrent", () => {
     }
   });
 
-  it("leaves packets, id cards, endorsements, and quotes off the Current page", () => {
-    for (const docType of ["policy_complete", "policy_id", "endorsement", "quote_pdf", "binder", "other", ""]) {
+  it("leaves AOR packets, id cards, endorsements, and quotes off the Current page", () => {
+    for (const docType of [
+      "aor",
+      "AOR",
+      "policy_complete",
+      "policy_id",
+      "endorsement",
+      "quote_pdf",
+      "binder",
+      "other",
+      "",
+    ]) {
       expect(arrivingDeclarationBecomesCurrent(docType), docType).toBe(false);
     }
   });

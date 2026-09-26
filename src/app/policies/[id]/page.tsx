@@ -146,6 +146,7 @@ export default async function PolicyDetailPage({
   const filed = typeof query.filed === "string" ? query.filed : undefined;
   const notice = typeof query.notice === "string" ? query.notice : filed;
   const tabParam = typeof query.tab === "string" ? query.tab : undefined;
+  const presetDocType = typeof query.docType === "string" ? query.docType : undefined;
   const partyNameRaw = contact
     ? `${contact.firstName} ${contact.lastName}`
     : account?.name ?? policy.policyNumber;
@@ -504,6 +505,7 @@ export default async function PolicyDetailPage({
               vercel: process.env.VERCEL,
               blobReady: blobStoreReady(),
             })}
+            presetDocType={presetDocType}
           />
         ) : null}
 

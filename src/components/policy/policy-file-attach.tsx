@@ -15,6 +15,7 @@ import { DocumentVersions } from "@/components/documents/document-versions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DOCUMENT_CATEGORIES } from "@/lib/desk/policy-family";
+import { presetPolicyAttachDocType } from "@/lib/policy/policy-documents-href";
 import type { DocumentVersionRow } from "@/lib/documents/versions";
 import { groupVersionsByDocument } from "@/lib/documents/versions";
 import { flashAction } from "@/lib/flash-client";
@@ -28,16 +29,20 @@ export function PolicyFileAttach({
   files,
   versions = [],
   uploadMode,
+  presetDocType,
 }: {
   policyId: string;
   dealId?: string | null;
   files: { id: string; filename: string; docType: string }[];
   versions?: DocumentVersionRow[];
   uploadMode?: { onVercel: boolean; directBlob: boolean };
+  /** From `?tab=documents&docType=` — AOR collect paths pass `aor`. */
+  presetDocType?: string | null;
 }) {
   const router = useRouter();
   const resolvedMode = uploadMode ?? { onVercel: false, directBlob: false };
-  const [rows, setRows] = useState<FileRow[]>([{ id: 1, category: "policy_dec", file: null, pick: 0 }]);
+  const startingCategory = presetPolicyAttachDocType(presetDocType);
+  const [rows, setRows] = useState<FileRow[]>([{ id: 1, category: startingCategory, file: null, pick: 0 }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const byDoc = groupVersionsByDocument(versions);
@@ -127,7 +132,7 @@ export function PolicyFileAttach({
         setError(lastMessage ?? "Could not attach that file. Nothing was saved.");
         return;
       }
-      setRows([{ id: Date.now(), category: "policy_dec", file: null, pick: 0 }]);
+      setRows([{ id: Date.now(), category: startingCategory, file: null, pick: 0 }]);
       flashAction(saved === 1 ? "Document attached" : `${saved} documents attached`);
       router.refresh();
     } finally {
@@ -156,6 +161,7 @@ export function PolicyFileAttach({
               <select
                 name="category"
                 value={row.category}
+                data-ff-policy-attach-doc-type={row.category}
                 onChange={(event) =>
                   setRows((current) =>
                     current.map((item) =>
