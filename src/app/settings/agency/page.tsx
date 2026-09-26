@@ -51,6 +51,13 @@ export default async function AgencySettingsPage() {
 
           </Link>
           <Link
+            href="/settings/pipeline-stages"
+            className="ff-card block p-4 hover:border-primary/40"
+            data-ff-agency-pipeline-stages-card=""
+          >
+            <div className="text-sm font-semibold text-navy">Pipeline stages</div>
+          </Link>
+          <Link
             href="/settings/offices"
             className="ff-card block p-4 hover:border-primary/40"
           >

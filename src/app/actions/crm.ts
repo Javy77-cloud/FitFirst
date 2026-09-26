@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { resolveWriteOwnerId } from "@/lib/auth/canonical-owner-backfill";
-import { getActor } from "@/lib/auth/session";
+import { currentDeskSession, getActor } from "@/lib/auth/session";
+import { assertStageStructureMutation } from "@/lib/deals/stage-permissions";
 import { periodKey, splitCommission } from "@/lib/commissions/math";
 import {
   DEFAULT_COMMISSION_RATE_PCT,
@@ -948,6 +949,7 @@ export async function updateDealStage(formData: FormData) {
 }
 
 export async function createPipelineStage(formData: FormData) {
+  assertStageStructureMutation(await currentDeskSession());
   const label = str(formData, "label") || str(formData, "name");
   if (!label) throw new Error("Stage label is required");
   const slug = slugifyStage(label);
@@ -974,6 +976,7 @@ export async function createPipelineStage(formData: FormData) {
 }
 
 export async function relabelPipelineStage(formData: FormData) {
+  assertStageStructureMutation(await currentDeskSession());
   const stageId = str(formData, "stageId");
   const label = str(formData, "label") || str(formData, "name");
   if (!label) throw new Error("Stage label is required");
@@ -982,6 +985,7 @@ export async function relabelPipelineStage(formData: FormData) {
 }
 
 export async function deletePipelineStage(formData: FormData) {
+  assertStageStructureMutation(await currentDeskSession());
   const stageId = str(formData, "stageId");
   const [stage] = await db.select().from(pipelineStages).where(eq(pipelineStages.id, stageId));
   if (!stage) throw new Error("Stage not found");

@@ -26,6 +26,7 @@ export const SETTINGS_NAV_IDS = [
   "esign",
   "lists",
   "lines",
+  "pipeline-stages",
   "email-templates",
   "field-builder",
   "policy-labels",
@@ -128,6 +129,12 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     children: [
       { id: "agency", href: "/settings/agency", label: "Agency chrome", hint: "Name + logo" },
       { id: "lines", href: "/settings/lines", label: "Lines of business", hint: "Agency catalog" },
+      {
+        id: "pipeline-stages",
+        href: "/settings/pipeline-stages",
+        label: "Pipeline stages",
+        hint: "Labels, add, delete, reorder",
+      },
       { id: "offices", href: "/settings/offices", label: "Offices", hint: "Desks + states" },
       { id: "territories", href: "/settings/territories", label: "Territories", hint: "Geo books" },
       { id: "routing", href: "/settings/routing", label: "Lead routing", hint: "Territory · line · capacity" },
@@ -411,6 +418,7 @@ export const SETTINGS_KNOWN_HREFS = [
   "/settings/territories",
   "/settings/routing",
   "/settings/lines",
+  "/settings/pipeline-stages",
   "/settings/lists",
   "/settings/field-builder",
   "/settings/policy-labels",

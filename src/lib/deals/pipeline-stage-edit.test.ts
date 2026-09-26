@@ -12,15 +12,16 @@ describe("deals pipeline stage editor + Lost/Archive layout", () => {
     expect(EDITABLE_DEAL_PIPELINE_SLUGS).toEqual(["p-c", "health", "life"]);
     const menu = source("src/components/deals/pipeline-views-menu.tsx");
     expect(menu).toMatch(/stageBoards/);
-    expect(menu).toMatch(/canStages = Boolean\(canEditStages && boards.length > 0\)/);
-    expect(menu).not.toMatch(/stages && stages.length > 0/);
-    expect(menu).toMatch(/data-ff-edit-stages-family/);
-    expect(menu).toMatch(/Rename, recolor, reorder, or add stages/);
+    expect(menu).toMatch(/StageColorMenu/);
+    expect(menu).not.toMatch(/Edit stages/);
+    expect(menu).not.toMatch(/PipelineStageEditor/);
+    expect(menu).not.toMatch(/data-ff-edit-stages/);
     const page = source("src/app/deals/page.tsx");
     expect(page).toMatch(/EDITABLE_DEAL_PIPELINE_SLUGS/);
     expect(page).toMatch(/stageBoards=/);
     const bar = source("src/components/deals/deal-workspace-bar.tsx");
     expect(bar).toMatch(/stageBoards=\{stageBoards\}/);
+    expect(bar).toMatch(/PipelineViewsMenu/);
   });
 
   it("keeps admin stage labels and added stages across /deals loads", () => {
@@ -32,8 +33,15 @@ describe("deals pipeline stage editor + Lost/Archive layout", () => {
     const editor = source("src/components/pipeline/stage-editor.tsx");
     expect(editor).toMatch(/addPipelineStage/);
     expect(editor).toMatch(/relabelPipelineStage/);
+    expect(editor).toMatch(/deletePipelineStage/);
+    expect(editor).toMatch(/reorderPipelineStage/);
     expect(editor).toMatch(/setPipelineStageColor/);
     expect(editor).toMatch(/placeholder="New stage"/);
+    const settings = source("src/app/settings/pipeline-stages/page.tsx");
+    expect(settings).toMatch(/requireAdminPage/);
+    expect(settings).toMatch(/PipelineStageEditor/);
+    expect(settings).toMatch(/"renewals"/);
+    expect(settings).toMatch(/data-ff-admin-stage-settings/);
   });
 
   it("puts Lost / Archive under the stage strip and keeps star + ⋮ on the right", () => {

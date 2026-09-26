@@ -5,6 +5,7 @@ export const ADMIN_ONLY_PATHS = [
   "/settings/offices",
   "/settings/territories",
   "/settings/lines",
+  "/settings/pipeline-stages",
   "/settings/phone",
   "/settings/sms",
   "/settings/email-templates",
