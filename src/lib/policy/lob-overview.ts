@@ -172,6 +172,9 @@ export type LobOverviewInput = {
   bceg?: string | null;
   fireAlarm?: string | null;
   sprinkler?: string | null;
+  roofCovering?: string | null;
+  roofShape?: string | null;
+  openingProtection?: string | null;
   dwellingType?: string | null;
   county?: string | null;
   dwellingReplacementCost?: string | null;
@@ -306,6 +309,9 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
             present("bceg", "BCEG", normalizeBcegGrade(input.bceg) || null),
             present("fireAlarm", "Fire alarm", alarmDisplay(input.fireAlarm)),
             present("sprinkler", "Sprinkler", alarmDisplay(input.sprinkler)),
+            present("roofCovering", "Roof material", input.roofCovering),
+            present("roofShape", "Roof shape", input.roofShape),
+            present("openingProtection", "Opening protection", input.openingProtection),
             present("dwellingType", "Dwelling type", input.dwellingType),
             present("county", "County", input.county),
             present("dwellingRc", "Dwelling replacement cost", input.dwellingReplacementCost),

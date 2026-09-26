@@ -21,7 +21,7 @@ import { renewalDaysPhrase } from "@/lib/renewal/urgency";
 import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
 import { floodRatingFromLimits } from "@/lib/policy/flood-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
-import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
+import { parsePropertyYear, resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { buildHomeOverviewInspections, type HomeInspectionDocument } from "@/lib/policy/home-overview-inspections";
 import { HomeInspectionSections } from "@/components/policy/home-inspection-sections";
@@ -299,7 +299,7 @@ export function PolicyOverviewTab({
           premisesState: policy.premisesState,
           premisesZip: policy.premisesZip,
           yearBuilt: dwelling.yearBuilt,
-          roofYear: dwelling.roofYear,
+          roofYear: dwelling.roofYear ?? parsePropertyYear(protectionValues.roof_year),
           construction: dwelling.construction,
           typeOfResidence: limits.type_of_residence,
           monthsOccupied: limits.months_occupied,
@@ -315,6 +315,10 @@ export function PolicyOverviewTab({
           bceg: protectionValues.bceg_grade || sheetValue("bceg_grade"),
           fireAlarm: protectionValues.fire_alarm || sheetValue("fire_alarm"),
           sprinkler: protectionValues.sprinkler || sheetValue("sprinkler"),
+          roofCovering: protectionValues.roof_covering || risk?.roofCovering || sheetValue("roof_covering"),
+          roofShape: protectionValues.roof_shape || sheetValue("roof_shape"),
+          openingProtection:
+            protectionValues.opening_protection || risk?.openingProtection || sheetValue("opening_protection"),
           dwellingType: limits.dwelling_type,
           county: risk?.county,
           dwellingReplacementCost: limits.dwelling_replacement_cost,

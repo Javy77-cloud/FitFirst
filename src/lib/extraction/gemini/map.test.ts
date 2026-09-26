@@ -126,7 +126,7 @@ describe("gemini map key mapping", () => {
     expect(sheetKeysForGeminiKey("Exclude Wind Coverage")).toEqual([]);
     expect(sheetKeysForGeminiKey("loss_of_rents")).toEqual(["loss_of_rents"]);
     expect(sheetKeysForGeminiKey("fair_rental_value")).toEqual(["loss_of_rents", "coverage_d"]);
-    expect(sheetKeysForGeminiKey("landlord_liability")).toEqual(["landlord_liability", "coverage_e"]);
+    expect(sheetKeysForGeminiKey("landlord_liability")).toEqual(["landlord_liability", "coverage_l"]);
   });
 
   it("maps four-point system years onto sheet fields from Gemini JSON", () => {
