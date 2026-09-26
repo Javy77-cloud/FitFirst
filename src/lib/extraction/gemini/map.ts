@@ -126,11 +126,28 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   limited_fungi: ["limited_fungi"],
   limited_fungi_wet_or_dry_rot_or_bacteria: ["limited_fungi"],
   limited_fungi_wet_or_dry_rot_or_bacteria_coverage: ["limited_fungi"],
+  limited_fungi_wet_or_dry_rot_or_bacteria_coverage_property: ["limited_fungi"],
   fungi: ["limited_fungi"],
   mold: ["limited_fungi"],
   limited_fungi_premium: ["limited_fungi_premium"],
   limited_fungi_wet_or_dry_rot_or_bacteria_premium: ["limited_fungi_premium"],
   limited_fungi_wet_or_dry_rot_or_bacteria_coverage_premium: ["limited_fungi_premium"],
+  limited_fungi_liability: ["limited_fungi_liability"],
+  limited_fungi_wet_or_dry_rot_or_bacteria_liability: ["limited_fungi_liability"],
+  limited_fungi_wet_or_dry_rot_or_bacteria_coverage_liability: ["limited_fungi_liability"],
+  limited_fungi_liability_premium: ["limited_fungi_liability_premium"],
+  rental_to_others_short_term: ["rental_to_others_short_term"],
+  rental_to_others_short_term_exclusions: ["rental_to_others_short_term"],
+  rental_to_others_short_term_exclusions_property: ["rental_to_others_short_term"],
+  "rental_to_others_(short_term_exclusions)_property": ["rental_to_others_short_term"],
+  rental_to_others_short_term_premium: ["rental_to_others_short_term_premium"],
+  replacement_cost_buy_back: ["replacement_cost_buy_back"],
+  replacement_cost_buyback: ["replacement_cost_buy_back"],
+  replacement_cost_buy_back_premium: ["replacement_cost_buy_back_premium"],
+  water_damage_exclusion: ["water_damage_exclusion"],
+  water_damage: ["water_damage_exclusion"],
+  sinkhole_exclusion: ["sinkhole_exclusion"],
+  hurricane_protection: ["opening_protection", "hurricane_protection"],
   unit_owners_coverage_a: ["unit_owners_coverage_a"],
   unit_owners_coverage_a_special: ["unit_owners_coverage_a"],
   unit_owners_coverage_a_special_coverage: ["unit_owners_coverage_a"],
@@ -297,6 +314,19 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   coverage_e: ["coverage_e"],
   personal_liability: ["coverage_e"],
   coverage_f: ["coverage_f"],
+  coverage_l: ["coverage_l"],
+  coverage_l_liability: ["coverage_l"],
+  coverage_l_liability_each_occurrence: ["coverage_l"],
+  coverage_l_premium: ["coverage_l_premium"],
+  coverage_m: ["coverage_m"],
+  coverage_m_medical_payments: ["coverage_m"],
+  coverage_m_medical_payments_to_others: ["coverage_m"],
+  coverage_m_premium: ["coverage_m_premium"],
+  coverage_a_fire_premium: ["coverage_a_fire_premium"],
+  fire_premium: ["coverage_a_fire_premium"],
+  coverage_a_extended_premium: ["coverage_a_extended_premium"],
+  extended_coverage_premium: ["coverage_a_extended_premium"],
+  coverage_a_hurricane_premium: ["coverage_a_hurricane_premium"],
   coverage_a_premium: ["coverage_a_premium"],
   dwelling_premium: ["coverage_a_premium"],
   coverage_b_premium: ["coverage_b_premium"],
@@ -385,7 +415,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   scheduled_shed: ["scheduled_shed"],
   loss_of_rents: ["loss_of_rents"],
   fair_rental_value: ["loss_of_rents", "coverage_d"],
-  landlord_liability: ["landlord_liability", "coverage_e"],
+  landlord_liability: ["landlord_liability", "coverage_l"],
   // Personal Auto dec
   vin: ["vin"],
   vehicle_year: ["vehicle_year"],
@@ -572,7 +602,7 @@ export function normalizeGeminiJsonKey(key: string): string {
   return key
     .trim()
     .toLowerCase()
-    .replace(/[%$#]+/g, "")
+    .replace(/[%$#,]+/g, "")
     .replace(/[\s\-./]+/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");

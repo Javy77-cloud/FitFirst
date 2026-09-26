@@ -187,7 +187,16 @@ const GROUND_COVER_COLLAPSE_KEYS = new Set([
  * A–F and dropped Year of Construction / Masonry must be read again.
  * Liability-only caches with no dwelling limit are left alone.
  * A unit-owners endorsement cache that predates Catastrophic Ground Cover Collapse is read again.
+ * A DP dwelling cache with fungi and ground-cover collapse but no Coverage L/M predates the DP-3 schedule teach.
  */
+const DP_LIABILITY_CACHE_KEYS = new Set([
+  "coverage_l",
+  "coverage_l_premium",
+  "coverage_m",
+  "coverage_m_premium",
+  "landlord_liability",
+]);
+
 export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
   let sawDwellingCoverage = false;
   let sawLinePremium = false;
@@ -195,6 +204,9 @@ export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolea
   let sawConstruction = false;
   let sawUnitOwnerEndorsement = false;
   let sawGroundCoverCollapse = false;
+  let sawCoverageF = false;
+  let sawDpLiability = false;
+  let sawLimitedFungi = false;
   for (const row of rows) {
     const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
     if (!value) continue;
@@ -205,9 +217,13 @@ export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolea
     if (HOME_CONSTRUCTION_KEYS.has(key)) sawConstruction = true;
     if (UNIT_OWNER_ENDORSEMENT_KEYS.has(key)) sawUnitOwnerEndorsement = true;
     if (GROUND_COVER_COLLAPSE_KEYS.has(key)) sawGroundCoverCollapse = true;
+    if (key === "coverage_f" || key === "coverage_f_premium") sawCoverageF = true;
+    if (DP_LIABILITY_CACHE_KEYS.has(key)) sawDpLiability = true;
+    if (key === "limited_fungi" || key.startsWith("limited_fungi")) sawLimitedFungi = true;
   }
   if (sawUnitOwnerEndorsement && !sawGroundCoverCollapse) return false;
   if (!sawDwellingCoverage) return true;
+  if (sawLimitedFungi && sawGroundCoverCollapse && !sawCoverageF && !sawDpLiability) return false;
   return sawLinePremium && sawYear && sawConstruction;
 }
 

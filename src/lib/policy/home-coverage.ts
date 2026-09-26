@@ -38,6 +38,22 @@ export const HOME_COVERAGE_OPTIONAL_KEYS = [
   "extended_replacement_cost_dwelling",
 ] as const;
 
+/**
+ * DP-3 letter rows printed after Coverage E.
+ * Liability and medical stay on the schedule. They are not Coverage E or F.
+ */
+export const DP_LIABILITY_COVERAGE_KEYS = ["coverage_l", "coverage_m"] as const;
+
+/** Breakdown rows that are coverages. Fees and credits stay off this list. */
+export const DP_BREAKDOWN_COVERAGE_KEYS = [
+  "limited_fungi_liability",
+  "rental_to_others_short_term",
+  "replacement_cost_buy_back",
+] as const;
+
+/** Exclusion flags. Shown with deductibles, not as premium lines. */
+export const HOME_EXCLUSION_FLAG_KEYS = ["water_damage"] as const;
+
 /** Deductibles last. */
 export const HOME_COVERAGE_DEDUCTIBLE_KEYS = [
   "aop_deductible",
@@ -54,6 +70,7 @@ export const HOME_COVERAGE_DESK_KEYS = [
 ] as const;
 
 const DEDUCTIBLE_KEYS = new Set<string>(HOME_COVERAGE_DEDUCTIBLE_KEYS);
+const EXCLUSION_FLAG_KEYS = new Set<string>(HOME_EXCLUSION_FLAG_KEYS);
 
 const LABELS: Record<string, string> = {
   coverage_a: "Coverage A",
@@ -62,6 +79,12 @@ const LABELS: Record<string, string> = {
   coverage_d: "Coverage D",
   coverage_e: "Coverage E",
   coverage_f: "Coverage F",
+  coverage_l: "Coverage L - Liability",
+  coverage_m: "Coverage M - Medical Payments",
+  limited_fungi_liability: "Limited Fungi, Wet or Dry Rot, or Bacteria - Liability",
+  rental_to_others_short_term: "Rental to Others (Short Term Exclusions) - Property",
+  replacement_cost_buy_back: "Replacement Cost Buy Back",
+  water_damage: "Water Damage",
   water_backup: "Water Back Up and Sump Overflow",
   personal_injury: "Personal Injury",
   ordinance_or_law: "Ordinance or Law",
@@ -122,6 +145,13 @@ const COVERAGE_KEY_ALIASES: Record<string, string> = {
   catastrophic_ground_cover_collapse_coverage: "catastrophic_ground_cover_collapse",
   ground_cover_collapse: "catastrophic_ground_cover_collapse",
   ground_cover_collapse_coverage: "catastrophic_ground_cover_collapse",
+  coverage_l_liability: "coverage_l",
+  landlord_liability: "coverage_l",
+  coverage_m_medical_payments: "coverage_m",
+  limited_fungi_liability: "limited_fungi_liability",
+  rental_to_others_short_term_exclusions_property: "rental_to_others_short_term",
+  replacement_cost_buyback: "replacement_cost_buy_back",
+  water_damage_exclusion: "water_damage",
 };
 
 export type HomeCoverageScheduleRow = {
@@ -260,13 +290,21 @@ export function homeCoverageSchedule(input: {
     setLimit("face", formatMoney(input.faceAmount));
     push("face");
   }
+  for (const key of DP_LIABILITY_COVERAGE_KEYS) push(key);
   for (const key of HOME_COVERAGE_OPTIONAL_KEYS) push(key);
+  for (const key of DP_BREAKDOWN_COVERAGE_KEYS) push(key);
 
   const extras = [...cells.keys()]
-    .filter((key) => !DEDUCTIBLE_KEYS.has(key) && !key.endsWith("_premium"))
+    .filter(
+      (key) =>
+        !DEDUCTIBLE_KEYS.has(key) &&
+        !EXCLUSION_FLAG_KEYS.has(key) &&
+        !key.endsWith("_premium"),
+    )
     .sort((a, b) => a.localeCompare(b));
   for (const key of extras) push(key);
 
+  for (const key of HOME_EXCLUSION_FLAG_KEYS) push(key);
   for (const key of HOME_COVERAGE_DEDUCTIBLE_KEYS) push(key);
 
   return rows;

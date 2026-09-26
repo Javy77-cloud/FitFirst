@@ -17,6 +17,8 @@ const HOME_DOLLAR_COVERAGE_KEYS = new Set([
   "coverage_d",
   "coverage_e",
   "coverage_f",
+  "coverage_l",
+  "coverage_m",
 ]);
 
 /** Optional-coverage limits and premiums. Included and percents stay as printed. */
@@ -51,6 +53,14 @@ const HOME_OPTIONAL_DOLLAR_KEYS = new Set([
   "unit_owners_coverage_a_premium",
   "catastrophic_ground_cover_collapse",
   "catastrophic_ground_cover_collapse_premium",
+  "limited_fungi_liability",
+  "limited_fungi_liability_premium",
+  "rental_to_others_short_term",
+  "rental_to_others_short_term_premium",
+  "replacement_cost_buy_back",
+  "replacement_cost_buy_back_premium",
+  "coverage_l",
+  "coverage_m",
 ]);
 
 const HOME_DEDUCTIBLE_KEYS = new Set([
@@ -67,6 +77,8 @@ const HOME_COVERAGE_LINE_PREMIUM_KEYS = new Set([
   "coverage_d_premium",
   "coverage_e_premium",
   "coverage_f_premium",
+  "coverage_l_premium",
+  "coverage_m_premium",
 ]);
 
 /** Fill-from-DEC keys whose displayed text must keep a printed dollar sign. */

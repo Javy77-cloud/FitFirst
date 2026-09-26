@@ -582,6 +582,37 @@ describe("auto fill confirm does not re-read Gemini", () => {
         reuseFresh: false,
       }),
     ).toBe(false);
+
+    const towerHillBeforeCoverageL: GeminiMintRow[] = [
+      ...rated,
+      {
+        fieldKey: "limited_fungi",
+        normalizedValue: "10000/10000",
+        rawValue: "10000/10000",
+        confidence: 0.9,
+        flagged: false,
+      },
+      {
+        fieldKey: "catastrophic_ground_cover_collapse_premium",
+        normalizedValue: "Included",
+        rawValue: "Incl",
+        confidence: 0.9,
+        flagged: false,
+      },
+    ];
+    expect(homeDecCacheSupportsFill(towerHillBeforeCoverageL)).toBe(false);
+    expect(
+      homeDecCacheSupportsFill([
+        ...towerHillBeforeCoverageL,
+        {
+          fieldKey: "coverage_l",
+          normalizedValue: "100000",
+          rawValue: "100000",
+          confidence: 0.9,
+          flagged: false,
+        },
+      ]),
+    ).toBe(true);
   });
 
   it("keeps an older cache once deductibles are already stored", () => {
