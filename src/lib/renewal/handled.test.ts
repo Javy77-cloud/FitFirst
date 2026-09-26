@@ -10,11 +10,21 @@ import {
 } from "@/lib/renewal/board-filter";
 import {
   assertClientStayingAvailable,
+  CLIENT_STAYING_EARLY_CANCEL,
+  CLIENT_STAYING_EARLY_CODE,
+  CLIENT_STAYING_EARLY_CONFIRM,
   CLIENT_STAYING_NO_RENEWAL_DATE,
   CLIENT_STAYING_TOO_EARLY,
   CLIENT_STAYING_WINDOW_DAYS,
+  ClientStayingEarlyConfirmError,
+  clientStayingEarlyConfirmMessage,
+  clientStayingEarlyRefusal,
   clientStayingUnavailableReason,
+  confirmEarlyClientStayingRequested,
   isClientStayingAvailable,
+  isClientStayingEarlyResult,
+  isRenewalHandledStageValue,
+  planClientStayingClick,
   RENEWAL_HANDLED_CLEAR_KINDS,
   RENEWAL_HANDLED_FILTER_LABEL,
   RENEWAL_HANDLED_LABEL,
@@ -25,6 +35,7 @@ import {
   RENEWAL_HANDLED_SUCCESS_TITLE,
   renewalProximityDrivesCare,
 } from "@/lib/renewal/handled";
+import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
 import { FLASH_COPY, resolveFlashMessage } from "@/lib/flash";
 
 function card(
@@ -130,7 +141,9 @@ describe("Client staying / Handled", () => {
     expect(readFileSync("src/lib/notifications/sync-panel.ts", "utf8")).toMatch(/applyTermStartEffects/);
     expect(readFileSync("src/lib/book-lists/heat.ts", "utf8")).toMatch(/renewalProximityDrivesCare/);
     expect(readFileSync("src/lib/policy/care-strip.ts", "utf8")).toMatch(/renewalProximityDrivesCare/);
-    expect(readFileSync("src/lib/book-lists/load.ts", "utf8")).toMatch(/RENEWAL_HANDLED_STAGE/);
+    expect(readFileSync("src/lib/book-lists/load.ts", "utf8")).toMatch(
+      /eq\(renewalQueue\.stage, RENEWAL_HANDLED_STAGE\)/,
+    );
     expect(readFileSync("src/app/policies/[id]/page.tsx", "utf8")).toMatch(/renewalHandled/);
     const button = readFileSync("src/components/renewals/client-staying-button.tsx", "utf8");
     expect(button).toMatch(/flashAction\("client-staying"\)/);
@@ -138,38 +151,155 @@ describe("Client staying / Handled", () => {
     expect(button).toMatch(/RENEWAL_HANDLED_SUCCESS_TITLE/);
     expect(button).toMatch(/setSuccessOpen\(true\)/);
     expect(button).toMatch(/Got it|RENEWAL_HANDLED_SUCCESS_DONE/);
-    expect(button).toMatch(/isClientStayingAvailable/);
+    expect(button).toMatch(/planClientStayingClick/);
+    expect(button).toMatch(/isClientStayingEarlyResult/);
+    expect(button).toMatch(/confirmEarlyClientStaying/);
     expect(button).toMatch(/data-ff-client-staying-blocked/);
+    expect(button).toMatch(/data-ff-client-staying-early-dialog/);
+    expect(button).toMatch(/data-ff-client-staying-early-cancel/);
+    expect(button).toMatch(/data-ff-client-staying-early-confirm/);
+    expect(button).toMatch(/onClick=\{\(\) => setEarlyOpen\(false\)\}/);
+    expect(button).toMatch(/onClick=\{\(\) => save\(true\)\}/);
+    expect(button).toMatch(/fd\.set\("confirmEarlyClientStaying", "true"\)/);
     expect(button).toMatch(/renewalDate/);
-    expect(readFileSync("src/app/actions/renewals-board.ts", "utf8")).toMatch(
-      /assertClientStayingAvailable/,
-    );
+    const action = readFileSync("src/app/actions/renewals-board.ts", "utf8");
+    const mark = action.slice(action.indexOf("export async function markClientStaying"));
+    expect(mark).toMatch(/assertClientStayingAvailable/);
+    expect(mark).toMatch(/confirmEarlyClientStaying/);
+    expect(mark).toMatch(/clientStayingEarlyRefusal/);
+    expect(mark.indexOf("if (early) return early")).toBeGreaterThan(-1);
+    expect(mark.indexOf("if (early) return early")).toBeLessThan(mark.indexOf("insert(renewalQueue)"));
+    const page = readFileSync("src/app/policies/[id]/page.tsx", "utf8");
+    expect(page).toMatch(/isRenewalHandledStageValue\(renewalQueueRow\?\.stage\)/);
+    const effects = readFileSync("src/lib/notifications/term-start-effects.ts", "utf8");
+    expect(effects).toMatch(/delete\(renewalQueue\)/);
+    expect(effects).toMatch(/RENEWAL_HANDLED_STAGE/);
   });
 
-  it("gates Client staying to the last 90 days before renewalDate", () => {
+  it("marks inside 90 days with no warning and asks to confirm outside that window", () => {
     expect(CLIENT_STAYING_WINDOW_DAYS).toBe(90);
+    expect(CLIENT_STAYING_EARLY_CANCEL).toBe("Cancel");
+    expect(CLIENT_STAYING_EARLY_CONFIRM).toBe("Confirm");
     const asOf = new Date("2026-09-24T12:00:00.000Z");
+
     expect(isClientStayingAvailable(null, asOf)).toBe(false);
     expect(isClientStayingAvailable(undefined, asOf)).toBe(false);
     expect(isClientStayingAvailable("", asOf)).toBe(false);
     expect(clientStayingUnavailableReason(null, asOf)).toBe(CLIENT_STAYING_NO_RENEWAL_DATE);
-    expect(isClientStayingAvailable("2027-09-24T12:00:00.000Z", asOf)).toBe(false);
-    expect(clientStayingUnavailableReason("2027-09-24T12:00:00.000Z", asOf)).toBe(
-      CLIENT_STAYING_TOO_EARLY,
-    );
-    // asOf inside [renewalDate-90d, renewalDate]
+    expect(planClientStayingClick(null, asOf)).toEqual({
+      kind: "blocked",
+      reason: CLIENT_STAYING_NO_RENEWAL_DATE,
+    });
+    expect(clientStayingEarlyRefusal(null, asOf)).toBeNull();
+    expect(() => assertClientStayingAvailable(null, asOf)).toThrow(CLIENT_STAYING_NO_RENEWAL_DATE);
+    expect(() =>
+      assertClientStayingAvailable(null, asOf, { confirmEarlyClientStaying: true }),
+    ).toThrow(CLIENT_STAYING_NO_RENEWAL_DATE);
+
+    // Inside the window, including the renewal day and exactly 90 days out: no confirm.
     expect(isClientStayingAvailable("2026-12-01T12:00:00.000Z", asOf)).toBe(true);
     expect(isClientStayingAvailable("2026-09-24T12:00:00.000Z", asOf)).toBe(true);
-    // exactly 90 days out: windowStart == asOf
     expect(isClientStayingAvailable("2026-12-23T12:00:00.000Z", asOf)).toBe(true);
-    // 91 days out: still too early
+    expect(planClientStayingClick("2026-12-23T12:00:00.000Z", asOf)).toEqual({ kind: "mark" });
+    expect(clientStayingEarlyRefusal("2026-10-01T12:00:00.000Z", asOf)).toBeNull();
+    expect(clientStayingUnavailableReason("2026-10-01T12:00:00.000Z", asOf)).toBeNull();
+    expect(() => assertClientStayingAvailable("2026-10-01T12:00:00.000Z", asOf)).not.toThrow();
+    expect(() => assertClientStayingAvailable("2026-12-23T12:00:00.000Z", asOf)).not.toThrow();
+
+    // 91 days out: warning + explicit confirm. The confirm flag is not implied.
     expect(isClientStayingAvailable("2026-12-24T12:00:00.000Z", asOf)).toBe(false);
-    // past renewal date
+    expect(clientStayingUnavailableReason("2026-12-24T12:00:00.000Z", asOf)).toBeNull();
+    const early91 = clientStayingEarlyRefusal("2026-12-24T12:00:00.000Z", asOf);
+    expect(early91).toEqual({
+      ok: false,
+      code: CLIENT_STAYING_EARLY_CODE,
+      daysAway: 91,
+      message: clientStayingEarlyConfirmMessage(91),
+    });
+    expect(early91?.message).toBe(
+      "This client is 91 days away from the renewal date. Are you sure you want to mark it as client staying?",
+    );
+    expect(planClientStayingClick("2026-12-24T12:00:00.000Z", asOf)).toMatchObject({
+      kind: "confirm",
+      daysAway: 91,
+    });
+    expect(clientStayingEarlyRefusal("2026-12-24T12:00:00.000Z", asOf, {
+      confirmEarlyClientStaying: true,
+    })).toBeNull();
+    expect(() => assertClientStayingAvailable("2026-12-24T12:00:00.000Z", asOf)).toThrow(
+      ClientStayingEarlyConfirmError,
+    );
+    expect(() => assertClientStayingAvailable("2026-12-24T12:00:00.000Z", asOf)).toThrow(
+      /91 days away/,
+    );
+    expect(() =>
+      assertClientStayingAvailable("2026-12-24T12:00:00.000Z", asOf, {
+        confirmEarlyClientStaying: true,
+      }),
+    ).not.toThrow();
+    expect(confirmEarlyClientStayingRequested("true")).toBe(true);
+    expect(confirmEarlyClientStayingRequested(true)).toBe(true);
+    expect(confirmEarlyClientStayingRequested("false")).toBe(false);
+    expect(confirmEarlyClientStayingRequested(null)).toBe(false);
+    expect(confirmEarlyClientStayingRequested("1")).toBe(false);
+    expect(isClientStayingEarlyResult(early91)).toBe(true);
+    expect(isClientStayingEarlyResult({ ok: true })).toBe(false);
+
+    const yearOut = clientStayingEarlyRefusal("2027-09-24T12:00:00.000Z", asOf);
+    expect(yearOut?.code).toBe(CLIENT_STAYING_EARLY_CODE);
+    expect(yearOut?.daysAway).toBeGreaterThan(90);
+    expect(yearOut?.message).toBe(clientStayingEarlyConfirmMessage(yearOut?.daysAway ?? 0));
+    expect(clientStayingUnavailableReason("2027-09-24T12:00:00.000Z", asOf)).toBeNull();
+
+    // Past the renewal day stays a hard block, even with the confirm flag.
     expect(isClientStayingAvailable("2026-09-23T12:00:00.000Z", asOf)).toBe(false);
-    expect(() => assertClientStayingAvailable(null, asOf)).toThrow(CLIENT_STAYING_NO_RENEWAL_DATE);
-    expect(() => assertClientStayingAvailable("2027-01-01T12:00:00.000Z", asOf)).toThrow(
+    expect(clientStayingUnavailableReason("2026-09-23T12:00:00.000Z", asOf)).toBe(
       CLIENT_STAYING_TOO_EARLY,
     );
-    expect(() => assertClientStayingAvailable("2026-10-01T12:00:00.000Z", asOf)).not.toThrow();
+    expect(clientStayingEarlyRefusal("2026-09-23T12:00:00.000Z", asOf)).toBeNull();
+    expect(() =>
+      assertClientStayingAvailable("2026-09-23T12:00:00.000Z", asOf, {
+        confirmEarlyClientStaying: true,
+      }),
+    ).toThrow(CLIENT_STAYING_TOO_EARLY);
+  });
+
+  it("shows Renewal agreed only while stage is handled, and clears it on the renewal day in ET", () => {
+    const window = {
+      renewalDate: "2026-10-10",
+      effectiveDate: "2025-10-10",
+      expirationDate: "2026-10-09",
+    };
+    const before = new Date("2026-10-09T16:00:00.000Z");
+    const onDay = new Date("2026-10-10T16:00:00.000Z");
+    for (const stage of [undefined, null, "", "upcoming", "contacted", "quoted", "bound", "lost"]) {
+      expect(isRenewalHandledStageValue(stage)).toBe(false);
+      expect(
+        showRenewalAgreedStamp(
+          { ...window, clientStaying: isRenewalHandledStageValue(stage) },
+          before,
+        ),
+      ).toBe(false);
+    }
+    expect(isRenewalHandledStageValue(RENEWAL_HANDLED_STAGE)).toBe(true);
+    expect(
+      showRenewalAgreedStamp(
+        { ...window, clientStaying: isRenewalHandledStageValue("handled") },
+        before,
+      ),
+    ).toBe(true);
+    expect(
+      showRenewalAgreedStamp(
+        { ...window, clientStaying: isRenewalHandledStageValue("handled") },
+        onDay,
+      ),
+    ).toBe(false);
+    // 8:30 PM EDT the night before is still the prior Eastern day.
+    expect(
+      showRenewalAgreedStamp(
+        { ...window, clientStaying: true },
+        new Date("2026-10-10T00:30:00.000Z"),
+      ),
+    ).toBe(true);
   });
 });

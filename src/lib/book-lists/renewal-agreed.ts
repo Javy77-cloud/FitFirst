@@ -53,7 +53,8 @@ export type RenewalAgreedInput = {
 };
 
 function clientStaying(input: RenewalAgreedInput): boolean {
-  return Boolean(input.clientStaying ?? input.handled);
+  if (input.clientStaying === true || input.clientStaying === false) return input.clientStaying;
+  return input.handled === true;
 }
 
 /**

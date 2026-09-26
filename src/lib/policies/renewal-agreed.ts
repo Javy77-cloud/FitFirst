@@ -141,7 +141,7 @@ export function showRenewalAgreedStamp(
   input: RenewalAgreedInput,
   asOf: Date = new Date(),
 ): boolean {
-  if (!input.clientStaying) return false;
+  if (input.clientStaying !== true) return false;
   const clearOn = renewalAgreedEffectiveDate(input);
   if (!clearOn) return false;
   return etDateKey(asOf) < clearOn;

@@ -67,6 +67,13 @@ describe("showRenewalAgreedStamp", () => {
         asOf: BEFORE,
       }),
     ).toBe(false);
+    expect(
+      showRenewalAgreedStamp({
+        renewalHandled: undefined,
+        renewedEffective: "2099-01-01",
+        asOf: BEFORE,
+      }),
+    ).toBe(false);
   });
 
   it("clears on the derived effective day and stays clear after", () => {
