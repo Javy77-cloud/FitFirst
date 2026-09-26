@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
-import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { appointmentLine } from "@/lib/domain-ams";
 import { shopLineFromLob } from "@/lib/deals/shop-flow";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -24,6 +23,7 @@ import { extractWithGeminiPdf } from "@/lib/extraction/gemini";
 import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
 import { readStoredFile } from "@/lib/files/object-store";
 import { isUuid } from "@/lib/ids";
+import { loadFillDecDocument } from "@/lib/policy/fill-dec-document";
 import { issuedPolicyDocType } from "@/lib/policy/issued-upload";
 import {
   loadGeminiRows,
@@ -50,7 +50,6 @@ import {
   formatFillServerTime,
   groupAppliedFill,
   manualFillReasonError,
-  pickPolicyDecDocument,
   proposeFillFromDec,
   snapshotFillTargets,
   vehicleIdentity,
@@ -142,62 +141,6 @@ type PreparedFill = {
   existing: Record<string, string>;
   classified: ReturnType<typeof classifyFillFields>;
 };
-
-const decDocColumns = {
-  id: documents.id,
-  filename: documents.filename,
-  storagePath: documents.storagePath,
-  mimeType: documents.mimeType,
-  docType: documents.docType,
-  slot: documents.slot,
-  createdAt: documents.createdAt,
-};
-
-/** Policy + declaration file only. No Gemini. The popup can show agent, time, and filename while the read runs. */
-async function loadFillDecDocument(input: {
-  policyId: string;
-  documentId?: string | null;
-}): Promise<
-  | { ok: true; policy: typeof policies.$inferSelect; doc: DecDocLike & { storagePath?: string | null } }
-  | { ok: false; error: string }
-> {
-  if (!isUuid(input.policyId)) return { ok: false, error: "Policy required." };
-  const [policy] = await db
-    .select()
-    .from(policies)
-    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, input.policyId)));
-  if (!policy) return { ok: false, error: "Policy not found." };
-
-  const docs = await db
-    .select(decDocColumns)
-    .from(documents)
-    .where(
-      and(
-        eq(documents.tenantId, DEFAULT_TENANT_ID),
-        eq(documents.policyId, policy.id),
-        notHiddenDocument(),
-      ),
-    );
-
-  let pool = docs;
-  if (policy.sourceDocumentId && !pool.some((doc) => doc.id === policy.sourceDocumentId)) {
-    const [source] = await db
-      .select(decDocColumns)
-      .from(documents)
-      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, policy.sourceDocumentId)));
-    if (source) pool = [...pool, source];
-  }
-
-  if (input.documentId && !pool.some((doc) => doc.id === input.documentId)) {
-    return { ok: false, error: "Declaration not on this policy." };
-  }
-  const doc = pickPolicyDecDocument(pool, {
-    documentId: input.documentId,
-    sourceDocumentId: policy.sourceDocumentId,
-  });
-  if (!doc) return { ok: false, error: "No declaration page on this policy." };
-  return { ok: true, policy, doc };
-}
 
 async function prepareFill(input: {
   policyId: string;
@@ -395,12 +338,26 @@ export async function fillPolicyFromDec(input: {
   reason?: string | null;
   source: FillSource;
   confirmOverwrite?: boolean;
+  /**
+   * Book script only. Ignored unless this process has FF_OPS_FILL=1.
+   * The desk button never sends it. Production leaves the env unset, so a client cannot skip sign-in.
+   */
+  opsActor?: { userId?: string | null; name?: string | null } | null;
 }): Promise<FillPolicyFromDecResult> {
   const reasonError = manualFillReasonError(input.source, input.reason);
   if (reasonError) return { ok: false, error: reasonError };
 
+  const opsName = input.opsActor?.name?.trim() ?? "";
+  const opsActor =
+    process.env.FF_OPS_FILL === "1" && opsName
+      ? {
+          userId: input.opsActor?.userId && isUuid(input.opsActor.userId) ? input.opsActor.userId : null,
+          name: opsName,
+        }
+      : null;
+
   const session = await currentDeskSession();
-  if (input.source === "manual" && !session.signedIn) {
+  if (input.source === "manual" && !session.signedIn && !opsActor) {
     return { ok: false, error: "Sign in required." };
   }
 
@@ -426,10 +383,12 @@ export async function fillPolicyFromDec(input: {
   const allowed = [...classified.filled, ...(applyOverwrites ? classified.overwritten : [])];
   const patch = groupAppliedFill(proposed, allowed);
   const dropped = new Set<string>();
-  const agentName = session.signedIn
-    ? session.name?.trim() || session.email || "Agent"
-    : "System";
-  const agentId = session.signedIn ? session.userId : null;
+  const agentName = opsActor
+    ? opsActor.name
+    : session.signedIn
+      ? session.name?.trim() || session.email || "Agent"
+      : "System";
+  const agentId = opsActor ? opsActor.userId : session.signedIn ? session.userId : null;
 
   let auditId: string;
   try {
@@ -719,8 +678,15 @@ export async function fillPolicyFromDec(input: {
     if (!marked.ok) return marked;
   }
 
-  revalidatePath(`/policies/${policy.id}`);
-  revalidatePath("/policies");
+  try {
+    revalidatePath(`/policies/${policy.id}`);
+    revalidatePath("/policies");
+  } catch (error) {
+    console.error("fillPolicyFromDec: revalidate skipped", {
+      policyId: policy.id,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
   return {
     ok: true,
     filled: classified.filled.filter((key) => !dropped.has(key)),
