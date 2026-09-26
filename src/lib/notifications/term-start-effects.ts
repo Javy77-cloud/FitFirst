@@ -1,7 +1,7 @@
 /**
  * Day-of term-start side effects (same sweep as Inbox renewal_term_started):
  * - Flip document term roles (renewal→current, current→prior, older priors→archive)
- * - Move Handled renewals queue rows to upcoming once that term has started
+ * - Move Handled renewals queue rows to upcoming once Eastern today is on or after that term's effective date
  */
 import { and, eq } from "drizzle-orm";
 import { notHiddenDocument } from "@/lib/documents/visible-docs";
@@ -55,7 +55,9 @@ export async function applyTermStartEffects(input: {
       .where(eq(documents.id, change.id));
   }
 
-  const clearedHandled = await releaseClientStayingForPolicy(input.policyId, { force: true });
+  const clearedHandled = await releaseClientStayingForPolicy(input.policyId, {
+    renewedEffective: input.termEffective,
+  });
 
   return { policyId: input.policyId, key, flipped: plan.length, clearedHandled };
 }

@@ -173,15 +173,22 @@ describe("Client staying / Handled", () => {
     expect(page).toMatch(/isRenewalHandledStageValue\(renewalQueueRow\?\.stage\)/);
     const effects = readFileSync("src/lib/notifications/term-start-effects.ts", "utf8");
     expect(effects).toMatch(/releaseClientStayingForPolicy/);
+    expect(effects).toMatch(/renewedEffective:\s*input\.termEffective/);
+    expect(effects).not.toMatch(/force:\s*true/);
     const release = readFileSync("src/lib/renewal/release-handled.ts", "utf8");
     expect(release).toMatch(/CLIENT_STAYING_AFTER_RENEWAL_STAGE/);
     expect(release).toMatch(/RENEWAL_HANDLED_STAGE/);
+    expect(release).toMatch(/renewedTermEffectiveReached/);
+    expect(release).not.toMatch(/CLIENT_STAYING_WINDOW_DAYS/);
+    expect(release).not.toMatch(/force\?:\s*boolean/);
+    expect(release).not.toMatch(/options\?\.force/);
     expect(readFileSync("src/lib/notifications/sync-panel.ts", "utf8")).toMatch(
       /releaseExpiredClientStaying/,
     );
-    expect(readFileSync("src/lib/policy/advance-current-term-apply.ts", "utf8")).toMatch(
-      /releaseClientStayingForPolicy/,
-    );
+    const advance = readFileSync("src/lib/policy/advance-current-term-apply.ts", "utf8");
+    expect(advance).toMatch(/releaseClientStayingForPolicy/);
+    expect(advance).toMatch(/renewedEffective:\s*toEffective/);
+    expect(advance).not.toMatch(/force:\s*true/);
   });
 
   it("marks inside 90 days with no warning and asks to confirm outside that window", () => {

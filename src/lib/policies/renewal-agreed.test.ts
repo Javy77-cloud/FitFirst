@@ -1,11 +1,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { calendarDaysBetween } from "@/lib/policies/current-term";
 import {
   clientStayingTermHasStarted,
   derivedNextTermStart,
   renewalAgreedEffectiveDate,
+  renewedTermEffectiveReached,
   showRenewalAgreedStamp,
 } from "@/lib/policies/renewal-agreed";
+import { etDateKey } from "@/lib/time/et";
 
 const term = {
   clientStaying: true,
@@ -129,7 +132,9 @@ describe("renewal agreed stamp", () => {
     expect(clientStayingTermHasStarted(jumped, asOfOn)).toBe(true);
   });
 
-  it("keeps an upcoming effective (ATM205086) until that date, not next year's renewal_date", () => {
+  it("keeps George Rigby MMHO (ATM205086) stamped until 2026-10-10", () => {
+    // American Traditions. Book is already on the upcoming term. renewal_date
+    // is the following cycle, more than 90 days out. That jump is not a release.
     const atm = {
       clientStaying: true,
       effectiveDate: "2026-10-10",
@@ -139,12 +144,35 @@ describe("renewal agreed stamp", () => {
     };
     const before = new Date("2026-09-26T16:00:00.000Z");
     const morning = new Date("2026-10-10T16:00:00.000Z");
+    expect(calendarDaysBetween(etDateKey(before), "2027-10-10")).toBeGreaterThan(90);
     expect(renewalAgreedEffectiveDate(atm, before)).toBe("2026-10-10");
     expect(showRenewalAgreedStamp(atm, before)).toBe(true);
     expect(showRenewalAgreedStamp(atm, new Date("2026-10-09T16:00:00.000Z"))).toBe(true);
     expect(showRenewalAgreedStamp(atm, morning)).toBe(false);
     expect(clientStayingTermHasStarted(atm, before)).toBe(false);
     expect(clientStayingTermHasStarted(atm, morning)).toBe(true);
+    expect(renewedTermEffectiveReached("2026-10-10", before)).toBe(false);
+    expect(renewedTermEffectiveReached("2026-10-10", morning)).toBe(true);
+  });
+
+  it("does not release when a premature renewal_date jump is more than 90 days out", () => {
+    const asOf = new Date("2026-09-26T16:00:00.000Z");
+    const premature = {
+      clientStaying: true,
+      effectiveDate: "2025-10-10",
+      expirationDate: "2026-10-09",
+      renewalDate: "2027-10-10",
+      handledAt: "2026-09-20T16:00:00.000Z",
+    };
+    expect(calendarDaysBetween(etDateKey(asOf), "2027-10-10")).toBeGreaterThan(90);
+    expect(renewalAgreedEffectiveDate(premature, asOf)).toBe("2026-10-10");
+    expect(showRenewalAgreedStamp(premature, asOf)).toBe(true);
+    expect(clientStayingTermHasStarted(premature, asOf)).toBe(false);
+    expect(renewedTermEffectiveReached(premature.renewalDate, asOf)).toBe(false);
+    expect(renewedTermEffectiveReached("2026-10-10", asOf)).toBe(false);
+    const morning = new Date("2026-10-10T16:00:00.000Z");
+    expect(clientStayingTermHasStarted(premature, morning)).toBe(true);
+    expect(showRenewalAgreedStamp(premature, morning)).toBe(false);
   });
 
   it("hides the stamp after the renewed term has started when the mark predates that term", () => {

@@ -224,6 +224,20 @@ export function renewalAgreedEffectiveDate(
 }
 
 /**
+ * True once America/New_York today is on or after a known renew-into effective.
+ * Distance to `policies.renewal_date` is not this check. A premature jump that
+ * leaves renewal_date more than 90 days out does not count as the term starting.
+ */
+export function renewedTermEffectiveReached(
+  renewedEffective: Date | string | null | undefined,
+  asOf: Date = new Date(),
+): boolean {
+  const clearOn = businessDateKey(renewedEffective);
+  if (!clearOn) return false;
+  return etDateKey(asOf) >= clearOn;
+}
+
+/**
  * True once America/New_York today is on or after the renew-into effective date.
  * That is when Client staying leaves `handled` for the next cycle.
  */
@@ -231,9 +245,7 @@ export function clientStayingTermHasStarted(
   input: RenewalAgreedWindow,
   asOf: Date = new Date(),
 ): boolean {
-  const clearOn = renewalAgreedEffectiveDate(input, asOf);
-  if (!clearOn) return false;
-  return etDateKey(asOf) >= clearOn;
+  return renewedTermEffectiveReached(renewalAgreedEffectiveDate(input, asOf), asOf);
 }
 
 /**

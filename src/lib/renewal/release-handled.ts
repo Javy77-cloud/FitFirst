@@ -1,6 +1,10 @@
 /**
  * Take Client staying off `handled` once the renewed term's effective date
- * is reached, so the next cycle starts on `upcoming`.
+ * is reached (America/New_York today >= that date), so the next cycle starts
+ * on `upcoming`.
+ *
+ * A `policies.renewal_date` more than 90 days away is not a release. That
+ * field often jumps to the following cycle before the renew-into term starts.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -10,6 +14,7 @@ import { businessDateKey } from "@/lib/policies/current-term";
 import {
   CLIENT_STAYING_AFTER_RENEWAL_STAGE,
   clientStayingTermHasStarted,
+  renewedTermEffectiveReached,
   type RenewalAgreedWindow,
 } from "@/lib/policies/renewal-agreed";
 import { RENEWAL_HANDLED_STAGE } from "@/lib/renewal/handled";
@@ -30,18 +35,22 @@ async function moveHandledToUpcoming(policyId: string): Promise<boolean> {
 }
 
 /**
- * Term-advance and day-of term start. `force` clears as soon as the renewed
- * term effective is already today or earlier, including a mark made in the
- * same request.
+ * Term-advance and day-of term start pass `renewedEffective` when they
+ * already know the term the client is entering. The row moves only when
+ * Eastern today is on or after that date, including a mark made in the same
+ * request. Callers that omit it use the policy's renew-into date.
  */
 export async function releaseClientStayingForPolicy(
   policyId: string,
-  options?: { asOf?: Date; force?: boolean },
+  options?: { asOf?: Date; renewedEffective?: Date | string | null },
 ): Promise<boolean> {
   if (!policyId) return false;
-  if (options?.force) return moveHandledToUpcoming(policyId);
-
   const asOf = options?.asOf ?? new Date();
+  if (options && "renewedEffective" in options) {
+    if (!renewedTermEffectiveReached(options.renewedEffective, asOf)) return false;
+    return moveHandledToUpcoming(policyId);
+  }
+
   const [policy] = await db
     .select({
       effectiveDate: policies.effectiveDate,
