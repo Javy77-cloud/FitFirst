@@ -7,7 +7,7 @@ import { enforceAutoPhysDam, formatAutoDollarDeductible, isAutoDeductibleField }
 import { enforceHomeDecDollars } from "./home-dollar";
 import { expandAutoDecLayout } from "./auto-layout";
 import { readGeminiDocumentKind, sanitizeGeminiPreview } from "./preview";
-import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
+import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_FLOOD_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
 
 /** Gemini JSON key → one or more sheet / extract field keys. */
 export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
@@ -50,6 +50,38 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   exterior_construction: ["construction"],
   building_construction: ["construction"],
   coverage_a: ["coverage_a"],
+  building_limit: ["building_limit"],
+  building_coverage: ["building_limit"],
+  building_property: ["building_limit"],
+  building_premium: ["building_premium"],
+  building_deductible: ["building_deductible"],
+  contents_limit: ["contents_limit"],
+  contents_deductible: ["contents_deductible"],
+  building_occupancy: ["building_occupancy"],
+  flood_occupancy: ["building_occupancy"],
+  number_of_units: ["number_of_units"],
+  primary_residence: ["primary_residence"],
+  property_description: ["property_description"],
+  prior_nfip_claims: ["prior_nfip_claims"],
+  prior_claims: ["prior_nfip_claims"],
+  nfip_claims: ["prior_nfip_claims"],
+  date_of_construction: ["date_of_construction"],
+  flood_zone: ["flood_zone"],
+  current_flood_zone: ["flood_zone"],
+  first_floor_height: ["first_floor_height"],
+  ffh: ["first_floor_height"],
+  first_floor_elevation: ["first_floor_height"],
+  ffh_method: ["ffh_method"],
+  most_favorable_ffh_method: ["ffh_method"],
+  building_description_detail: ["building_description_detail"],
+  building_description: ["building_description_detail"],
+  increased_cost_of_compliance: ["increased_cost_of_compliance"],
+  icc: ["increased_cost_of_compliance"],
+  icc_limit: ["increased_cost_of_compliance"],
+  increased_cost_of_compliance_premium: ["increased_cost_of_compliance_premium"],
+  icc_premium: ["increased_cost_of_compliance_premium"],
+  debris_removal: ["debris_removal"],
+  debris_removal_premium: ["debris_removal_premium"],
   ordinance_law: ["ordinance_or_law"],
   ordinance_or_law: ["ordinance_or_law"],
   ordinance_law_premium: ["ordinance_or_law_premium"],
@@ -534,6 +566,32 @@ function clampConfidence(n: number): number {
 /** A printed value with no confidence object is a model commitment, not a 0.5 maybe. */
 const BARE_PRINTED_CONFIDENCE = 0.9;
 
+/** NFIP rating cells print N/A. That is the value, not an empty field. */
+const FLOOD_NA_VALUE_KEYS = new Set([
+  "number_of_units",
+  "building_description_detail",
+  "building_description",
+  "primary_residence",
+  "building_occupancy",
+  "prior_nfip_claims",
+]);
+
+function rawPrintedText(raw: unknown): { value: string; confidence: number } | null {
+  if (typeof raw === "string" || typeof raw === "number") {
+    const value = String(raw).trim();
+    return value ? { value, confidence: BARE_PRINTED_CONFIDENCE } : null;
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as GeminiFieldPayload & { text?: string | number | null };
+  const rawValue = obj.value ?? obj.text;
+  if (rawValue == null || typeof rawValue === "object") return null;
+  const value = String(rawValue).trim();
+  if (!value) return null;
+  const confidence =
+    obj.confidence == null ? BARE_PRINTED_CONFIDENCE : clampConfidence(Number(obj.confidence));
+  return { value, confidence };
+}
+
 function asPayload(raw: unknown): { value: string; confidence: number } | null {
   if (raw == null) return null;
   if (typeof raw === "string" || typeof raw === "number") {
@@ -775,9 +833,14 @@ export function mapGeminiJsonToFields(
   }
 
   const prepared = expandAutoDecLayout(json as Record<string, unknown>, shopLine);
+  const floodLine = (shopLine ?? "").trim().toLowerCase() === "flood";
   for (const [rawKey, raw] of Object.entries(prepared)) {
     const geminiKey = normalizeGeminiJsonKey(rawKey);
-    const payload = asPayload(raw);
+    let payload = asPayload(raw);
+    if (!payload && floodLine && FLOOD_NA_VALUE_KEYS.has(geminiKey)) {
+      const printed = rawPrintedText(raw);
+      if (printed && /^n\/?a$/i.test(printed.value)) payload = { value: "N/A", confidence: printed.confidence };
+    }
     if (!payload) continue;
     const sheetKeys = sheetKeysForGeminiKey(geminiKey);
     if (sheetKeys.length === 0) {
@@ -785,6 +848,7 @@ export function mapGeminiJsonToFields(
         ...GEMINI_EXTRACT_JSON_KEYS,
         ...GEMINI_AUTO_EXTRACT_JSON_KEYS,
         ...GEMINI_LETTER_EXTRACT_JSON_KEYS,
+        ...GEMINI_FLOOD_EXTRACT_JSON_KEYS,
       ]);
       if (!knownKeys.has(geminiKey)) {
         unmappedLabels.push({ sourceLabel: geminiKey, rawValue: payload.value });

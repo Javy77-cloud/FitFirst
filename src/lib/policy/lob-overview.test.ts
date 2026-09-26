@@ -142,6 +142,64 @@ describe("LOB overview templates", () => {
     ).toBe("Owner");
   });
 
+  it("gives flood its own rating section and leaves HO3 on Dwelling", () => {
+    expect(resolveLobOverviewFamily({ lineOfBusiness: "FLOOD" })).toBe("flood");
+    expect(resolveLobOverviewFamily({ lineOfBusiness: "FLOOD", policyType: "Home", formType: "HO3" })).toBe(
+      "flood",
+    );
+    expect(resolveLobOverviewFamily({ lineOfBusiness: "HO3", formType: "HO3" })).toBe("homeowners");
+
+    const sections = buildLobOverviewSections({
+      policyId: "zoila",
+      lineOfBusiness: "FLOOD",
+      policyType: "Flood",
+      formType: "FLD",
+      mortgageeCount: 1,
+      floodBuildingOccupancy: "SINGLE-FAMILY HOME",
+      floodNumberOfUnits: "N/A",
+      floodPrimaryResidence: "No",
+      floodPropertyDescription: "SLAB ON GRADE (NON-ELEVATED), 2 FLOOR(S), FRAME CONSTRUCTION",
+      floodPriorNfipClaims: "0 CLAIM(S)",
+      floodDateOfConstruction: "07/01/1989",
+      floodZone: "AE",
+      floodFirstFloorHeight: "1.2 FEET",
+      floodFfhMethod: "ELEVATION CERTIFICATE",
+      floodBuildingDescription: "N/A",
+    });
+    expect(sections.map((section) => section.id)).toEqual(["flood-rating", "mortgagee"]);
+    expect(sections.some((section) => section.title === "Dwelling")).toBe(false);
+    const rating = sections[0]?.fields ?? [];
+    expect(rating.find((field) => field.key === "buildingOccupancy")?.value).toBe("SINGLE-FAMILY HOME");
+    expect(rating.find((field) => field.key === "numberOfUnits")?.value).toBe("N/A");
+    expect(rating.find((field) => field.key === "primaryResidence")?.value).toBe("No");
+    expect(rating.find((field) => field.key === "propertyDescription")?.value).toContain("SLAB ON GRADE");
+    expect(rating.find((field) => field.key === "priorNfipClaims")?.value).toBe("0 CLAIM(S)");
+    expect(rating.find((field) => field.key === "dateOfConstruction")?.value).toBe("07/01/1989");
+    expect(rating.find((field) => field.key === "floodZone")?.value).toBe("AE");
+    expect(rating.find((field) => field.key === "firstFloorHeight")?.value).toBe("1.2 FEET");
+    expect(rating.find((field) => field.key === "ffhMethod")?.value).toBe("ELEVATION CERTIFICATE");
+    expect(rating.find((field) => field.key === "buildingDescription")?.value).toBe("N/A");
+
+    const html = renderToStaticMarkup(
+      createElement(LobOverviewSections, {
+        input: {
+          policyId: "zoila",
+          lineOfBusiness: "FLOOD",
+          formType: "FLD",
+          floodBuildingOccupancy: "SINGLE-FAMILY HOME",
+          floodZone: "AE",
+          floodDateOfConstruction: "07/01/1989",
+        },
+      }),
+    );
+    expect(html).toContain("Flood rating");
+    expect(html).toContain("SINGLE-FAMILY HOME");
+    expect(html).toContain("Current flood zone");
+    expect(html).toContain("AE");
+    expect(html).not.toContain(">Dwelling<");
+    expect(html).toContain("Line template · Flood");
+  });
+
   it("treats DP, manufactured home, and rentals as home lines", () => {
     expect(resolveLobOverviewFamily({ lineOfBusiness: "DP3" })).toBe("homeowners");
     expect(resolveLobOverviewFamily({ lineOfBusiness: "HO4" })).toBe("homeowners");

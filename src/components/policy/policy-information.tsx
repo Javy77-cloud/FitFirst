@@ -83,7 +83,9 @@ export function PolicyInformationCard({
       ? `/accounts/${account.id}`
       : undefined;
   const billing = policy.billingFrequency || policy.premiumFrequency || "";
-  const homePc = resolveLobOverviewFamily(policy) === "homeowners";
+  const family = resolveLobOverviewFamily(policy);
+  const homePc = family === "homeowners";
+  const formSlot = homePc || family === "flood";
   const premisesParts = {
     address: policy.premisesAddress,
     city: policy.premisesCity,
@@ -138,12 +140,13 @@ export function PolicyInformationCard({
       <PolicyInlineText
         policyId={policy.id}
           fieldKey="policySubType"
-          label={homePc ? "Form" : "Subtype"}
+          label={formSlot ? "Form" : "Subtype"}
           value={policy.policySubType ?? ""}
           displayText={policyFormProductLabel({
             formType: policy.formType,
             policySubType: policy.policySubType,
             policyType: policy.policyType,
+            lineOfBusiness: family === "flood" ? policy.lineOfBusiness : undefined,
           })}
           readOnly={readOnly}
       />

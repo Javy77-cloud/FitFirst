@@ -1311,6 +1311,8 @@ describe("fillPolicyFromDec wiring", () => {
     expect(action).toMatch(/extractPurpose: "fill"/);
     expect(action).toMatch(/shouldForceAutoDecReread/);
     expect(action).toMatch(/shouldForceHomeDecReread/);
+    expect(action).toMatch(/shouldForceFloodDecReread/);
+    expect(action).toMatch(/floodCoverageLimitsAfterFill/);
     expect(source("src/app/policies/[id]/page.tsx")).toMatch(/export const maxDuration = 300/);
     expect(action).not.toMatch(/quoteSheets|quote_sheets|fillQuoteSheet/);
     const mint = source("src/app/actions/policy-mint.ts");

@@ -16,6 +16,7 @@ import {
   autoVehicleCoverageBlocks,
   type AutoCoverageVehicle,
 } from "@/lib/policy/auto-coverage";
+import { floodCoverageSchedule } from "@/lib/policy/flood-coverage";
 import { homeCoverageSchedule } from "@/lib/policy/home-coverage";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import type { PolicyCoverageLine } from "@/lib/db/schema";
@@ -370,6 +371,7 @@ export function PolicyCoverageTab({
   const family = resolveLobOverviewFamily(policy);
   const auto = family === "auto";
   const home = family === "homeowners";
+  const flood = family === "flood";
   const termSource: ScheduleRow["source"] = termScheduleSource(current);
   const autoSource = {
     coverageLimits: policy.coverageLimits,
@@ -379,9 +381,15 @@ export function PolicyCoverageTab({
   };
   const schedule: ScheduleRow[] = auto
     ? autoCoverageSchedule(autoSource).map((row) => ({ ...row, source: termSource }))
-    : home
-      ? buildHomeSchedule(policy, current)
-      : buildSchedule(policy, current);
+    : flood
+      ? floodCoverageSchedule({
+          coverageA: policy.coverageA,
+          coverageLimits: policy.coverageLimits,
+          coverages: current?.coverages,
+        }).map((row) => ({ ...row, source: termSource }))
+      : home
+        ? buildHomeSchedule(policy, current)
+        : buildSchedule(policy, current);
   const vehicleBlocks = auto
     ? autoVehicleCoverageBlocks(autoSource).map((block) => ({
         ...block,

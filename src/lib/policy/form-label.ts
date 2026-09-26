@@ -45,12 +45,23 @@ export function policyFormCode(raw: string | null | undefined): string | null {
   }
   if (/^(WC|WORKERS?\s*'?\s*COMP(?:ENSATION)?|WORKERS_COMP)$/.test(upper)) return "WC";
   if (/^(PA|AUTO|PERSONAL AUTO|PERSONAL AUTOMOBILE)$/.test(upper)) return "Auto";
-  if (upper === "FLOOD") return "Flood";
+  if (/\bFLD(?:\d|\b)/.test(upper) || /^FLD\s+FORM$/.test(upper)) return "FLD";
+  if (upper === "FLOOD" || upper === "NFIP" || upper === "SELECTIVE FLOOD") return "Flood";
   return null;
+}
+
+function lineIsFlood(input: PolicyFormLabelInput): boolean {
+  return homeLineKey(input.lineOfBusiness ?? "") === "FLOOD";
 }
 
 function firstFormCode(input: PolicyFormLabelInput): string | null {
   const sub = input.policySubType ?? input.subType;
+  if (lineIsFlood(input)) {
+    for (const value of [input.formType, sub, input.policyType]) {
+      if (policyFormCode(value) === "FLD") return "FLD";
+    }
+    return "Flood";
+  }
   for (const value of [input.formType, sub, input.policyType, input.lineOfBusiness]) {
     const code = policyFormCode(value);
     if (code) return code;

@@ -352,10 +352,52 @@ export const GEMINI_LETTER_EXTRACT_JSON_KEYS = [
   "request_reason",
 ] as const;
 
+/** Selective Flood / NFIP declaration. Not the HO3 Coverage A–F list. */
+export const GEMINI_FLOOD_EXTRACT_JSON_KEYS = [
+  "named_insured",
+  "current_policy_name_insured",
+  "property_address",
+  "mailing_address",
+  "policy_number",
+  "current_carrier",
+  "premium",
+  "current_premium",
+  "effective_date",
+  "expiration_date",
+  "term_months",
+  "form",
+  "mortgagee",
+  "loan_number",
+  "building_occupancy",
+  "number_of_units",
+  "primary_residence",
+  "property_description",
+  "prior_nfip_claims",
+  "date_of_construction",
+  "year_built",
+  "flood_zone",
+  "first_floor_height",
+  "ffh_method",
+  "building_description_detail",
+  "building_limit",
+  "building_premium",
+  "building_deductible",
+  "contents_limit",
+  "contents_premium",
+  "contents_deductible",
+  "loss_of_use",
+  "loss_of_use_premium",
+  "increased_cost_of_compliance",
+  "increased_cost_of_compliance_premium",
+  "debris_removal",
+  "debris_removal_premium",
+] as const;
+
 export type GeminiExtractKey =
   | (typeof GEMINI_EXTRACT_JSON_KEYS)[number]
   | (typeof GEMINI_AUTO_EXTRACT_JSON_KEYS)[number]
-  | (typeof GEMINI_LETTER_EXTRACT_JSON_KEYS)[number];
+  | (typeof GEMINI_LETTER_EXTRACT_JSON_KEYS)[number]
+  | (typeof GEMINI_FLOOD_EXTRACT_JSON_KEYS)[number];
 
 export function isAgencyLetterGeminiDoc(docType?: string | null): boolean {
   const t = (docType ?? "").trim().toLowerCase();
@@ -376,6 +418,7 @@ export function geminiKeysForShopLine(shopLine?: string | null): readonly string
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
     return GEMINI_AUTO_EXTRACT_JSON_KEYS;
   }
+  if (line === "flood") return GEMINI_FLOOD_EXTRACT_JSON_KEYS;
   return GEMINI_EXTRACT_JSON_KEYS;
 }
 
@@ -388,6 +431,27 @@ export function buildGeminiSystemPrompt(docType?: string | null, shopLine?: stri
   const kind = (docType ?? "").trim() || "insurance source document";
   const line = (shopLine ?? "").trim().toLowerCase();
   const keys = geminiKeysForExtract(docType, shopLine);
+  if (line === "flood") {
+    return `You extract structured fields from a Flood declaration (Selective Flood, NFIP, or another flood carrier). This is not a homeowners HO3 policy.
+
+Document type hint: ${kind}
+
+Rules:
+- Return ONLY a single JSON object. No markdown fences, no commentary.
+- Keys MUST be exactly from this list (omit unknown keys or set value null):
+  ${keys.join(", ")}
+- Each present key maps to an object: { "value": string|null, "confidence": number }
+  where confidence is 0..1.
+- Extract ONLY what is printed. Never invent. N/A printed on the page is the value N/A, not a blank.
+- form is FLD when the form block or the policy number starts with FLD. Otherwise form is Flood. Never Home, HO3, HO, or Dwelling.
+- Rating Information, when that label is printed: building_occupancy, number_of_units, primary_residence (Yes or No), property_description, prior_nfip_claims, date_of_construction (the printed date, not only the year), year_built (the four-digit year from that date), flood_zone, first_floor_height (include the unit, such as feet), ffh_method (most favorable FFH method), building_description_detail.
+- Coverages are Building, Contents, and Loss of use. NFIP sometimes prints Building as Coverage A and Contents as Coverage C. Store Building on building_limit, building_premium, and building_deductible. Store Contents on contents_limit, contents_premium, and contents_deductible. Store Loss of use only when that row is printed (loss_of_use and loss_of_use_premium). Do not return homeowners Coverage B, E, or F. Do not invent other structures, liability, medical payments, ordinance or law, water backup, or sinkhole.
+- One extra coverage only when printed: increased_cost_of_compliance, or debris_removal. Leave it null when the page does not have it.
+- Dollar limits use a leading $. Premiums are digits only, or Included. A line premium is never the total policy premium. current_premium / premium is the policy total.
+- mortgagee and loan_number only when an additional interest is printed. Do not invent a lender.
+- property_address is the insured building. mailing_address only when it differs.
+`;
+  }
   if (isAgencyLetterGeminiDoc(docType)) {
     return `You extract structured fields from Florida agency letters and source decs used to fill a Cancellation request or Agent of Record (AOR) pack.
 
@@ -565,6 +629,10 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
       "This may be a phone photo (JPEG/PNG/HEIC) of a dec, wind mit, 4-point, or inspection — not a PDF. Read the visible text from the image and fill every labeled field you can see. Prefer the same keys as dec / wind mit / four-point when the form type is clear from the page.";
   }
   const line = (shopLine ?? "").trim().toLowerCase();
+  if (line === "flood") {
+    focus =
+      "This is a Flood declaration (Selective Flood or NFIP), not homeowners. Do not fill HO3 Coverage A–F. form is FLD when the form or policy number starts with FLD, otherwise Flood — never Home or HO3. MUST fill Rating Information when printed: building_occupancy, number_of_units, primary_residence, property_description, prior_nfip_claims, date_of_construction (full printed date) and year_built (four-digit year), flood_zone, first_floor_height, ffh_method, building_description_detail. N/A stays N/A. Building (NFIP Coverage A) → building_limit, building_premium, building_deductible. Contents (NFIP Coverage C) → contents_limit, contents_premium, contents_deductible. Loss of use only when printed. Increased cost of compliance or debris removal only when printed. Do not invent Coverage B, E, or F. Mortgagee only when printed. Policy number, dates, and the total premium when printed.";
+  }
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
     focus =
       "This photo, HEIC, or PDF is an issued Auto policy or Auto declaration (Travelers and similar carrier dec, policy jacket, ID card, or ACORD 90) — not a shopping quote. Do not treat this as homeowners / Coverage A. Read every page. The declarations block is often the first pages; a later page can hold the premium total. A multi-page Travelers Automobile Policy Declarations file (names like “Adriana Iori DEC Page Travelers.pdf”) prints policy number and the policy period on the page 1 header (Begins and Ends, or From and To) and the Total or Full Term premium on a later coverage page — still fill policy_number, effective_date, expiration_date, and current_premium. Ignore the contract jacket. Fill Current Policy first when printed: current_carrier (the writing company actually printed — Travelers, or The Standard Fire Insurance Company when that is the name on the page; do not invent a carrier), policy_number (Policy Number / Policy No / Policy # / Current policy ID; keep spaces), effective_date and expiration_date (Policy Period From and To, or Begins and Ends. Travelers prints 12:01 A.M. before each date — store September 21, 2026 and March 21, 2027, not the clock), current_premium (Total Premium, Full Term Premium, 6 Month Premium, the coverage-schedule Total or Full Term row, Total Premium for This Policy, or Premium Due when that is the term total — keep cents; not one coverage-line premium such as Bodily Injury 412). Do not leave those empty when they are printed, and do not invent a number, premium, or date that is not on the page. years_with_carrier, currently_insured, and aaa_member only when those facts are printed — do not invent them. Then vin and vehicle_year / vehicle_make / vehicle_model (split a cell like 2019 TOYOTA CAMRY; vehicle_2_* for the next car). driver_1_name is the full legal name — Domenic M Iori, never Domenic Ic. List each person once; the same name and date of birth is not driver 2 and driver 3. Coverage rows come from a printed coverage table on any page, including page 2 of a multi-page dec. Fill every platform field. Absent coverages are explicit None (do not omit them). Every coverage column is filled: limit, deductible, and premium — printed value or None. Do not invent a 0. Bodily injury → liability_bi as 100/300 (not 100000/300000), liability_bi_deductible, and liability_bi_premium. Property damage → liability_pd, liability_pd_deductible, and liability_pd_premium. PIP → pip, pip_deductible, and pip_premium. Medical payments → med_pay, med_pay_deductible, and med_pay_premium. UM/UIM → um_uim, um_uim_deductible, and um_uim_premium. UM property damage → um_pd, um_pd_deductible, and um_pd_premium (do not put UM PD in liability_pd). Stacked or Non-stacked → um_stacked, or None when the dec does not say. Bodily injury, property damage, PIP, medical payments, UM/UIM, and UM property damage are policy-wide — return them once. Comprehensive, collision, rental, towing, and glass are per vehicle. Vehicle 1 → comp_limit, comp_deductible, comp_premium, collision_limit, collision_deductible, collision_premium, rental, rental_deductible, rental_premium, towing, towing_deductible, towing_premium, glass_limit, glass, and glass_premium. Later cars → vehicle_N_comp_deductible, vehicle_N_collision_deductible, vehicle_N_comp_premium, vehicle_N_collision_premium, vehicle_N_rental, vehicle_N_towing, and vehicle_N_glass. Deductibles are dollar amounts: write $500 or $1,000, never a bare 500 or 1000. None stays None when there is no deductible. If that car's comprehensive has a dollar deductible, its limit is ✓ (covered), not None. If collision has a dollar deductible, collision_limit is ✓, not None. Keep a printed limit such as ACV when the dec prints one. Use None for comp_limit or collision_limit only when that coverage has no dollar deductible and is not on the dec. Do not copy vehicle 1 physical damage onto vehicle 2. Discounts → discounts, or None when none are listed. Per-vehicle overview fields are required for each car: usage, annual miles, garaging address, garaging ZIP, lienholder, premium, comprehensive deductible, and collision deductible — printed value or None. Do not invent coverages. Also fill when printed: industry, occupation, gender (Male/Female only), marital status. Never fill driver_1_relationship. Never fill employment / employment status — use industry + occupation only. If this file is a wind mitigation, four-point, or shopping quote, set document_kind to wind_mit or not_declaration and leave policy number, premium, and dates empty. Do not return {} and do not mark the page not_declaration when a VIN, vehicle, driver, coverage table, carrier, policy number, or premium is visible. A JPG, PNG, HEIC, or PDF of this dec is the same document — a phone photo may be rotated or skewed, so read it upright. When printed, also return term length, license state, excluded drivers, lienholder or loss payee, annual miles, garaging address, per-vehicle premium, med pay, rental, towing, and discounts. Copy a LAST FIRST or LAST, FIRST name as printed.";

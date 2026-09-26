@@ -246,6 +246,57 @@ export function shouldForceAutoDecReread(input: {
   return true;
 }
 
+const FLOOD_RATING_CACHE_KEYS = new Set([
+  "building_occupancy",
+  "flood_building_occupancy",
+  "number_of_units",
+  "primary_residence",
+  "property_description",
+  "prior_nfip_claims",
+  "date_of_construction",
+  "flood_zone",
+  "first_floor_height",
+  "ffh_method",
+  "most_favorable_ffh_method",
+  "building_description_detail",
+  "building_limit",
+  "flood_building",
+]);
+
+/**
+ * A flood cache from the homeowners prompt has Coverage A/C and no rating block.
+ * Manual Flood Fill reads the declaration again until a rating fact is present.
+ */
+export function floodDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
+  return rows.some((row) => {
+    const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
+    if (!value) return false;
+    return FLOOD_RATING_CACHE_KEYS.has(normalizeMintFieldKey(row.fieldKey));
+  });
+}
+
+/** Manual flood Fill re-reads a cache that never captured the NFIP rating block. */
+export function shouldForceFloodDecReread(input: {
+  manualFlood: boolean;
+  rows: readonly GeminiMintRow[];
+  newestAt: Date | null;
+  now: Date;
+  reuseFresh: boolean;
+}): boolean {
+  if (!input.manualFlood) return false;
+  if (!evaluateMintExtract(input.rows).ok) return true;
+  if (floodDecCacheSupportsFill(input.rows)) return false;
+  if (
+    input.reuseFresh &&
+    input.newestAt &&
+    input.now.getTime() - input.newestAt.getTime() < AUTO_FILL_CACHE_FRESH_MS &&
+    input.now.getTime() >= input.newestAt.getTime()
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /** Manual home Fill re-reads a dwelling cache missing premiums, year built, or construction. */
 export function shouldForceHomeDecReread(input: {
   manualHome: boolean;

@@ -15,10 +15,12 @@ import {
   liabilityRetroDate,
 } from "@/lib/policy/eo";
 import { isResidentialHomeForm } from "@/lib/quote-sheet/home-inspections";
+import { isFloodPolicy } from "@/lib/policy/flood-coverage";
 
 export type LobOverviewFamily =
   | "auto"
   | "homeowners"
+  | "flood"
   | "life"
   | "health"
   | "wc"
@@ -61,6 +63,7 @@ export function resolveLobOverviewFamily(input: {
     .map((part) => (part ?? "").toLowerCase())
     .join(" ");
 
+  if (isFloodPolicy(input)) return "flood";
   if (line === "AUTO" || /\b(auto|pa|personal.?auto)\b/.test(blob)) return "auto";
   const residentialHome = [input.lineOfBusiness, input.policyType, input.policySubType, input.formType].some(
     (part) => isResidentialHomeForm(part) || isDwellingFireProduct(part),
@@ -160,6 +163,16 @@ export type LobOverviewInput = {
   mailingAddress?: string | null;
   mobileHomeUnit?: string | null;
   scheduledStructures?: string | null;
+  floodBuildingOccupancy?: string | null;
+  floodNumberOfUnits?: string | null;
+  floodPrimaryResidence?: string | null;
+  floodPropertyDescription?: string | null;
+  floodPriorNfipClaims?: string | null;
+  floodDateOfConstruction?: string | null;
+  floodZone?: string | null;
+  floodFirstFloorHeight?: string | null;
+  floodFfhMethod?: string | null;
+  floodBuildingDescription?: string | null;
 };
 
 export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSection[] {
@@ -182,6 +195,57 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
             { hint: "Add vehicles on this Auto policy — none listed yet." },
           ),
         ],
+      },
+    ];
+  }
+
+  if (family === "flood") {
+    return [
+      {
+        id: "flood-rating",
+        title: "Flood rating",
+        fields: [
+          field("buildingOccupancy", "Building occupancy", input.floodBuildingOccupancy, {
+            hint: "Building occupancy not on the declaration yet.",
+          }),
+          field("numberOfUnits", "Number of units", input.floodNumberOfUnits, { hint: "" }),
+          field("primaryResidence", "Primary residence", input.floodPrimaryResidence, { hint: "" }),
+          field("propertyDescription", "Property description", input.floodPropertyDescription, {
+            hint: "",
+          }),
+          field("priorNfipClaims", "Prior NFIP claims", input.floodPriorNfipClaims, { hint: "" }),
+          field("dateOfConstruction", "Date of construction", input.floodDateOfConstruction, {
+            hint: "Date of construction not on the declaration yet.",
+          }),
+          field("floodZone", "Current flood zone", input.floodZone, { hint: "" }),
+          field("firstFloorHeight", "First floor height (FFH)", input.floodFirstFloorHeight, {
+            hint: "",
+          }),
+          field("ffhMethod", "Most favorable FFH method", input.floodFfhMethod, { hint: "" }),
+          field("buildingDescription", "Building description detail", input.floodBuildingDescription, {
+            hint: "",
+          }),
+        ],
+      },
+      {
+        id: "mortgagee",
+        title: "Mortgagee",
+        fields: [
+          field(
+            "mortgageeCount",
+            "Mortgagees on file",
+            input.mortgageeCount != null && input.mortgageeCount > 0
+              ? String(input.mortgageeCount)
+              : null,
+            {
+              hint: "No mortgagee on this policy yet. Add the lender on Coverage.",
+            },
+          ),
+        ],
+        pointer: {
+          label: "Mortgagee form lives on Coverage",
+          href: `/policies/${input.policyId}?tab=coverage#mortgagee`,
+        },
       },
     ];
   }
@@ -452,6 +516,8 @@ export function lobOverviewFamilyLabel(family: LobOverviewFamily): string {
       return "Auto";
     case "homeowners":
       return "Homeowners";
+    case "flood":
+      return "Flood";
     case "life":
       return "Life";
     case "health":
