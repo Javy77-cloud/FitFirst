@@ -32,6 +32,7 @@ import {
   type PipelineSheetMode,
 } from "@/lib/deals/pipeline-sheet";
 import { isDealStale, nextDealActionAt } from "@/lib/deals/pipeline-desk";
+import { formatShopLinesForDesk } from "@/lib/deals/product-chip-label";
 import {
   attachListProductStageHrefs,
   isDealListNotesColumn,
@@ -304,7 +305,7 @@ function dealRowCells({
     ),
     line: sheetAttr(deal.lineOfBusiness),
     subType: sheetAttr(deal.policySubType),
-    shopLines: sheetAttr((deal.shopLines ?? []).join(", ")),
+    shopLines: sheetAttr(formatShopLinesForDesk(deal.shopLines)),
     source: sheetAttr(sourceLabel(deal.source)),
     assigned: sheetAttr(deal.ownerId ? users.get(deal.ownerId) : ""),
     value: sheetAttr(value),
@@ -370,7 +371,7 @@ function dealRowCells({
       label: "Life / Health type",
       userRecords,
     }),
-    shopLines: (deal.shopLines ?? []).join(", ") || "—",
+    shopLines: formatShopLinesForDesk(deal.shopLines) || "—",
     source: sheetCell({
       mode,
       dealId: deal.id,

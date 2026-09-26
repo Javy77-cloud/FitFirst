@@ -9,6 +9,7 @@ import { blobStoreReady } from "@/lib/files/object-store";
 import { quoteFileUploadMode } from "@/lib/files/upload-plan";
 import { isBoundReadyForIssue } from "@/lib/policy/mint-gate";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
+import { presentProductLabel } from "@/lib/deals/product-chip-label";
 import { lifeHealthQuoteCarriers } from "@/lib/life/quote-writer";
 import type { Carrier, Document, DocumentVersion, Quote, QuoteNote } from "@/lib/db/schema";
 
@@ -127,6 +128,7 @@ export function LifeHealthQuotesPanel({
   });
   const writerCarriers = lifeHealthQuoteCarriers(carriers, dealLine);
   const familyLabel = shopLine === "health" ? "Health" : "Life";
+  const visibleProduct = presentProductLabel(productLabel);
 
   return (
     <div className="relative flex flex-col gap-4" data-ff-life-health-quotes="" data-ff-quotes-line={shopLine}>
@@ -152,7 +154,7 @@ export function LifeHealthQuotesPanel({
         ) : null}
         <div>
           <h3 className="text-sm font-semibold text-navy">
-            {productLabel ? `${familyLabel} · ${productLabel}` : `${familyLabel} quote writer`}
+            {visibleProduct ? `${familyLabel} · ${visibleProduct}` : `${familyLabel} quote writer`}
           </h3>
         </div>
         <form

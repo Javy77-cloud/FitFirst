@@ -1,14 +1,15 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { panelAlertBody, panelOwnsInsert, parsePanelKey, visiblePanelCards } from "./sync-panel";
-import { displayNoticeBody } from "@/lib/coverage/notices";
+import { formatNotificationBody } from "./copy";
+import { shouldEnqueueUserNotification } from "./quote-status-policy";
 import type { PanelCard } from "./panel";
 
 describe("panel alert persistence", () => {
   it("hides the machine key and keeps the why line for the board", () => {
     const body = panelAlertBody("Declined by Travelers at 2:14 AM · 3 carriers left", "quote_declined:q1");
     expect(parsePanelKey(body)).toBe("quote_declined:q1");
-    expect(displayNoticeBody(body)).toBe("Declined by Travelers at 2:14 AM · 3 carriers left");
+    expect(formatNotificationBody(body)).toBe("Declined by Travelers at 2:14 AM · 3 carriers left");
   });
 
   it("drops dismissed and snoozed keys from lane counts", () => {
@@ -34,9 +35,14 @@ describe("panel alert persistence", () => {
   it("does not insert deal_cold_chase — sole writer is cold-chase-sync", () => {
     expect(panelOwnsInsert("deal_cold_chase")).toBe(false);
     expect(panelOwnsInsert("quote_declined")).toBe(true);
+    expect(shouldEnqueueUserNotification("quote_declined")).toBe(false);
+    expect(shouldEnqueueUserNotification("quote_approved")).toBe(false);
     const src = readFileSync("src/lib/notifications/sync-panel.ts", "utf8");
+    expect(src).toMatch(/shouldEnqueueUserNotification/);
     expect(src).toMatch(/syncLiveDealColdChaseNotices/);
-    expect(src).toMatch(/if \(!panelOwnsInsert\(card\.kind\)\)/);
+    expect(src).toMatch(
+      /if \(!panelOwnsInsert\(card\.kind\) \|\| !shouldEnqueueUserNotification\(card\.kind\)\)/,
+    );
   });
 });
 

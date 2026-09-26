@@ -7,6 +7,8 @@ import { alerts } from "@/lib/db/schema";
 import { syncLiveDealColdChaseNotices } from "@/lib/deals/cold-chase-sync";
 import { DEAL_COLD_CHASE_KIND } from "@/lib/deals/cold-chase";
 import { loadPanelCards } from "@/lib/notifications/load-panel";
+import { scrubRawProductKeys } from "@/lib/deals/product-chip-label";
+import { shouldEnqueueUserNotification } from "@/lib/notifications/quote-status-policy";
 import { PANEL_SIGNAL_KINDS, type PanelCard } from "@/lib/notifications/panel";
 import { migrateOrphanCommitments } from "@/lib/notifications/load-commitments";
 import { applyTermStartEffects } from "@/lib/notifications/term-start-effects";
@@ -50,7 +52,7 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
 
 async function syncPanelSignalsOnce(): Promise<PanelCard[]> {
   await migrateOrphanCommitments().catch(() => 0);
-  const cards = await loadPanelCards();
+  const cards = (await loadPanelCards()).filter((card) => shouldEnqueueUserNotification(card.kind));
 
   // Sole insert path for cold chase (episode suppress + coalesce). Panel never
   // inserts this kind — dual AppShell+/deals writers raced into ×2 bells.
@@ -119,18 +121,21 @@ async function syncPanelSignalsOnce(): Promise<PanelCard[]> {
       continue;
     }
     const unread = unreadByKey.get(card.key);
-    const body = card.metaBody?.includes("<!--ff-href:")
-      ? `<!--ff-panel:${card.key}-->\n${card.metaBody}\n\n${card.why}`
-      : card.metaBody
-        ? `${panelAlertBody(card.why, card.key)}\n${card.metaBody}`
-        : panelAlertBody(card.why, card.key);
+    const body = scrubRawProductKeys(
+      card.metaBody?.includes("<!--ff-href:")
+        ? `<!--ff-panel:${card.key}-->\n${card.metaBody}\n\n${card.why}`
+        : card.metaBody
+          ? `${panelAlertBody(card.why, card.key)}\n${card.metaBody}`
+          : panelAlertBody(card.why, card.key),
+    );
+    const title = scrubRawProductKeys(card.entityLine);
     if (unread) {
       card.alertId = unread.id;
-      if (unread.title !== card.entityLine || unread.body !== body) {
+      if (unread.title !== title || unread.body !== body) {
         await db
           .update(alerts)
           .set({
-            title: card.entityLine,
+            title,
             body,
             severity: severityFor(card),
           })
@@ -138,7 +143,7 @@ async function syncPanelSignalsOnce(): Promise<PanelCard[]> {
       }
       continue;
     }
-    if (!panelOwnsInsert(card.kind)) {
+    if (!panelOwnsInsert(card.kind) || !shouldEnqueueUserNotification(card.kind)) {
       // Cold chase: attach if a row already exists (writer ran above).
       continue;
     }
@@ -147,7 +152,7 @@ async function syncPanelSignalsOnce(): Promise<PanelCard[]> {
       .values({
         tenantId: DEFAULT_TENANT_ID,
         kind: card.kind,
-        title: card.entityLine,
+        title,
         body,
         severity: severityFor(card),
         entityType: card.entityType,

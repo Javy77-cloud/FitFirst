@@ -67,6 +67,7 @@ import {
   sheetLineForProduct,
   splitHomeProducts,
 } from "@/lib/deals/deal-products";
+import { presentProductLabel } from "@/lib/deals/product-chip-label";
 import {
   addressFactsFromSheetValues,
   labelProductInstances,
@@ -545,7 +546,9 @@ export default async function DealPage({
     };
   });
   const instanceLabels = labelProductInstances(instanceLabelRows);
-  const activeInstanceLabel = instanceLabels.get(activeInstance.key) ?? dealProductDef(activeProduct).label;
+  const activeInstanceLabel = presentProductLabel(
+    instanceLabels.get(activeInstance.key) ?? dealProductDef(activeProduct).label,
+  );
   const quoteCompletenessByProduct = Object.fromEntries(
     productInstances.map((instance) => [
       instance.key,

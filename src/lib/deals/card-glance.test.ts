@@ -203,6 +203,8 @@ describe("deal card glance", () => {
     expect(formLeak[0]?.quoteSummary).toMatch(/pulled/i);
 
     expect(stackProductName("homeowners", "No quotes yet")).toBe("HO3");
+    expect(stackProductName("homeowners~88uvyj", "home~homeowners~88uvyj")).toBe("HO3");
+    expect(stackProductName("home~landlord")).toBe("DP3");
     expect(stackPlaceLabel("best $2,109 · 1 pending")).toBe("Documents");
     expect(stackPlaceLabel("gathering")).toBe("Documents");
     expect(stackPlaceLabel("quote_sent")).toBe("Quotes");

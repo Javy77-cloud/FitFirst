@@ -15,6 +15,7 @@ import {
   type FieldLayout,
 } from "@/lib/custom-fields/types";
 import type { ColumnDef } from "@/lib/desk/columns";
+import { formatShopLinesForDesk } from "@/lib/deals/product-chip-label";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
 import { formatMoney } from "@/lib/domain";
 import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
@@ -276,7 +277,7 @@ export function dealNativeColumnText(
   if (key === "title") return deal.title;
   if (key === "line") return deal.lineOfBusiness;
   if (key === "subType") return deal.policySubType ?? "";
-  if (key === "shopLines") return (deal.shopLines ?? []).join(", ");
+  if (key === "shopLines") return formatShopLinesForDesk(deal.shopLines);
   if (key === "source") return sourceLabel(deal.source);
   if (key === "assigned") return deal.ownerId ? users.get(deal.ownerId) ?? "" : "";
   if (key === "value") return coverage == null ? "" : formatMoney(coverage);
