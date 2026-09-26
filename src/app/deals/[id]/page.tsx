@@ -81,14 +81,17 @@ import {
 import { hideCrossProductDealFacts } from "@/lib/quote-sheet/product-fact-scope";
 import {
   boundStorageLineForInstance,
+  dealDetailsStoredAddresses,
+  headerSheetForPinnedAddress,
+  headerWithSplitInsuredAddress,
   pinPropertyAddresses,
   quotingFormForProductSheet,
+  sheetWithProductInsuredAddress,
   unscopedRiskInstanceKey,
 } from "@/lib/deals/product-address-pin";
 import {
   headerAddressesForProductTab,
   instanceOwnsSheet,
-  insuredFieldsFromAddress,
   isPropertyCoveringProduct,
   legacyPropertyOwnerKey,
   overlaySharedProductSheet,
@@ -389,20 +392,40 @@ export default async function DealPage({
     dealProductDef(activeProduct).quotingForm,
     activeProduct,
   );
-  const headerAddresses = headerAddressesForProductTab({
+  const productLocationStreets = [...propertyPins.values()].map((pin) => pin.address.street);
+  const foreignStreets = [...propertyPins.entries()]
+    .filter(([key]) => key !== activeInstance.key)
+    .map(([, pin]) => pin.address.street);
+  const pinnedSheetValues = sheetWithProductInsuredAddress(
+    headerSheetForPinnedAddress(activeSheet.values, activePin),
+    {
+      instanceKey: activeInstance.key,
+      legacyOwnerKey: legacyPropertyKey,
+      locationStreet: activePin?.address.street,
+      dealStored: dealValues,
+      foreignStreets,
+    },
+  );
+  const headerAddresses = headerWithSplitInsuredAddress({
     instanceKey: activeInstance.key,
-    ownsSheet: activeOwnsPropertySheet,
-    sheetValues: activeSheet.values,
-    ownRisk: activePin?.address.street
-      ? {
-          address1: activePin.address.street,
-          city: activePin.address.city,
-          state: activePin.address.state,
-          zip: activePin.address.zip,
-        }
-      : null,
-    dwellingFire: headerDwellingFire,
+    legacyOwnerKey: legacyPropertyKey,
+    locationStreet: activePin?.address.street,
     dealStored: dealValues,
+    header: headerAddressesForProductTab({
+      instanceKey: activeInstance.key,
+      ownsSheet: activeOwnsPropertySheet,
+      sheetValues: pinnedSheetValues,
+      ownRisk: activePin?.address.street
+        ? {
+            address1: activePin.address.street,
+            city: activePin.address.city,
+            state: activePin.address.state,
+            zip: activePin.address.zip,
+          }
+        : null,
+      dwellingFire: headerDwellingFire,
+      dealStored: dealValues,
+    }),
   });
   const activePropertyAddress = isPropertyCoveringProduct(activeProduct)
     ? resolveProductPropertyAddress({
@@ -417,15 +440,11 @@ export default async function DealPage({
     : null;
   const profileValues = hideCrossProductDealFacts(
     activePropertyAddress && !activeOwnsPropertySheet
-      ? overlaySharedProductSheet(activeSheet.values, activeInstance.key, activePropertyAddress.address)
-      : activeSheet.values,
+      ? overlaySharedProductSheet(pinnedSheetValues, activeInstance.key, activePropertyAddress.address)
+      : pinnedSheetValues,
     productInstances.length > 1,
     { includeAddress: activeInstance.key !== legacyPropertyKey },
   );
-  const detailsAddressOverlay =
-    activePropertyAddress && activeInstance.key !== legacyPropertyKey
-      ? insuredFieldsFromAddress(activePropertyAddress.address)
-      : null;
   const lineForm =
     quotingFormForProductSheet(activeProduct, activeSheet.values) ??
     resolveLineQuotingForm({
@@ -1104,11 +1123,15 @@ export default async function DealPage({
                         layout={dealLayout ?? defaultLayoutForModule("deals")}
                         fields={dealFields.length ? dealFields : resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
                         values={{
-                          ...mergeDealSystemValues(deal, lead, dealValues, dealFields),
+                          ...mergeDealSystemValues(
+                            deal,
+                            lead,
+                            dealDetailsStoredAddresses(dealValues, { productLocationStreets }),
+                            dealFields,
+                          ),
                           ...(deal.accountKind === "commercial" && !dealValues.business_name
                             ? { business_name: deal.primaryNamedInsured ?? "" }
                             : {}),
-                          ...(detailsAddressOverlay ?? {}),
                         }}
                         productInstance={activeInstance.key}
                         pipelineFamily={familyForProducts(dealProducts)}

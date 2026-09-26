@@ -76,6 +76,8 @@ export type HomeAddressDealInput = {
    * HO3 and other products keep the party-home fallback.
    */
   dwellingFire?: boolean;
+  /** Other products' risk streets. Fill must not copy them onto this sheet's mailing. */
+  excludeMailingStreets?: readonly (string | null | undefined)[];
 };
 
 function compactStreet(raw: string): string {
@@ -185,8 +187,12 @@ export function resolveHomeRiskAddresses(input: HomeAddressDealInput): ResolvedH
     });
   }
 
+  const blocked = input.excludeMailingStreets ?? [];
   const distinct = mailingCandidates.find(
-    (row) => row.street && !streetsAreSameLocation(row.street, property.street),
+    (row) =>
+      row.street &&
+      !streetsAreSameLocation(row.street, property.street) &&
+      !blocked.some((street) => streetsAreSameLocation(row.street, street)),
   );
   const mailing = distinct ?? { street: "", city: "", state: "", zip: "" };
   const mailingReason: HomeMailingReason = distinct

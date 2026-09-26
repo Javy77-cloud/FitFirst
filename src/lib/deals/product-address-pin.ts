@@ -1,3 +1,5 @@
+import { addressFingerprint } from "@/lib/address/compare";
+import { parseAddressVerifyMeta } from "@/lib/address/verify-state";
 import { dealProductDef } from "@/lib/deals/deal-products";
 import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { sheetFormForProduct } from "@/lib/deals/product-chip-label";
@@ -7,12 +9,14 @@ import {
   type ProductInstance,
 } from "@/lib/deals/product-instances";
 import {
+  addressFromInsuredFields,
   addressFromRiskRow,
   addressHasLocation,
   dealLevelPropertyAddress,
   EMPTY_PROPERTY_ADDRESS,
   isPropertyCoveringProduct,
   legacyPropertyOwnerKey,
+  type ProductTabHeaderAddress,
   type PropertyAddress,
 } from "@/lib/deals/product-property";
 
@@ -20,11 +24,13 @@ import {
  * Which quote-sheet line and risk row a property tab may use.
  *
  * Shop order gives the plain `home` line to the first property product.
- * A dec can land on that line with a different form (DP3 facts on an HO3
- * chip). That sheet is not an address source for the chip that merely owns
- * the line. The product the form belongs to reads it. The unscoped risk
- * (product_key null) follows the same rule and is never copied onto a second
- * property product.
+ * A dec `form` on that line (DP3 facts stamped HO3) does not move the
+ * location onto the sibling. The unscoped risk stays with the first
+ * property product. A later product does not reuse that street, and does
+ * not reuse another product's keyed street, unless it has its own risk row.
+ * Deal Details insured address stays the deal field. When that street
+ * differs from the first product's location, the header shows the deal
+ * street and the chip keeps the location.
  */
 
 type SheetValues = Record<string, { value?: string | null } | null | undefined> | null | undefined;
@@ -137,18 +143,23 @@ export function propertyStreetsMatch(a: string | null | undefined, b: string | n
 
 /**
  * True when this sheet's policy form belongs to a sibling product, not `instance`.
- * A sheet with no form stays with its line owner.
+ * A shop stamp (`sheet_product` / `quoting_form`) keeps the line with that product.
+ * An extracted `form` does not steal it. A sheet with no form stays with its line owner.
  */
 export function sheetIsForeignToInstance(
   instance: Pick<ProductInstance, "key" | "productId">,
   peers: readonly Pick<ProductInstance, "key" | "productId">[],
   values: SheetValues,
 ): boolean {
-  const form = policyFormOnSheet(values);
-  if (!form) return false;
-  if (sheetFormForProduct(instance.productId, form)) return false;
+  const stampedProduct = cell(values, "sheet_product");
+  if (stampedProduct && stampedProduct === instance.productId) return false;
+  const stampedForm = cell(values, "quoting_form");
+  if (stampedForm && sheetFormForProduct(instance.productId, stampedForm)) return false;
+  const extracted = cell(values, "form");
+  if (!extracted) return false;
+  if (sheetFormForProduct(instance.productId, extracted)) return false;
   return peers.some(
-    (peer) => peer.key !== instance.key && Boolean(sheetFormForProduct(peer.productId, form)),
+    (peer) => peer.key !== instance.key && Boolean(sheetFormForProduct(peer.productId, extracted)),
   );
 }
 
@@ -309,6 +320,7 @@ export function pinPropertyAddresses(input: {
     pins.set(instance.key, pinFromSheetOrRisk(instance, input.instances, input.sheets, input.risks));
   }
   const legacy = legacyPropertyOwnerKey(input.instances);
+  keepOneProductPerStreet(pins, input.instances, input.risks);
   if (!legacy) return pins;
   const current = pins.get(legacy);
   if (current && addressHasLocation(current.address)) return pins;
@@ -326,6 +338,270 @@ export function pinPropertyAddresses(input: {
   if (taken) return pins;
   pins.set(legacy, { address: prefill, source: "deal" });
   return pins;
+}
+
+/** One insured street per property tab. The legacy owner keeps a shared street; a keyed risk wins over that. */
+function keepOneProductPerStreet(
+  pins: Map<string, PinnedPropertyAddress>,
+  instances: readonly ProductInstance[],
+  risks: readonly PropertyRiskRef[],
+): void {
+  const groups = new Map<string, string[]>();
+  for (const instance of instances) {
+    const pin = pins.get(instance.key);
+    if (!pin || !addressHasLocation(pin.address)) continue;
+    const streetKey = propertyStreetKey(pin.address.street);
+    if (!streetKey) continue;
+    const list = groups.get(streetKey) ?? [];
+    list.push(instance.key);
+    groups.set(streetKey, list);
+  }
+  const legacy = legacyPropertyOwnerKey(instances);
+  for (const keys of groups.values()) {
+    if (keys.length < 2) continue;
+    const keyed = keys.find((key) =>
+      risks.some(
+        (row) =>
+          String(row.productKey ?? "").trim() === key &&
+          propertyStreetsMatch(row.address1, pins.get(key)?.address.street),
+      ),
+    );
+    const winner = keyed ?? (legacy && keys.includes(legacy) ? legacy : keys[0]);
+    for (const key of keys) {
+      if (key === winner) continue;
+      pins.set(key, { address: { ...EMPTY_PROPERTY_ADDRESS }, source: "blank" });
+    }
+  }
+}
+
+const HEADER_INSURED_SHEET_KEYS = [
+  "address1",
+  "city",
+  "state",
+  "zip",
+  "county",
+  "premises_address",
+  "premises_city",
+  "premises_state",
+  "premises_zip",
+  "garaging_address",
+  "garaging_city",
+  "garaging_state",
+  "garaging_zip",
+  "applicant_address",
+  "property_address",
+] as const;
+
+/**
+ * Package-header "Insured address" for the first property product.
+ * The chip and risk stay the location (Gloria HO3: 10358 Doral). When Deal
+ * Details insured is a different street (8944), the header shows that street
+ * — not the risk and not a sibling mailing (16021). Keyed copies and a blank
+ * pin are left alone.
+ */
+export function headerWithSplitInsuredAddress<
+  T extends { insured: ProductTabHeaderAddress; mailing: ProductTabHeaderAddress },
+>(input: {
+  instanceKey: string;
+  legacyOwnerKey: string | null;
+  locationStreet: string | null | undefined;
+  dealStored?: Record<string, string | null | undefined> | null;
+  header: T;
+}): T {
+  if (!input.legacyOwnerKey || input.instanceKey !== input.legacyOwnerKey) return input.header;
+  if (!propertyStreetKey(input.locationStreet)) return input.header;
+  const insured = addressFromInsuredFields(input.dealStored);
+  if (!insured.street || propertyStreetsMatch(input.locationStreet, insured.street)) return input.header;
+  return {
+    ...input.header,
+    insured: {
+      address1: insured.street,
+      city: insured.city,
+      state: insured.state,
+      zip: insured.zip,
+    },
+  };
+}
+
+/**
+ * Applicant on the open sheet is the insured person, not the risk and not
+ * another product's street. Display only — does not write the sheet.
+ */
+const SHEET_MAILING_KEYS = ["mailing_address", "mailing_city", "mailing_state", "mailing_zip"] as const;
+
+function blankSheetCell(current: { value?: string | null } | null | undefined) {
+  return current ? { ...current, value: "" } : { value: "" };
+}
+
+export function sheetWithProductInsuredAddress(
+  values: SheetValues,
+  input: {
+    instanceKey: string;
+    legacyOwnerKey: string | null;
+    locationStreet: string | null | undefined;
+    dealStored?: Record<string, string | null | undefined> | null;
+    /** Other products' risk streets. They must not sit on this sheet as mailing or applicant. */
+    foreignStreets?: readonly (string | null | undefined)[];
+  },
+): SheetValues {
+  if (!values) return values;
+  let next = values;
+  const mailing = cell(next, "mailing_address");
+  if (
+    streetIsProductLocation(mailing, input.foreignStreets, input.locationStreet) &&
+    !propertyStreetsMatch(mailing, addressFromInsuredFields(input.dealStored).street)
+  ) {
+    next = { ...next };
+    for (const key of SHEET_MAILING_KEYS) {
+      next[key] = blankSheetCell(next[key]);
+    }
+  }
+  if (!input.legacyOwnerKey || input.instanceKey !== input.legacyOwnerKey) return next;
+  if (!propertyStreetKey(input.locationStreet)) return next;
+  const insured = addressFromInsuredFields(input.dealStored);
+  if (!insured.street || propertyStreetsMatch(input.locationStreet, insured.street)) return next;
+  const applicant = cell(next, "applicant_address");
+  if (!applicant || propertyStreetsMatch(applicant, insured.street)) return next;
+  if (propertyStreetsMatch(applicant, input.locationStreet)) return next;
+  if (!streetIsProductLocation(applicant, input.foreignStreets, insured.street)) return next;
+  const current = next.applicant_address;
+  return {
+    ...next,
+    applicant_address: current ? { ...current, value: insured.street } : { value: insured.street },
+  };
+}
+
+/** Header insured location follows the pin. A blank pin does not fall through to a sibling street on the sheet. */
+export function headerSheetForPinnedAddress(
+  values: SheetValues,
+  pin: PinnedPropertyAddress | null | undefined,
+): SheetValues {
+  if (!values || (pin && addressHasLocation(pin.address))) return values;
+  const next: NonNullable<SheetValues> = { ...values };
+  for (const key of HEADER_INSURED_SHEET_KEYS) {
+    const current = next[key];
+    if (!current) continue;
+    next[key] = { ...current, value: "" };
+  }
+  return next;
+}
+
+const CONTACT_MAILING_KEYS = [
+  "contact_mailing_address",
+  "contact_mailing_unit",
+  "contact_mailing_city",
+  "contact_mailing_state",
+  "contact_mailing_zip",
+  "contact_mailing_county",
+  "contact_mailing_address__verify",
+] as const;
+
+const DEAL_INSURED_PART_KEYS = [
+  "mailing_address",
+  "mailing_unit",
+  "city",
+  "state",
+  "zip",
+  "county",
+  "mailing_address__verify",
+] as const;
+
+function streetIsProductLocation(
+  street: string | null | undefined,
+  productLocationStreets: readonly (string | null | undefined)[] | undefined,
+  exceptStreet?: string | null,
+): boolean {
+  if (!propertyStreetKey(street)) return false;
+  return (productLocationStreets ?? []).some(
+    (row) => propertyStreetsMatch(row, street) && !propertyStreetsMatch(row, exceptStreet),
+  );
+}
+
+/**
+ * Deal Details insured address is the deal field (`mailing_address`), not the
+ * active product's risk and not the mailing street. A same-as flag or a verify
+ * fingerprint for a different street must not present mailing as insured.
+ * A contact-mailing street that is another product's location is cleared so
+ * "mailing same as insured" cannot paint that product onto the insured field.
+ */
+export function dealDetailsStoredAddresses(
+  stored: Record<string, string | null | undefined> | null | undefined,
+  options?: { productLocationStreets?: readonly (string | null | undefined)[] },
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const [key, value] of Object.entries(stored ?? {})) {
+    if (value != null) next[key] = String(value);
+  }
+  const insuredStreet = next.mailing_address ?? "";
+  let mailingStreet = next.contact_mailing_address ?? "";
+  if (
+    streetIsProductLocation(mailingStreet, options?.productLocationStreets, insuredStreet)
+  ) {
+    for (const key of CONTACT_MAILING_KEYS) next[key] = "";
+    mailingStreet = "";
+    next.mailing_same_as_insured = "false";
+  }
+  if (insuredStreet && mailingStreet && !propertyStreetsMatch(insuredStreet, mailingStreet)) {
+    next.mailing_same_as_insured = "false";
+  }
+  const meta = parseAddressVerifyMeta(next.mailing_address__verify);
+  const insuredFingerprint = addressFingerprint({
+    street: insuredStreet,
+    city: next.city ?? "",
+    state: next.state ?? "",
+    zip: next.zip ?? "",
+    county: next.county ?? "",
+    country: "US",
+  });
+  if (meta?.fingerprint && insuredFingerprint && meta.fingerprint !== insuredFingerprint) {
+    next.mailing_address__verify = "";
+  }
+  return next;
+}
+
+/**
+ * A Deal Details save must not replace the insured street with another
+ * product's location (16021 or 10358 over 8944). Mailing is never copied
+ * onto insured.
+ */
+export function keepDealInsuredOffProductStreets(input: {
+  previous: Record<string, string | null | undefined> | null | undefined;
+  next: Record<string, string>;
+  productLocationStreets?: readonly (string | null | undefined)[];
+}): Record<string, string> {
+  const previous = input.previous ?? {};
+  const prevStreet = String(previous.mailing_address ?? "");
+  const nextStreet = input.next.mailing_address ?? "";
+  if (!propertyStreetKey(prevStreet) || propertyStreetsMatch(prevStreet, nextStreet)) {
+    return dealDetailsStoredAddresses(input.next, {
+      productLocationStreets: input.productLocationStreets,
+    });
+  }
+  const hitsProduct = streetIsProductLocation(nextStreet, input.productLocationStreets, prevStreet);
+  const guarded = { ...input.next };
+  if (hitsProduct) {
+    for (const key of DEAL_INSURED_PART_KEYS) {
+      guarded[key] = String(previous[key] ?? "");
+    }
+    guarded.mailing_address__verify = "";
+  }
+  return dealDetailsStoredAddresses(guarded, {
+    productLocationStreets: input.productLocationStreets,
+  });
+}
+
+/** A later product must not insert a second risk on the unscoped building. */
+export function mayInsertSeparatePropertyRisk(input: {
+  instanceKey: string;
+  legacyOwnerKey: string | null;
+  addressStreet: string | null | undefined;
+  unscopedStreet: string | null | undefined;
+  claimMatchingUnscoped?: boolean;
+}): boolean {
+  if (input.claimMatchingUnscoped) return false;
+  if (input.legacyOwnerKey && input.instanceKey === input.legacyOwnerKey) return false;
+  if (propertyStreetsMatch(input.addressStreet, input.unscopedStreet)) return false;
+  return Boolean(propertyStreetKey(input.addressStreet));
 }
 
 export type PropertyRiskWriteTarget = {

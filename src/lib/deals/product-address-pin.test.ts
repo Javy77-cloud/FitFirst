@@ -4,17 +4,27 @@ import { headerAddressesForProductTab } from "@/lib/deals/product-property";
 import { resolveVisibleProductInstances } from "@/lib/deals/product-instances";
 import {
   boundStorageLineForInstance,
+  dealDetailsStoredAddresses,
+  headerSheetForPinnedAddress,
+  headerWithSplitInsuredAddress,
+  keepDealInsuredOffProductStreets,
+  mayInsertSeparatePropertyRisk,
   pinPropertyAddresses,
   propertyRiskWriteTarget,
   propertyStreetsMatch,
   quotingFormForProductSheet,
+  sheetWithProductInsuredAddress,
 } from "@/lib/deals/product-address-pin";
+import { quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
+import { resolveHomeRiskAddresses } from "@/lib/quote-sheet/home-address-fill";
+import { readFileSync } from "node:fs";
 
 /**
- * Gloria Martinez — three products, three insured locations.
- * The plain `home` line holds the DP3 dec (10358 Doral). The HO3 at 16021
- * is the `~88uvyj` copy. Deal insured is the third street (8944 Adriatico).
- * DP3 mailing may be 16021; that must not become either product's insured address.
+ * Gloria Martinez — three products, three locations, no shared insured street.
+ * The HO3 that owns `home` keeps its risk at 10358 Doral. Its insured
+ * address (header + Deal Details) is 8944 Adriatico — not 10358 and not
+ * 16021. The `~88uvyj` HO3 stays at 16021. The landlord sheet is only a
+ * Deal address copy of 10358, so it is not a second pin of that building.
  */
 const gloriaInstances = resolveVisibleProductInstances({
   shopProducts: ["homeowners", "landlord", "homeowners~88uvyj"],
@@ -97,7 +107,7 @@ describe("Gloria product address pins", () => {
     expect(propertyStreetsMatch("10358 NW 30th TER", "16021 NW 79th CT")).toBe(false);
   });
 
-  it("pins HO3 at 16021, DP3 at 10358, and the other HO3 off both", () => {
+  it("pins the deal HO3 at 10358, the copy at 16021, and does not reuse 10358 for DP3", () => {
     const pins = pinPropertyAddresses({
       instances: gloriaInstances,
       sheets: gloriaSheets,
@@ -108,20 +118,18 @@ describe("Gloria product address pins", () => {
     const dp3 = pins.get("landlord")!.address;
     const ho3Copy = pins.get("homeowners~88uvyj")!.address;
 
+    expect(ho3.street).toMatch(/10358/i);
+    expect(ho3.city).toBe("Doral");
+    expect(ho3.zip).toBe("33172");
     expect(ho3Copy.street).toMatch(/16021/i);
     expect(ho3Copy.city).toBe("Miami Lakes");
-    expect(dp3.street).toMatch(/10358/i);
-    expect(dp3.city).toBe("Doral");
-    expect(ho3.street).toMatch(/8944/);
-    expect(ho3.city).toBe("Kissimmee");
+    expect(ho3Copy.zip).toBe("33016");
+    expect(dp3.street).toBe("");
 
     expect(propertyStreetsMatch(ho3.street, dp3.street)).toBe(false);
     expect(propertyStreetsMatch(ho3.street, ho3Copy.street)).toBe(false);
-    expect(propertyStreetsMatch(dp3.street, ho3Copy.street)).toBe(false);
-    expect(dp3.street).not.toMatch(/16021/);
-    expect(ho3.street).not.toMatch(/16021/);
-    expect(ho3.street).not.toMatch(/10358/);
-    expect(ho3Copy.street).not.toMatch(/10358/);
+    expect(ho3.street).not.toMatch(/16021|8944/);
+    expect(ho3Copy.street).not.toMatch(/10358|8944/);
 
     const labels = labelProductInstances(
       gloriaInstances.map((instance) => {
@@ -135,18 +143,18 @@ describe("Gloria product address pins", () => {
         };
       }),
     );
-    expect(labels.get("homeowners")).toBe("HO3 8944 Adriatico");
-    expect(labels.get("landlord")).toMatch(/^DP3 10358 Northwest 30th/);
+    expect(labels.get("homeowners")).toBe("HO3 10358 Northwest 30th");
+    expect(labels.get("landlord")).toBe("DP3");
     expect(labels.get("homeowners~88uvyj")).toBe("HO3 16021 Northwest 79th");
   });
 
-  it("reads the DP3 dec on the landlord tab and keeps 16021 as mailing only", () => {
+  it("keeps the HO3 tab on the home line and leaves 16021 quotes on the copy", () => {
     const landlord = gloriaInstances.find((row) => row.key === "landlord")!;
-    expect(boundStorageLineForInstance(landlord, gloriaInstances, gloriaSheets)).toBe("home");
     const homeowners = gloriaInstances.find((row) => row.key === "homeowners")!;
-    expect(boundStorageLineForInstance(homeowners, gloriaInstances, gloriaSheets)).toBe("home~homeowners");
-    expect(quotingFormForProductSheet("landlord", gloriaSheets[0]!.values)).toBe("DP3");
+    expect(boundStorageLineForInstance(homeowners, gloriaInstances, gloriaSheets)).toBe("home");
+    expect(boundStorageLineForInstance(landlord, gloriaInstances, gloriaSheets)).toBe("home~landlord");
     expect(quotingFormForProductSheet("homeowners", gloriaSheets[0]!.values)).toBeNull();
+    expect(quotingFormForProductSheet("landlord", gloriaSheets[1]!.values)).toBe("DP3");
 
     const pins = pinPropertyAddresses({
       instances: gloriaInstances,
@@ -154,53 +162,235 @@ describe("Gloria product address pins", () => {
       risks: gloriaRisks,
       storedDeal: gloriaStored,
     });
-    const dp3 = pins.get("landlord")!.address;
+    const headerSheet = headerSheetForPinnedAddress(gloriaSheets[1]!.values, pins.get("landlord"));
     const header = headerAddressesForProductTab({
       instanceKey: "landlord",
       ownsSheet: true,
       dwellingFire: true,
-      sheetValues: gloriaSheets[0]!.values,
-      ownRisk: dp3,
+      sheetValues: headerSheet,
+      ownRisk: pins.get("landlord")!.address,
       dealStored: gloriaStored,
     });
-    expect(header.insured.address1).toMatch(/10358/);
-    expect(header.insured.address1).not.toMatch(/16021/);
+    expect(header.insured.address1).toBe("");
+    expect(header.insured.address1).not.toMatch(/10358|16021/);
     expect(header.mailing.address1).toMatch(/16021/);
-    expect(header.mailing.address1).not.toBe(header.insured.address1);
+
+    const copyNotes = "HO3 product 803-16021 [[ff-instance:homeowners~88uvyj]]";
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home~homeowners~88uvyj", notes: copyNotes },
+        "homeowners~88uvyj",
+        { splitHomeProducts: true },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home~homeowners~88uvyj", notes: copyNotes },
+        "homeowners",
+        { splitHomeProducts: true },
+      ),
+    ).toBe(false);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home~homeowners~88uvyj", notes: copyNotes },
+        "landlord",
+        { splitHomeProducts: true },
+      ),
+    ).toBe(false);
   });
 
-  it("writes the DP3 home line onto landlord and does not reuse the null risk for the other HO3", () => {
+  it("writes the home line onto the HO3 risk and does not clone it onto DP3", () => {
     const target = propertyRiskWriteTarget({
       instances: gloriaInstances,
       storageLine: "home",
       values: gloriaSheets[0]!.values,
     });
     expect(target).toEqual({
-      instanceKey: "landlord",
-      claimMatchingUnscoped: true,
-      preserveUnscoped: true,
-    });
-    const ho3Sheet = propertyRiskWriteTarget({
-      instances: gloriaInstances,
-      storageLine: "home~homeowners",
-      values: {
-        quoting_form: { value: "HO3" },
-        address1: { value: "8944 Adriatico Lane" },
-        city: { value: "Kissimmee" },
-      },
-    });
-    expect(ho3Sheet).toEqual({
       instanceKey: "homeowners",
       claimMatchingUnscoped: false,
-      preserveUnscoped: true,
+      preserveUnscoped: false,
     });
-    const copy = propertyRiskWriteTarget({
+    expect(
+      mayInsertSeparatePropertyRisk({
+        instanceKey: "landlord",
+        legacyOwnerKey: "homeowners",
+        addressStreet: "10358 Northwest 30th Terrace",
+        unscopedStreet: "10358 NW 30th TER",
+      }),
+    ).toBe(false);
+    expect(
+      mayInsertSeparatePropertyRisk({
+        instanceKey: "homeowners~88uvyj",
+        legacyOwnerKey: "homeowners",
+        addressStreet: "16021 Northwest 79th Court",
+        unscopedStreet: "10358 NW 30th TER",
+      }),
+    ).toBe(true);
+  });
+
+  it("shows 8944 as the Doral HO3 insured address and leaves the 16021 copy alone", () => {
+    const pins = pinPropertyAddresses({
       instances: gloriaInstances,
-      storageLine: "home~homeowners~88uvyj",
-      values: gloriaSheets[2]!.values,
+      sheets: gloriaSheets,
+      risks: gloriaRisks,
+      storedDeal: gloriaStored,
     });
-    expect(copy?.instanceKey).toBe("homeowners~88uvyj");
-    expect(copy?.claimMatchingUnscoped).toBe(false);
+    const location = pins.get("homeowners")!.address;
+    expect(location.street).toMatch(/10358/i);
+    expect(location.city).toBe("Doral");
+
+    const raw = headerAddressesForProductTab({
+      instanceKey: "homeowners",
+      ownsSheet: true,
+      dwellingFire: false,
+      sheetValues: gloriaSheets[0]!.values,
+      ownRisk: location,
+      dealStored: gloriaStored,
+    });
+    expect(raw.insured.address1).toMatch(/10358/);
+    const header = headerWithSplitInsuredAddress({
+      instanceKey: "homeowners",
+      legacyOwnerKey: "homeowners",
+      locationStreet: location.street,
+      dealStored: gloriaStored,
+      header: raw,
+    });
+    expect(header.insured).toEqual({
+      address1: "8944 Adriatico Lane",
+      city: "Kissimmee",
+      state: "FL",
+      zip: "34747",
+    });
+    expect(header.insured.address1).not.toMatch(/10358|16021/);
+    expect(header.mailing.address1).toMatch(/16021/);
+
+    const shown = sheetWithProductInsuredAddress(
+      {
+        ...gloriaSheets[0]!.values,
+        applicant_address: { value: "16021 NW 79Th CT" },
+        address1: gloriaSheets[0]!.values.address1,
+      },
+      {
+        instanceKey: "homeowners",
+        legacyOwnerKey: "homeowners",
+        locationStreet: location.street,
+        dealStored: gloriaStored,
+        foreignStreets: ["16021 Northwest 79th Court"],
+      },
+    );
+    expect(shown?.address1?.value).toMatch(/10358/);
+    expect(shown?.mailing_address?.value).toBe("");
+    expect(shown?.applicant_address?.value).toBe("8944 Adriatico Lane");
+
+    const copy = headerWithSplitInsuredAddress({
+      instanceKey: "homeowners~88uvyj",
+      legacyOwnerKey: "homeowners",
+      locationStreet: pins.get("homeowners~88uvyj")!.address.street,
+      dealStored: gloriaStored,
+      header: headerAddressesForProductTab({
+        instanceKey: "homeowners~88uvyj",
+        ownsSheet: true,
+        sheetValues: gloriaSheets[2]!.values,
+        ownRisk: pins.get("homeowners~88uvyj")!.address,
+        dealStored: gloriaStored,
+      }),
+    });
+    expect(copy.insured.address1).toMatch(/16021/);
+    expect(copy.insured.address1).not.toMatch(/8944|10358/);
+    const copySheet = sheetWithProductInsuredAddress(gloriaSheets[2]!.values, {
+      instanceKey: "homeowners~88uvyj",
+      legacyOwnerKey: "homeowners",
+      locationStreet: pins.get("homeowners~88uvyj")!.address.street,
+      dealStored: gloriaStored,
+    });
+    expect(copySheet?.address1?.value).toMatch(/16021/);
+    expect(copySheet?.applicant_address?.value).toBeUndefined();
+
+    const dp3 = headerWithSplitInsuredAddress({
+      instanceKey: "landlord",
+      legacyOwnerKey: "homeowners",
+      locationStreet: pins.get("landlord")!.address.street,
+      dealStored: gloriaStored,
+      header: {
+        insured: { address1: "", city: "", state: "", zip: "" },
+        mailing: { address1: "16021 Northwest 79th Court", city: "Miami Lakes", state: "FL", zip: "33016" },
+      },
+    });
+    expect(dp3.insured.address1).toBe("");
+    expect(dp3.insured.address1).not.toMatch(/8944|10358|16021/);
+  });
+
+  it("keeps Deal Details insured at 8944 and does not confirm it as 16021", () => {
+    const details = dealDetailsStoredAddresses({
+      ...gloriaStored,
+      mailing_same_as_insured: "true",
+      mailing_address__verify:
+        '{"status":"confirmed","fingerprint":"16021 northwest 79th ct|miami lakes|FL|33016"}',
+    });
+    expect(details.mailing_address).toBe("8944 Adriatico Lane");
+    expect(details.city).toBe("Kissimmee");
+    expect(details.zip).toBe("34747");
+    expect(details.mailing_address).not.toMatch(/16021/);
+    expect(details.mailing_same_as_insured).toBe("false");
+    expect(details.mailing_address__verify).toBe("");
+    expect(details.contact_mailing_address).toMatch(/16021/);
+
+    const isolated = dealDetailsStoredAddresses(
+      {
+        ...gloriaStored,
+        mailing_same_as_insured: "true",
+        mailing_address__verify:
+          '{"status":"confirmed","fingerprint":"16021 northwest 79th ct|miami lakes|FL|33016"}',
+      },
+      { productLocationStreets: ["10358 NW 30th TER", "16021 Northwest 79th Court"] },
+    );
+    expect(isolated.mailing_address).toBe("8944 Adriatico Lane");
+    expect(isolated.contact_mailing_address).toBe("");
+    expect(isolated.contact_mailing_city).toBe("");
+    expect(isolated.mailing_same_as_insured).toBe("false");
+    expect(isolated.mailing_address__verify).toBe("");
+    expect(isolated.mailing_address).not.toMatch(/16021|10358/);
+  });
+
+  it("does not let a product street overwrite Deal Details insured on save", () => {
+    const saved = keepDealInsuredOffProductStreets({
+      previous: {
+        ...gloriaStored,
+        mailing_same_as_insured: "true",
+      },
+      next: {
+        ...gloriaStored,
+        mailing_address: "16021 Northwest 79th Court",
+        city: "Miami Lakes",
+        zip: "33016",
+        county: "Miami-Dade",
+        mailing_same_as_insured: "true",
+      },
+      productLocationStreets: ["10358 NW 30th TER", "16021 Northwest 79th Court"],
+    });
+    expect(saved.mailing_address).toBe("8944 Adriatico Lane");
+    expect(saved.city).toBe("Kissimmee");
+    expect(saved.zip).toBe("34747");
+    expect(saved.mailing_address).not.toMatch(/16021|10358/);
+    expect(saved.contact_mailing_address).toBe("");
+    expect(saved.mailing_same_as_insured).toBe("false");
+  });
+
+  it("does not fill another product's street onto this sheet's mailing", () => {
+    const resolved = resolveHomeRiskAddresses({
+      stored: gloriaStored,
+      risk: { address1: "10358 NW 30th TER", city: "Doral", state: "FL", zip: "33172" },
+      excludeMailingStreets: ["16021 Northwest 79th Court"],
+    });
+    expect(resolved.property.street).toMatch(/10358/);
+    expect(resolved.mailing.street).toBe("8944 Adriatico Lane");
+    expect(resolved.mailing.street).not.toMatch(/16021/);
+  });
+
+  it("does not write Deal Details insured onto a product sheet", () => {
+    const source = readFileSync("src/app/actions/custom-fields.ts", "utf8");
+    expect(source).not.toMatch(/saveInstancePropertyAddress/);
+    expect(source).toMatch(/keepDealInsuredOffProductStreets/);
   });
 
   it("still lets the first product keep an unscoped risk when the home line is its own form", () => {

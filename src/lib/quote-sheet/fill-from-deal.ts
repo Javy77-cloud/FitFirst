@@ -112,6 +112,8 @@ export type DealSheetCopyInput = {
    * The first property product still may.
    */
   skipSharedPropertyAddress?: boolean;
+  /** Other products' locations. Do not copy those streets onto this sheet's mailing. */
+  blockedMailingStreets?: readonly (string | null | undefined)[];
 };
 
 export type DealSheetCopyResult = {
@@ -653,6 +655,7 @@ export function fillSheetFromDealDetails(
         stored.insurance_subtype,
         stored.quoting_form,
       ),
+      excludeMailingStreets: input.blockedMailingStreets,
     });
     put("address1", resolved.property.street);
     put("city", resolved.property.city);
