@@ -132,9 +132,10 @@ describe("renewal agreed stamp", () => {
     expect(clientStayingTermHasStarted(jumped, asOfOn)).toBe(true);
   });
 
-  it("keeps George Rigby MMHO (ATM205086) stamped until 2026-10-10", () => {
-    // American Traditions. Book is already on the upcoming term. renewal_date
-    // is the following cycle, more than 90 days out. That jump is not a release.
+  it("keeps George Rigby MMHO (ATM205086) on the imminent effective, not the 379-day expiration", () => {
+    // American Traditions. Imminent renew is effective_date 2026-10-10 (~14 days).
+    // expiration and renewal_date are 2027-10-10 (~379 days). Those later dates
+    // are not the clear date, and they do not release while effective is ahead.
     const atm = {
       clientStaying: true,
       effectiveDate: "2026-10-10",
@@ -144,15 +145,22 @@ describe("renewal agreed stamp", () => {
     };
     const before = new Date("2026-09-26T16:00:00.000Z");
     const morning = new Date("2026-10-10T16:00:00.000Z");
-    expect(calendarDaysBetween(etDateKey(before), "2027-10-10")).toBeGreaterThan(90);
-    expect(renewalAgreedEffectiveDate(atm, before)).toBe("2026-10-10");
+    const today = etDateKey(before);
+    expect(calendarDaysBetween(today, atm.effectiveDate)).toBe(14);
+    expect(calendarDaysBetween(today, atm.expirationDate)).toBe(379);
+    expect(calendarDaysBetween(today, atm.renewalDate)).toBe(379);
+    const clearOn = renewalAgreedEffectiveDate(atm, before);
+    expect(clearOn).toBe(atm.effectiveDate);
+    expect(clearOn).not.toBe(atm.expirationDate);
+    expect(clearOn).not.toBe(atm.renewalDate);
     expect(showRenewalAgreedStamp(atm, before)).toBe(true);
     expect(showRenewalAgreedStamp(atm, new Date("2026-10-09T16:00:00.000Z"))).toBe(true);
     expect(showRenewalAgreedStamp(atm, morning)).toBe(false);
     expect(clientStayingTermHasStarted(atm, before)).toBe(false);
     expect(clientStayingTermHasStarted(atm, morning)).toBe(true);
-    expect(renewedTermEffectiveReached("2026-10-10", before)).toBe(false);
-    expect(renewedTermEffectiveReached("2026-10-10", morning)).toBe(true);
+    expect(renewedTermEffectiveReached(atm.effectiveDate, before)).toBe(false);
+    expect(renewedTermEffectiveReached(atm.expirationDate, before)).toBe(false);
+    expect(renewedTermEffectiveReached(atm.effectiveDate, morning)).toBe(true);
   });
 
   it("does not release when a premature renewal_date jump is more than 90 days out", () => {

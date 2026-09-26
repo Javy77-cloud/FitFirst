@@ -8,6 +8,10 @@
  * After the book rolls onto that term, `policies.renewal_date` jumps about a
  * year forward (the following cycle). The stamp follows the renew-into
  * effective date, so that later renewal date cannot keep it up.
+ *
+ * That clear date is the imminent renew (George Rigby MMHO: effective
+ * 2026-10-10), not the expiration or renewal_date the renewals board may
+ * still count (~379 days). Those board bands are a separate clock.
  */
 
 import { businessDateKey, calendarDaysBetween } from "@/lib/policies/current-term";
@@ -193,7 +197,8 @@ export function renewalAgreedEffectiveDate(
   const priorEnd = priorExpirationKey(input, effective);
   const handledDay = businessDateKey(input.handledAt);
 
-  // The book is already dated on the upcoming renewed term.
+  // Imminent renew: the book effective is still ahead. Expiration and
+  // renewal_date on that same row are the following cycle, not this clear date.
   if (effective && effective > today) return effective;
 
   // The renewed term starts today, and the stored renewal date is the cycle after it.
