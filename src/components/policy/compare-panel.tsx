@@ -33,29 +33,51 @@ export function ComparePanel({
   current,
   proposed,
   logs,
+  compareBaseline,
+  compareRenewal,
+  baselineLabel = "Current term",
+  renewalLabel = "Proposed term",
+  renewalHandled = false,
 }: {
   policy: Policy;
   current: PolicyTerm | undefined;
   proposed: PolicyTerm | undefined;
   logs: RenewalCompareLog[];
+  /** Displayed left column. Defaults to the current term (unstamped compare). */
+  compareBaseline?: PolicyTerm;
+  /** Displayed right column. Defaults to the proposed term (unstamped compare). */
+  compareRenewal?: PolicyTerm;
+  baselineLabel?: string;
+  renewalLabel?: string;
+  /** Client staying already pushed — do not show the chase control again. */
+  renewalHandled?: boolean;
 }) {
-  const currentPremium = parseMoney(current?.premium);
-  const proposedPremium = parseMoney(proposed?.premium);
+  const baseline = compareBaseline ?? current;
+  const renewal = compareRenewal ?? proposed;
+  const currentPremium = parseMoney(baseline?.premium);
+  const proposedPremium = parseMoney(renewal?.premium);
   const change =
     currentPremium != null && proposedPremium != null
       ? premiumChange(currentPremium, proposedPremium)
       : null;
   const deductibleDefs = deductiblesForLine(policy.lineOfBusiness);
-  const rows = coverageRows(current?.coverages, proposed?.coverages);
+  const rows = coverageRows(baseline?.coverages, renewal?.coverages);
 
   return (
     <div className="space-y-4">
       <section className="ff-card flex flex-wrap items-center gap-3 p-4">
         <FillCompareFromDecsButton policyId={policy.id} />
-        <ClientStayingButton policyId={policy.id} renewalDate={policy.renewalDate} size="sm" />
+        {renewalHandled ? null : (
+          <ClientStayingButton policyId={policy.id} renewalDate={policy.renewalDate} size="sm" />
+        )}
 
       </section>
-      {change ? <PremiumChangeSummary change={change} /> : (
+      {change ? <PremiumChangeSummary change={change} /> : baselineLabel === "Prior term" ? (
+        <section className="ff-card p-4 text-base text-muted-foreground">
+          Prior term and current term are open for compare. Premium change shows once both
+          terms have a premium. FitFirst does not rate this policy.
+        </section>
+      ) : (
         <section className="ff-card p-4 text-base text-muted-foreground">
           Record the carrier&apos;s proposed term to see the premium-change summary. FitFirst
           does not rate this policy.
@@ -67,32 +89,32 @@ export function ComparePanel({
           <thead>
             <tr>
               <th>Item</th>
-              <th>Current term</th>
-              <th>Proposed term</th>
+              <th>{baselineLabel}</th>
+              <th>{renewalLabel}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td className="font-medium">Term</td>
               <td>
-                {current
-                  ? `${formatDay(current.termEffective)} → ${formatDay(current.termExpiration)}`
+                {baseline
+                  ? `${formatDay(baseline.termEffective)} → ${formatDay(baseline.termExpiration)}`
                   : "—"}
               </td>
               <td>
-                {proposed
-                  ? `${formatDay(proposed.termEffective)} → ${formatDay(proposed.termExpiration)}`
+                {renewal
+                  ? `${formatDay(renewal.termEffective)} → ${formatDay(renewal.termExpiration)}`
                   : "—"}
               </td>
             </tr>
             <tr className={change && change.direction !== "flat" ? "bg-fit-flag-bg/40" : undefined}>
               <td className="font-medium">Premium</td>
-              <td>{formatMoney(current?.premium)}</td>
-              <td className="font-semibold">{formatMoney(proposed?.premium)}</td>
+              <td>{formatMoney(baseline?.premium)}</td>
+              <td className="font-semibold">{formatMoney(renewal?.premium)}</td>
             </tr>
             {deductibleDefs.map((field) => {
-              const left = current?.[field.key] ?? "—";
-              const right = proposed?.[field.key] ?? "—";
+              const left = baseline?.[field.key] ?? "—";
+              const right = renewal?.[field.key] ?? "—";
               const changed = left !== right;
               return (
                 <tr key={field.key} className={cn(changed && "bg-fit-flag-bg/40")}>
